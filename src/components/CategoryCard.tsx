@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Car,
   Factory,
+  Building2,
   LucideIcon,
 } from "lucide-react";
 
@@ -26,6 +27,7 @@ const iconMap: Record<string, LucideIcon> = {
   GraduationCap,
   Car,
   Factory,
+  Building2,
 };
 
 const CategoryCard = ({ id, nome, icone }: CategoryCardProps) => {

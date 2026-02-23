@@ -1,12 +1,16 @@
 import { Link } from "react-router-dom";
-import { MapPin, TrendingUp } from "lucide-react";
+import { MapPin, TrendingUp, Home } from "lucide-react";
 import { Listing, formatCurrency, getCategoryName } from "@/data/mockListings";
+import { Badge } from "@/components/ui/badge";
 
 interface ListingCardProps {
   listing: Listing;
 }
 
 const ListingCard = ({ listing }: ListingCardProps) => {
+  const isAluguel = listing.tipo === "aluguel-imovel";
+  const isImovel = listing.tipo === "venda-imovel" || isAluguel;
+
   return (
     <Link
       to={`/anuncio/${listing.id}`}
@@ -19,11 +23,19 @@ const ListingCard = ({ listing }: ListingCardProps) => {
           alt={listing.titulo}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {listing.destaque && (
-          <div className="absolute left-3 top-3 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
-            Destaque
-          </div>
-        )}
+        <div className="absolute left-3 top-3 flex gap-2">
+          {listing.destaque && (
+            <div className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
+              Destaque
+            </div>
+          )}
+          {isImovel && (
+            <Badge variant={isAluguel ? "secondary" : "default"} className="gap-1">
+              <Home className="h-3 w-3" />
+              {isAluguel ? "Aluguel" : "Venda"}
+            </Badge>
+          )}
+        </div>
         <div className="absolute bottom-3 left-3 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
           {getCategoryName(listing.categoria)}
         </div>
@@ -42,26 +54,36 @@ const ListingCard = ({ listing }: ListingCardProps) => {
           </span>
         </div>
 
+        {listing.areaM2 && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Área: {listing.areaM2} m²
+          </p>
+        )}
+
         <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
           {listing.descricao}
         </p>
 
         <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
           <div>
-            <p className="text-xs text-muted-foreground">Valor do Negócio</p>
+            <p className="text-xs text-muted-foreground">
+              {isAluguel ? "Aluguel/mês" : "Valor do Negócio"}
+            </p>
             <p className="font-display text-lg font-bold text-primary">
               {formatCurrency(listing.preco)}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Faturamento/mês</p>
-            <div className="flex items-center gap-1 text-success">
-              <TrendingUp className="h-4 w-4" />
-              <span className="font-semibold">
-                {formatCurrency(listing.faturamentoMensal)}
-              </span>
+          {listing.faturamentoMensal > 0 && (
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Faturamento/mês</p>
+              <div className="flex items-center gap-1 text-success">
+                <TrendingUp className="h-4 w-4" />
+                <span className="font-semibold">
+                  {formatCurrency(listing.faturamentoMensal)}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </Link>

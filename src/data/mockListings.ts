@@ -10,6 +10,8 @@ export interface Listing {
   descricaoCompleta: string;
   imagem: string;
   destaque?: boolean;
+  tipo?: "venda" | "venda-imovel" | "aluguel-imovel";
+  areaM2?: number;
 }
 
 export const categorias = [
@@ -21,6 +23,7 @@ export const categorias = [
   { id: "educacao", nome: "Educação", icone: "GraduationCap" },
   { id: "automotivo", nome: "Automotivo", icone: "Car" },
   { id: "industria", nome: "Indústria", icone: "Factory" },
+  { id: "imoveis-comerciais", nome: "Imóveis Comerciais", icone: "Building2" },
 ];
 
 export const estados = [
@@ -182,6 +185,48 @@ export const mockListings: Listing[] = [
     descricao: "Loja especializada em produtos naturais, orgânicos e suplementos.",
     descricaoCompleta: "Loja de produtos naturais em galeria comercial de alto movimento. Mix de produtos orgânicos, suplementos e cosméticos naturais. Parcerias com produtores locais. E-commerce com entrega na região. Base de clientes conscientes e recorrentes. Decoração rústica e acolhedora. Potencial para expansão com produtos a granel. Margens atrativas no segmento.",
     imagem: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800",
+  },
+  {
+    id: "13",
+    titulo: "Sala Comercial Premium no Centro",
+    categoria: "imoveis-comerciais",
+    cidade: "São Paulo",
+    estado: "SP",
+    preco: 520000,
+    faturamentoMensal: 0,
+    descricao: "Sala comercial de 120m² em edifício corporativo com infraestrutura completa.",
+    descricaoCompleta: "Sala comercial de alto padrão localizada em edifício corporativo no centro financeiro de São Paulo. 120m² de área útil com divisórias em vidro. Recepção compartilhada, 2 vagas de garagem, ar-condicionado central. Prédio com segurança 24h, gerador e heliponto. Próximo ao metrô e principais vias de acesso. Ideal para escritórios de advocacia, consultoria ou coworking.",
+    imagem: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800",
+    tipo: "venda-imovel",
+    areaM2: 120,
+  },
+  {
+    id: "14",
+    titulo: "Galpão Industrial para Aluguel",
+    categoria: "imoveis-comerciais",
+    cidade: "Guarulhos",
+    estado: "SP",
+    preco: 18000,
+    faturamentoMensal: 0,
+    descricao: "Galpão de 800m² com docas, pé-direito alto e localização estratégica.",
+    descricaoCompleta: "Galpão industrial de 800m² disponível para aluguel em Guarulhos. Pé-direito de 10 metros, 2 docas para caminhões, piso industrial de alta resistência. Escritório administrativo de 80m², vestiários e refeitório. Energia trifásica, sistema contra incêndio. Localização estratégica próxima à Rodovia Dutra e ao Aeroporto de Guarulhos. Ideal para logística, distribuição ou manufatura.",
+    imagem: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800",
+    tipo: "aluguel-imovel",
+    areaM2: 800,
+  },
+  {
+    id: "15",
+    titulo: "Loja de Rua em Bairro Nobre",
+    categoria: "imoveis-comerciais",
+    cidade: "Rio de Janeiro",
+    estado: "RJ",
+    preco: 12000,
+    faturamentoMensal: 0,
+    descricao: "Loja térrea de 65m² com vitrine ampla em rua de alto movimento comercial.",
+    descricaoCompleta: "Loja de rua em excelente ponto comercial no Leblon, Rio de Janeiro. 65m² de área com vitrine ampla de vidro. Mezanino para estoque ou escritório. Banheiro e copa. Alto fluxo de pedestres e fácil acesso por transporte público. Ideal para boutique, café, galeria ou serviços. Contrato de aluguel com possibilidade de renovação por 5 anos.",
+    imagem: "https://images.unsplash.com/photo-1528698827591-e625c338dea0?w=800",
+    tipo: "aluguel-imovel",
+    areaM2: 65,
   },
 ];
 

@@ -22,10 +22,12 @@ const Anunciar = () => {
   const [formData, setFormData] = useState({
     titulo: "",
     categoria: "",
+    tipo: "venda" as "venda" | "venda-imovel" | "aluguel-imovel",
     cidade: "",
     estado: "",
     preco: "",
     faturamentoMensal: "",
+    areaM2: "",
     descricao: "",
     descricaoCompleta: "",
   });
@@ -43,7 +45,7 @@ const Anunciar = () => {
     if (!formData.estado) newErrors.estado = "Estado é obrigatório";
     if (!formData.preco || Number(formData.preco) <= 0)
       newErrors.preco = "Preço deve ser maior que zero";
-    if (!formData.faturamentoMensal || Number(formData.faturamentoMensal) <= 0)
+    if (formData.tipo === "venda" && (!formData.faturamentoMensal || Number(formData.faturamentoMensal) <= 0))
       newErrors.faturamentoMensal = "Faturamento deve ser maior que zero";
     if (!formData.descricao.trim())
       newErrors.descricao = "Descrição breve é obrigatória";
@@ -68,11 +70,13 @@ const Anunciar = () => {
         cidade: formData.cidade,
         estado: formData.estado,
         preco: Number(formData.preco),
-        faturamentoMensal: Number(formData.faturamentoMensal),
+        faturamentoMensal: Number(formData.faturamentoMensal) || 0,
         descricao: formData.descricao,
         descricaoCompleta: formData.descricaoCompleta,
         imagem: "https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800",
         destaque: false,
+        tipo: formData.tipo !== "venda" ? formData.tipo : undefined,
+        areaM2: formData.areaM2 ? Number(formData.areaM2) : undefined,
       };
 
       // Add to mock data (will only persist for this session)
@@ -207,7 +211,7 @@ const Anunciar = () => {
                 )}
               </div>
 
-              {/* Category & Location */}
+              {/* Category & Type */}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
                   <Label>Categoria *</Label>
@@ -233,6 +237,26 @@ const Anunciar = () => {
                   )}
                 </div>
 
+                <div>
+                  <Label>Tipo de Operação *</Label>
+                  <Select
+                    value={formData.tipo}
+                    onValueChange={(value) => handleSelectChange("tipo", value)}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="venda">Venda de Negócio</SelectItem>
+                      <SelectItem value="venda-imovel">Venda de Imóvel Comercial</SelectItem>
+                      <SelectItem value="aluguel-imovel">Aluguel de Imóvel Comercial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="grid gap-6 sm:grid-cols-2">
                 <div>
                   <Label>Estado *</Label>
                   <Select
@@ -277,7 +301,9 @@ const Anunciar = () => {
               {/* Price & Revenue */}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="preco">Valor do Negócio (R$) *</Label>
+                  <Label htmlFor="preco">
+                    {formData.tipo === "aluguel-imovel" ? "Valor do Aluguel Mensal (R$) *" : "Valor do Negócio (R$) *"}
+                  </Label>
                   <Input
                     id="preco"
                     name="preco"
@@ -300,33 +326,50 @@ const Anunciar = () => {
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="faturamentoMensal">Faturamento Mensal (R$) *</Label>
-                  <Input
-                    id="faturamentoMensal"
-                    name="faturamentoMensal"
-                    type="number"
-                    value={formData.faturamentoMensal}
-                    onChange={(e) =>
-                      handleChange({
-                        ...e,
-                        target: {
-                          ...e.target,
-                          value: formatCurrencyInput(e.target.value),
-                        },
-                      })
-                    }
-                    placeholder="Ex: 75000"
-                    className={`mt-2 ${
-                      errors.faturamentoMensal ? "border-destructive" : ""
-                    }`}
-                  />
-                  {errors.faturamentoMensal && (
-                    <p className="mt-1 text-sm text-destructive">
-                      {errors.faturamentoMensal}
-                    </p>
-                  )}
-                </div>
+                {formData.tipo === "venda" && (
+                  <div>
+                    <Label htmlFor="faturamentoMensal">Faturamento Mensal (R$) *</Label>
+                    <Input
+                      id="faturamentoMensal"
+                      name="faturamentoMensal"
+                      type="number"
+                      value={formData.faturamentoMensal}
+                      onChange={(e) =>
+                        handleChange({
+                          ...e,
+                          target: {
+                            ...e.target,
+                            value: formatCurrencyInput(e.target.value),
+                          },
+                        })
+                      }
+                      placeholder="Ex: 75000"
+                      className={`mt-2 ${
+                        errors.faturamentoMensal ? "border-destructive" : ""
+                      }`}
+                    />
+                    {errors.faturamentoMensal && (
+                      <p className="mt-1 text-sm text-destructive">
+                        {errors.faturamentoMensal}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {(formData.tipo === "venda-imovel" || formData.tipo === "aluguel-imovel") && (
+                  <div>
+                    <Label htmlFor="areaM2">Área (m²)</Label>
+                    <Input
+                      id="areaM2"
+                      name="areaM2"
+                      type="number"
+                      value={formData.areaM2}
+                      onChange={handleChange}
+                      placeholder="Ex: 120"
+                      className="mt-2"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Short Description */}
