@@ -131,36 +131,61 @@ const Anuncio = () => {
             {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 rounded-xl border border-border bg-card p-6 shadow-card">
+                {/* Type Badge */}
+                {(listing.tipo === "aluguel-imovel" || listing.tipo === "venda-imovel") && (
+                  <div className="mb-4 flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${listing.tipo === "aluguel-imovel" ? "bg-secondary text-secondary-foreground" : "bg-primary text-primary-foreground"}`}>
+                      {listing.tipo === "aluguel-imovel" ? "Aluguel" : "Venda de Imóvel"}
+                    </span>
+                  </div>
+                )}
+
+                {/* Area */}
+                {listing.areaM2 && (
+                  <div className="border-b border-border pb-4 mb-4">
+                    <p className="text-sm text-muted-foreground">Área</p>
+                    <p className="mt-1 font-display text-xl font-bold text-foreground">
+                      {listing.areaM2} m²
+                    </p>
+                  </div>
+                )}
+
                 {/* Price */}
                 <div className="border-b border-border pb-6">
-                  <p className="text-sm text-muted-foreground">Valor do Negócio</p>
+                  <p className="text-sm text-muted-foreground">
+                    {listing.tipo === "aluguel-imovel" ? "Valor do Aluguel/mês" : "Valor do Negócio"}
+                  </p>
                   <p className="mt-1 font-display text-3xl font-bold text-primary">
                     {formatCurrency(listing.preco)}
                   </p>
                 </div>
 
                 {/* Revenue */}
-                <div className="border-b border-border py-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Faturamento Mensal</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-success" />
-                        <span className="font-display text-xl font-bold text-success">
-                          {formatCurrency(listing.faturamentoMensal)}
-                        </span>
+                {listing.faturamentoMensal > 0 && (
+                  <div className="border-b border-border py-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Faturamento Mensal</p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5 text-success" />
+                          <span className="font-display text-xl font-bold text-success">
+                            {formatCurrency(listing.faturamentoMensal)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* ROI */}
-                <div className="border-b border-border py-6">
-                  <p className="text-sm text-muted-foreground">Retorno Estimado</p>
-                  <p className="mt-1 font-display text-lg font-semibold text-foreground">
-                    ~{Math.round(listing.preco / listing.faturamentoMensal)} meses
-                  </p>
-                </div>
+                {listing.faturamentoMensal > 0 && (
+                  <div className="border-b border-border py-6">
+                    <p className="text-sm text-muted-foreground">Retorno Estimado</p>
+                    <p className="mt-1 font-display text-lg font-semibold text-foreground">
+                      ~{Math.round(listing.preco / listing.faturamentoMensal)} meses
+                    </p>
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="mt-6 space-y-3">
