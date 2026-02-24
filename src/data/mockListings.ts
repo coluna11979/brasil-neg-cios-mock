@@ -9,6 +9,7 @@ export interface Listing {
   descricao: string;
   descricaoCompleta: string;
   imagem: string;
+  imagens?: string[];
   destaque?: boolean;
   tipo?: "venda" | "venda-imovel" | "aluguel-imovel";
   areaM2?: number;
@@ -50,6 +51,12 @@ export const mockListings: Listing[] = [
     descricao: "Pizzaria consolidada há 12 anos com clientela fiel e excelente localização.",
     descricaoCompleta: "Pizzaria tradicional estabelecida há 12 anos em um dos bairros mais nobres de São Paulo. Clientela consolidada com alta taxa de fidelização. Equipamentos modernos e em perfeito estado. Capacidade para 60 pessoas sentadas. Delivery próprio com motoboys fixos. Receitas exclusivas e fornecedores de qualidade. Funcionários treinados inclusos na negociação. Faturamento consistente mesmo em períodos de crise.",
     imagem: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800",
+    imagens: [
+      "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800",
+      "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800",
+      "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800",
+      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800",
+    ],
     destaque: true,
   },
   {
@@ -63,6 +70,11 @@ export const mockListings: Listing[] = [
     descricao: "Clínica completa com equipamentos de última geração e carteira de clientes VIP.",
     descricaoCompleta: "Clínica de estética localizada em área premium do Rio de Janeiro. Equipamentos de última geração importados. Carteira com mais de 500 clientes ativos. Equipe técnica especializada e fidelizada. Parcerias com dermatologistas renomados. Ambiente sofisticado e climatizado. Sistema de gestão integrado. Potencial de expansão com novos procedimentos.",
     imagem: "https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=800",
+    imagens: [
+      "https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=800",
+      "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800",
+      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800",
+    ],
     destaque: true,
   },
   {
@@ -88,6 +100,11 @@ export const mockListings: Listing[] = [
     descricao: "Franquia de escola de idiomas com metodologia reconhecida e 200+ alunos ativos.",
     descricaoCompleta: "Escola de idiomas de franquia renomada nacionalmente. Mais de 200 alunos matriculados. Metodologia própria com material didático incluso. Professores qualificados e certificados. Localização estratégica próxima a universidades. Sistema de gestão e marketing fornecido pela franqueadora. Suporte contínuo da marca. Potencial de crescimento com cursos corporativos.",
     imagem: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800",
+    imagens: [
+      "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800",
+      "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800",
+      "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800",
+    ],
     destaque: true,
   },
   {
