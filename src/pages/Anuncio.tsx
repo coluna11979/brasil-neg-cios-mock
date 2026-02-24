@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,6 +9,8 @@ import {
   Share2,
   Heart,
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
@@ -18,6 +21,8 @@ const Anuncio = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const listing = getListingById(id || "");
+  const images = listing?.imagens?.length ? listing.imagens : listing ? [listing.imagem] : [];
+  const [currentImage, setCurrentImage] = useState(0);
 
   if (!listing) {
     return (
@@ -59,16 +64,57 @@ const Anuncio = () => {
           <div className="mt-6 grid gap-8 lg:grid-cols-3">
             {/* Main Content */}
             <div className="lg:col-span-2">
-              {/* Image */}
-              <div className="relative aspect-video overflow-hidden rounded-xl">
-                <img
-                  src={listing.imagem}
-                  alt={listing.titulo}
-                  className="h-full w-full object-cover"
-                />
-                {listing.destaque && (
-                  <div className="absolute left-4 top-4 rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-foreground">
-                    Destaque
+              {/* Image Carousel */}
+              <div className="relative overflow-hidden rounded-xl">
+                <div className="relative aspect-video">
+                  <img
+                    src={images[currentImage]}
+                    alt={`${listing.titulo} - Foto ${currentImage + 1}`}
+                    className="h-full w-full object-cover transition-opacity duration-300"
+                  />
+                  {listing.destaque && (
+                    <div className="absolute left-4 top-4 rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-foreground">
+                      Destaque
+                    </div>
+                  )}
+
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setCurrentImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-background"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => setCurrentImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-background"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                      <div className="absolute bottom-3 right-3 rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-foreground backdrop-blur-sm">
+                        {currentImage + 1} / {images.length}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Thumbnails */}
+                {images.length > 1 && (
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentImage(idx)}
+                        className={`relative h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                          idx === currentImage
+                            ? "border-primary ring-1 ring-primary"
+                            : "border-transparent opacity-60 hover:opacity-100"
+                        }`}
+                      >
+                        <img src={img} alt={`Miniatura ${idx + 1}`} className="h-full w-full object-cover" />
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
