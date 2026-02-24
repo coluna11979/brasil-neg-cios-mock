@@ -34,12 +34,6 @@ const Header = () => {
             >
               Como Funciona
             </Link>
-            <Link
-              to="/meus-anuncios"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Meus Anúncios
-            </Link>
           </nav>
 
           {/* CTA Button */}
@@ -75,13 +69,6 @@ const Header = () => {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Como Funciona
-              </Link>
-              <Link
-                to="/meus-anuncios"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Meus Anúncios
               </Link>
               <Button asChild variant="default" className="mt-2 font-semibold">
                 <Link to="/anunciar" onClick={() => setMobileMenuOpen(false)}>

@@ -15,7 +15,6 @@ import {
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { categorias, estados, mockListings, Listing } from "@/data/mockListings";
-import { addCreatedId } from "@/data/sessionStore";
 
 const Anunciar = () => {
   const navigate = useNavigate();
@@ -82,7 +81,6 @@ const Anunciar = () => {
 
       // Add to mock data (will only persist for this session)
       mockListings.push(newListing);
-      addCreatedId(newId);
 
       setCreatedId(newId);
       setShowPreview(true);
