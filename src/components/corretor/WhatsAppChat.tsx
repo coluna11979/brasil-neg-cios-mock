@@ -576,7 +576,6 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
               <UserPlus className="h-4 w-4" />
             </button>
           </div>
-          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-border/50">
