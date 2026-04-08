@@ -185,7 +185,7 @@ const ImoveisComerciais = () => {
           <div className="mt-16 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl gradient-hero p-8 text-center">
               <h2 className="font-display text-xl font-bold text-primary-foreground">
-                Tem um salão ou imóvel para anunciar?
+                Quero anunciar meu imóvel
               </h2>
               <p className="mt-2 text-primary-foreground/75 text-sm">
                 Alcance milhares de empresários e investidores.

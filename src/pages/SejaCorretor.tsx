@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import usePageTitle from "@/hooks/usePageTitle";
 import { supabase } from "@/lib/supabase";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
-import { ArrowLeft, CheckCircle, UserCheck, TrendingUp, Handshake, Wallet } from "lucide-react";
+import { login } from "@/stores/authStore";
+import { ArrowLeft, CheckCircle, UserCheck, TrendingUp, Handshake, Wallet, LogIn, AlertCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +28,45 @@ const BENEFICIOS = [
 
 const SejaCorretor = () => {
   usePageTitle("Seja um Corretor – NegócioJá");
+  const navigate = useNavigate();
+
+  const [modo, setModo] = useState<"cadastro" | "login">("cadastro");
+  const [loginForm, setLoginForm] = useState({ email: "", senha: "" });
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [loginPendente, setLoginPendente] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoginPendente(false);
+    setLoginLoading(true);
+    try {
+      const success = await login(loginForm.email, loginForm.senha);
+      if (success) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("ativo, role")
+            .eq("id", user.id)
+            .single();
+          if (profile?.role === "corretor" && !profile?.ativo) {
+            await supabase.auth.signOut();
+            setLoginPendente(true);
+            return;
+          }
+        }
+        navigate("/corretor/mensagens");
+      } else {
+        setLoginError("E-mail ou senha incorretos.");
+      }
+    } catch {
+      setLoginError("Erro ao conectar. Tente novamente.");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   const [enviado, setEnviado] = useState(false);
   const [form, setForm] = useState({
@@ -212,6 +252,88 @@ const SejaCorretor = () => {
 
             {/* Formulário */}
             <div className="mx-auto max-w-xl">
+              {/* Toggle cadastro / login */}
+              <div className="flex rounded-xl border border-border bg-muted/40 p-1 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setModo("cadastro")}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${modo === "cadastro" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Quero me cadastrar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModo("login")}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${modo === "login" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Já sou cadastrado
+                </button>
+              </div>
+
+              {/* Login form */}
+              {modo === "login" && (
+                <div className="rounded-xl border border-border bg-card p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <LogIn className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="font-display text-xl font-bold text-foreground">Entrar no painel</h2>
+                      <p className="text-xs text-muted-foreground">Acesse seu CRM de corretor</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    {loginPendente && (
+                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                        <Clock className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
+                        <div>
+                          <p className="font-semibold">Cadastro em análise</p>
+                          <p className="mt-0.5 text-amber-700">Sua conta ainda não foi aprovada. Em até 24h você receberá um aviso pelo WhatsApp.</p>
+                        </div>
+                      </div>
+                    )}
+                    {loginError && (
+                      <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        {loginError}
+                      </div>
+                    )}
+                    <div>
+                      <Label htmlFor="login-email">E-mail</Label>
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={loginForm.email}
+                        onChange={(e) => setLoginForm((p) => ({ ...p, email: e.target.value }))}
+                        className="mt-1.5"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="login-senha">Senha</Label>
+                      <Input
+                        id="login-senha"
+                        type="password"
+                        placeholder="Sua senha"
+                        value={loginForm.senha}
+                        onChange={(e) => setLoginForm((p) => ({ ...p, senha: e.target.value }))}
+                        className="mt-1.5"
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full gap-2 font-semibold" size="lg" disabled={loginLoading}>
+                      <LogIn className="h-4 w-4" />
+                      {loginLoading ? "Entrando..." : "Entrar no meu painel"}
+                    </Button>
+                  </form>
+                </div>
+              )}
+
+              {/* Cadastro form */}
+              {modo === "cadastro" && (
               <div className="rounded-xl border border-border bg-card p-8">
                 <h2 className="font-display text-xl font-bold text-foreground mb-6">
                   Cadastre-se como corretor
@@ -297,6 +419,7 @@ const SejaCorretor = () => {
                   </Button>
                 </form>
               </div>
+              )}
             </div>
           </div>
         </div>
