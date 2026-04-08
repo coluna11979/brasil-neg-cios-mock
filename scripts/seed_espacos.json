@@ -1,0 +1,152 @@
+[
+  {
+    "galeria_id": "7efd9acf-7aa2-4252-a163-f1a2fbbfcd34",
+    "numero": "Loja 12",
+    "tipo": "loja",
+    "area_m2": 55,
+    "valor_aluguel": 4800,
+    "andar": "Térreo",
+    "descricao": "Loja de esquina com vitrine dupla. Alto fluxo de clientes no corredor principal do Brás.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "7efd9acf-7aa2-4252-a163-f1a2fbbfcd34",
+    "numero": "Box 05",
+    "tipo": "box",
+    "area_m2": 18,
+    "valor_aluguel": 1800,
+    "andar": "Térreo",
+    "descricao": "Box compacto no corredor de maior movimento. Ideal para acessórios ou serviços rápidos.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "7efd9acf-7aa2-4252-a163-f1a2fbbfcd34",
+    "numero": "Quiosque 02",
+    "tipo": "quiosque",
+    "area_m2": 9,
+    "valor_aluguel": 1200,
+    "andar": "Térreo",
+    "descricao": "Quiosque central na praça de alimentação. Fluxo constante durante horário comercial.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "7efd9acf-7aa2-4252-a163-f1a2fbbfcd34",
+    "numero": "Loja 07",
+    "tipo": "loja",
+    "area_m2": 40,
+    "valor_aluguel": 3600,
+    "andar": "Térreo",
+    "descricao": "Loja com mezanino. Ótima para varejo de moda ou calçados.",
+    "disponivel": false
+  },
+  {
+    "galeria_id": "e194c99f-319b-43f6-8042-a1cd92d5d514",
+    "numero": "Sala 101",
+    "tipo": "sala",
+    "area_m2": 42,
+    "valor_aluguel": 3200,
+    "andar": "1º Andar",
+    "descricao": "Sala comercial climatizada. Ideal para consultório, escritório ou atendimento ao cliente.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "e194c99f-319b-43f6-8042-a1cd92d5d514",
+    "numero": "Sala 103",
+    "tipo": "sala",
+    "area_m2": 28,
+    "valor_aluguel": 2200,
+    "andar": "1º Andar",
+    "descricao": "Sala compacta com iluminação natural. Ótima para profissional autônomo ou pequena empresa.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "e194c99f-319b-43f6-8042-a1cd92d5d514",
+    "numero": "Loja 01",
+    "tipo": "loja",
+    "area_m2": 65,
+    "valor_aluguel": 5500,
+    "andar": "Térreo",
+    "descricao": "Loja âncora no térreo com acesso direto pela rua. Ponto nobre em Pinheiros.",
+    "disponivel": false
+  },
+  {
+    "galeria_id": "e194c99f-319b-43f6-8042-a1cd92d5d514",
+    "numero": "Sala 205",
+    "tipo": "sala",
+    "area_m2": 35,
+    "valor_aluguel": 2800,
+    "andar": "2º Andar",
+    "descricao": "Sala ampla no 2º andar com recepção. Excelente para clínicas ou escritório compartilhado.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "717fd32b-9816-45b6-84e8-fa99f776dd98",
+    "numero": "Ateliê A3",
+    "tipo": "sala",
+    "area_m2": 30,
+    "valor_aluguel": 2600,
+    "andar": "Térreo",
+    "descricao": "Ateliê com pé direito alto e iluminação zenital. Perfeito para artistas, designers ou fotógrafos.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "717fd32b-9816-45b6-84e8-fa99f776dd98",
+    "numero": "Loja C1",
+    "tipo": "loja",
+    "area_m2": 45,
+    "valor_aluguel": 4200,
+    "andar": "Térreo",
+    "descricao": "Loja com vitrine ampla na entrada principal da galeria. Alto fluxo de turistas na Vila Madalena.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "717fd32b-9816-45b6-84e8-fa99f776dd98",
+    "numero": "Quiosque 01",
+    "tipo": "quiosque",
+    "area_m2": 10,
+    "valor_aluguel": 1500,
+    "andar": "Térreo",
+    "descricao": "Quiosque no pátio central. Ideal para café, sucos ou artesanato.",
+    "disponivel": false
+  },
+  {
+    "galeria_id": "ff3ed424-a3c3-47c5-95bb-8540781e32cf",
+    "numero": "Loja 04",
+    "tipo": "loja",
+    "area_m2": 50,
+    "valor_aluguel": 3800,
+    "andar": "Térreo",
+    "descricao": "Loja de bairro com boa visibilidade na avenida principal. Clientela local fiel.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "ff3ed424-a3c3-47c5-95bb-8540781e32cf",
+    "numero": "Sala 201",
+    "tipo": "sala",
+    "area_m2": 32,
+    "valor_aluguel": 2400,
+    "andar": "2º Andar",
+    "descricao": "Sala comercial com vista para a avenida. Ótima para serviços de saúde ou beleza.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "ff3ed424-a3c3-47c5-95bb-8540781e32cf",
+    "numero": "Box 03",
+    "tipo": "box",
+    "area_m2": 15,
+    "valor_aluguel": 1400,
+    "andar": "Térreo",
+    "descricao": "Box interno em corredor movimentado. Ideal para serviços rápidos ou alimentação.",
+    "disponivel": true
+  },
+  {
+    "galeria_id": "ff3ed424-a3c3-47c5-95bb-8540781e32cf",
+    "numero": "Loja 08",
+    "tipo": "loja",
+    "area_m2": 60,
+    "valor_aluguel": 4500,
+    "andar": "Térreo",
+    "descricao": "Loja grande próxima ao metrô Santana. Excelente para farmácia, varejo ou alimentação.",
+    "disponivel": false
+  }
+]

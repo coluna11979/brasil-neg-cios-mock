@@ -11,9 +11,90 @@ export interface Listing {
   imagem: string;
   imagens?: string[];
   destaque?: boolean;
-  tipo?: "venda" | "venda-imovel" | "aluguel-imovel";
+  tipo?: "venda" | "venda-imovel" | "aluguel-imovel" | "galeria";
   areaM2?: number;
 }
+
+export interface EspacoGaleria {
+  id: string;
+  numero: string;
+  areaM2: number;
+  valorAluguel: number;
+  descricao: string;
+  disponivel: boolean;
+  andar?: string;
+  tipo: "loja" | "sala" | "quiosque" | "box";
+}
+
+export interface Galeria {
+  id: string;
+  nome: string;
+  endereco: string;
+  cidade: string;
+  estado: string;
+  descricao: string;
+  imagem: string;
+  totalEspacos: number;
+  espacos: EspacoGaleria[];
+}
+
+export const mockGalerias: Galeria[] = [
+  {
+    id: "g1",
+    nome: "Galeria Centro Empresarial Paulista",
+    endereco: "Av. Paulista, 1500",
+    cidade: "São Paulo",
+    estado: "SP",
+    descricao: "Galeria comercial premium na Av. Paulista com alto fluxo de pedestres. Ideal para lojas, escritórios e serviços.",
+    imagem: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800",
+    totalEspacos: 8,
+    espacos: [
+      { id: "g1e1", numero: "Loja 01", areaM2: 45, valorAluguel: 4500, descricao: "Loja térrea com vitrine para a avenida. Ótima visibilidade.", disponivel: true, andar: "Térreo", tipo: "loja" },
+      { id: "g1e2", numero: "Loja 03", areaM2: 60, valorAluguel: 5800, descricao: "Loja de esquina com duas vitrines. Ponto estratégico.", disponivel: true, andar: "Térreo", tipo: "loja" },
+      { id: "g1e3", numero: "Sala 201", areaM2: 35, valorAluguel: 2800, descricao: "Sala comercial no 2º andar com ar-condicionado central.", disponivel: true, andar: "2º Andar", tipo: "sala" },
+      { id: "g1e4", numero: "Sala 205", areaM2: 28, valorAluguel: 2200, descricao: "Sala compacta ideal para consultório ou escritório individual.", disponivel: false, andar: "2º Andar", tipo: "sala" },
+      { id: "g1e5", numero: "Box 12", areaM2: 12, valorAluguel: 1200, descricao: "Box no corredor principal. Ideal para serviços rápidos.", disponivel: true, andar: "Térreo", tipo: "box" },
+      { id: "g1e6", numero: "Quiosque 03", areaM2: 8, valorAluguel: 900, descricao: "Quiosque na praça de alimentação. Ponto de alto fluxo.", disponivel: true, andar: "Térreo", tipo: "quiosque" },
+      { id: "g1e7", numero: "Sala 302", areaM2: 50, valorAluguel: 3500, descricao: "Sala ampla no 3º andar com vista panorâmica.", disponivel: false, andar: "3º Andar", tipo: "sala" },
+      { id: "g1e8", numero: "Loja 07", areaM2: 40, valorAluguel: 4200, descricao: "Loja com mezanino, ótima para varejo ou alimentação.", disponivel: true, andar: "Térreo", tipo: "loja" },
+    ],
+  },
+  {
+    id: "g2",
+    nome: "Galeria Shopping Norte",
+    endereco: "Rua Voluntários da Pátria, 800",
+    cidade: "Rio de Janeiro",
+    estado: "RJ",
+    descricao: "Galeria popular com grande movimento. Foco em comércio varejista e serviços do dia a dia.",
+    imagem: "https://images.unsplash.com/photo-1528698827591-e625c338dea0?w=800",
+    totalEspacos: 6,
+    espacos: [
+      { id: "g2e1", numero: "Box 01", areaM2: 15, valorAluguel: 1800, descricao: "Box na entrada principal. Grande circulação de pessoas.", disponivel: true, andar: "Térreo", tipo: "box" },
+      { id: "g2e2", numero: "Box 05", areaM2: 10, valorAluguel: 1200, descricao: "Box compacto no corredor central. Bom para acessórios.", disponivel: true, andar: "Térreo", tipo: "box" },
+      { id: "g2e3", numero: "Loja 10", areaM2: 55, valorAluguel: 5000, descricao: "Loja ampla com depósito nos fundos. Ideal para vestuário.", disponivel: false, andar: "Térreo", tipo: "loja" },
+      { id: "g2e4", numero: "Quiosque 01", areaM2: 6, valorAluguel: 800, descricao: "Quiosque no hall de entrada. Perfeito para lanches ou bebidas.", disponivel: true, andar: "Térreo", tipo: "quiosque" },
+      { id: "g2e5", numero: "Sala 101", areaM2: 30, valorAluguel: 2500, descricao: "Sala no 1º andar com banheiro privativo.", disponivel: true, andar: "1º Andar", tipo: "sala" },
+      { id: "g2e6", numero: "Box 08", areaM2: 18, valorAluguel: 2000, descricao: "Box próximo à escada rolante. Boa visibilidade.", disponivel: true, andar: "Térreo", tipo: "box" },
+    ],
+  },
+  {
+    id: "g3",
+    nome: "Galeria Bela Vista Comércio",
+    endereco: "Av. Afonso Pena, 2100",
+    cidade: "Belo Horizonte",
+    estado: "MG",
+    descricao: "Galeria tradicional no coração de BH. Espaços variados para diferentes segmentos comerciais.",
+    imagem: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800",
+    totalEspacos: 5,
+    espacos: [
+      { id: "g3e1", numero: "Loja 02", areaM2: 70, valorAluguel: 4800, descricao: "Loja grande com frente dupla. Excelente para moda ou eletrônicos.", disponivel: true, andar: "Térreo", tipo: "loja" },
+      { id: "g3e2", numero: "Sala 103", areaM2: 25, valorAluguel: 1800, descricao: "Sala no 1º andar. Ideal para profissionais autônomos.", disponivel: true, andar: "1º Andar", tipo: "sala" },
+      { id: "g3e3", numero: "Box 04", areaM2: 14, valorAluguel: 1500, descricao: "Box no corredor principal com boa iluminação.", disponivel: false, andar: "Térreo", tipo: "box" },
+      { id: "g3e4", numero: "Quiosque 02", areaM2: 9, valorAluguel: 1000, descricao: "Quiosque na área central da galeria.", disponivel: true, andar: "Térreo", tipo: "quiosque" },
+      { id: "g3e5", numero: "Loja 08", areaM2: 38, valorAluguel: 3200, descricao: "Loja com vitrine iluminada e ar-condicionado split.", disponivel: true, andar: "Térreo", tipo: "loja" },
+    ],
+  },
+];
 
 export const categorias = [
   { id: "alimentacao", nome: "Alimentação", icone: "UtensilsCrossed" },
@@ -24,7 +105,7 @@ export const categorias = [
   { id: "educacao", nome: "Educação", icone: "GraduationCap" },
   { id: "automotivo", nome: "Automotivo", icone: "Car" },
   { id: "industria", nome: "Indústria", icone: "Factory" },
-  { id: "imoveis-comerciais", nome: "Imóveis Comerciais", icone: "Building2" },
+  { id: "imoveis-comerciais", nome: "Salões & Imóveis Comerciais", icone: "Building2" },
 ];
 
 export const estados = [

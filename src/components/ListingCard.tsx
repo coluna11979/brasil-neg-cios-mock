@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { MapPin, TrendingUp, Home } from "lucide-react";
+import { MapPin, TrendingUp, Home, Heart, GitCompareArrows } from "lucide-react";
 import { Listing, formatCurrency, getCategoryName } from "@/data/mockListings";
 import { Badge } from "@/components/ui/badge";
+import { useBuyer } from "@/contexts/BuyerContext";
+import { useCompare } from "@/contexts/CompareContext";
 
 interface ListingCardProps {
   listing: Listing;
@@ -10,6 +12,23 @@ interface ListingCardProps {
 const ListingCard = ({ listing }: ListingCardProps) => {
   const isAluguel = listing.tipo === "aluguel-imovel";
   const isImovel = listing.tipo === "venda-imovel" || isAluguel;
+  const { favorites, toggleFavorite } = useBuyer();
+  const { toggleCompare, isComparing, compareIds } = useCompare();
+  const isFav = favorites.includes(listing.id);
+  const comparing = isComparing(listing.id);
+  const compareDisabled = !comparing && compareIds.length >= 3;
+
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite(listing.id);
+  };
+
+  const handleCompare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!compareDisabled) toggleCompare(listing.id);
+  };
 
   return (
     <Link
@@ -20,7 +39,8 @@ const ListingCard = ({ listing }: ListingCardProps) => {
       <div className="relative aspect-[16/10] overflow-hidden">
         <img
           src={listing.imagem}
-          alt={listing.titulo}
+          alt={`${listing.titulo} em ${listing.cidade}, ${listing.estado}`}
+          loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute left-3 top-3 flex gap-2">
@@ -36,6 +56,21 @@ const ListingCard = ({ listing }: ListingCardProps) => {
             </Badge>
           )}
         </div>
+
+        {/* Botão favorito */}
+        <button
+          type="button"
+          onClick={handleFavorite}
+          aria-label={isFav ? "Remover dos favoritos" : "Salvar nos favoritos"}
+          className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full shadow-md transition-all duration-200 ${
+            isFav
+              ? "bg-red-500 text-white scale-110"
+              : "bg-white/90 text-muted-foreground hover:text-red-500 hover:scale-110"
+          }`}
+        >
+          <Heart className={`h-4 w-4 ${isFav ? "fill-current" : ""}`} />
+        </button>
+
         <div className="absolute bottom-3 left-3 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
           {getCategoryName(listing.categoria)}
         </div>
@@ -85,6 +120,23 @@ const ListingCard = ({ listing }: ListingCardProps) => {
             </div>
           )}
         </div>
+
+        {/* Botão comparar */}
+        <button
+          type="button"
+          onClick={handleCompare}
+          disabled={compareDisabled}
+          className={`mt-3 w-full flex items-center justify-center gap-1.5 rounded-lg border py-1.5 text-xs font-medium transition-colors ${
+            comparing
+              ? "border-primary bg-primary/10 text-primary"
+              : compareDisabled
+              ? "border-border text-muted-foreground/40 cursor-not-allowed"
+              : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+          }`}
+        >
+          <GitCompareArrows className="h-3.5 w-3.5" />
+          {comparing ? "Selecionado para comparar" : "Comparar"}
+        </button>
       </div>
     </Link>
   );

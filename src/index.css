@@ -125,22 +125,6 @@
     @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
   }
 
-  .btn-glow {
-    @apply relative overflow-hidden;
-  }
-
-  .btn-glow::after {
-    content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full;
-    animation: shimmer 2s infinite;
-  }
-
-  @keyframes shimmer {
-    100% {
-      transform: translateX(100%);
-    }
-  }
-
   .gradient-hero {
     background: linear-gradient(135deg, hsl(195 70% 28%) 0%, hsl(195 60% 35%) 50%, hsl(195 50% 42%) 100%);
   }

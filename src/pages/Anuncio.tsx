@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import usePageTitle from "@/hooks/usePageTitle";
 import {
   ArrowLeft,
   MapPin,
@@ -11,18 +12,131 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Loader2,
+  Sparkles,
+  Eye,
+  Users,
 } from "lucide-react";
+import { callClaude } from "@/lib/anthropic";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { getListingById, formatCurrency, getCategoryName } from "@/data/mockListings";
+import ListingCard from "@/components/ListingCard";
+import { formatCurrency, getCategoryName } from "@/data/mockListings";
+import StickyMobileCTA from "@/components/StickyMobileCTA";
+import { supabase } from "@/lib/supabase";
+import { useNegocios, adaptNegocio, type NegocioSupabase } from "@/hooks/useNegocios";
+import { useBuyer } from "@/contexts/BuyerContext";
+
+// Hash determinístico para social proof seed
+function hashId(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = Math.imul(31, h) + str.charCodeAt(i) | 0; }
+  return Math.abs(h);
+}
 
 const Anuncio = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const listing = getListingById(id || "");
-  const images = listing?.imagens?.length ? listing.imagens : listing ? [listing.imagem] : [];
+  const [listing, setListing] = useState<NegocioSupabase | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentImage, setCurrentImage] = useState(0);
+  const [shareMsg, setShareMsg] = useState("");
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [aiLoadingAnalysis, setAiLoadingAnalysis] = useState(false);
+  const { favorites, toggleFavorite } = useBuyer();
+
+  // Social proof — números determinísticos baseados no ID
+  const viewsHoje = listing ? (hashId(listing.id) % 28) + 9 : 0;
+  const interessados = listing ? (hashId(listing.id + "i") % 10) + 3 : 0;
+
+  const handleAiAnalysis = async () => {
+    if (!listing || aiAnalysis) return;
+    setAiLoadingAnalysis(true);
+    try {
+      const prompt = `Você é um analista de M&A especializado em PMEs brasileiras. Com base nos dados abaixo, gere um resumo executivo com exatamente estas 4 seções em markdown:
+
+**Pontos Fortes**
+- (3 bullets objetivos)
+
+**Riscos a Considerar**
+- (2 bullets honestos)
+
+**Perfil Ideal do Comprador**
+(1 parágrafo curto)
+
+**Veredito**
+(1 frase direta)
+
+---
+Negócio: ${listing.titulo}
+Categoria: ${getCategoryName(listing.categoria)}
+Localização: ${listing.cidade}, ${listing.estado}
+Preço: ${formatCurrency(listing.preco)}
+${listing.faturamento_mensal > 0 ? `Faturamento mensal: ${formatCurrency(listing.faturamento_mensal)}\nRetorno estimado: ~${Math.round(listing.preco / listing.faturamento_mensal)} meses` : ""}
+${listing.area_m2 ? `Área: ${listing.area_m2}m²` : ""}
+Descrição: ${listing.descricao_completa || listing.descricao}`;
+      const result = await callClaude(prompt);
+      setAiAnalysis(result);
+    } catch {
+      setAiAnalysis("Não foi possível gerar a análise agora. Tente novamente.");
+    }
+    setAiLoadingAnalysis(false);
+  };
+  const isFav = listing ? favorites.includes(listing.id) : false;
+
+  const { negocios: todosNegocios } = useNegocios();
+  const similares = listing
+    ? todosNegocios
+        .filter((n) => n.id !== listing.id && n.categoria === listing.categoria)
+        .slice(0, 3)
+        .map(adaptNegocio)
+    : [];
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = listing?.titulo || "NegócioJá";
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); } catch { /* cancelado */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShareMsg("Link copiado!");
+      setTimeout(() => setShareMsg(""), 2000);
+    }
+  };
+
+  usePageTitle(listing?.titulo || "Carregando...");
+
+  useEffect(() => {
+    if (!id) { setLoading(false); return; }
+    supabase
+      .from("negocios")
+      .select("*")
+      .eq("id", id)
+      .single()
+      .then(({ data, error }) => {
+        if (!error && data) setListing(data as NegocioSupabase);
+        setLoading(false);
+      });
+  }, [id]);
+
+  const images = listing?.imagens?.length
+    ? listing.imagens
+    : listing?.imagem
+    ? [listing.imagem]
+    : ["https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"];
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!listing) {
     return (
@@ -70,6 +184,7 @@ const Anuncio = () => {
                   <img
                     src={images[currentImage]}
                     alt={`${listing.titulo} - Foto ${currentImage + 1}`}
+                    loading="lazy"
                     className="h-full w-full object-cover transition-opacity duration-300"
                   />
                   {listing.destaque && (
@@ -82,12 +197,14 @@ const Anuncio = () => {
                     <>
                       <button
                         onClick={() => setCurrentImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                        aria-label="Foto anterior"
                         className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-background"
                       >
                         <ChevronLeft className="h-5 w-5" />
                       </button>
                       <button
                         onClick={() => setCurrentImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                        aria-label="Próxima foto"
                         className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-background"
                       >
                         <ChevronRight className="h-5 w-5" />
@@ -136,6 +253,18 @@ const Anuncio = () => {
                     {listing.cidade}, {listing.estado}
                   </span>
                 </div>
+
+                {/* P5 — Social Proof */}
+                <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="h-4 w-4 text-primary" />
+                    {viewsHoje} pessoas viram hoje
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Users className="h-4 w-4 text-primary" />
+                    {interessados} interessados esta semana
+                  </span>
+                </div>
               </div>
 
               {/* Description */}
@@ -144,8 +273,45 @@ const Anuncio = () => {
                   Sobre o Negócio
                 </h2>
                 <p className="mt-4 text-muted-foreground leading-relaxed">
-                  {listing.descricaoCompleta}
+                  {listing.descricao_completa || listing.descricao}
                 </p>
+              </div>
+
+              {/* IA6 — AI Analysis */}
+              <div className="mt-8 rounded-xl border border-primary/20 bg-primary/5 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <h2 className="font-display text-lg font-semibold text-foreground">
+                      Análise IA — Resumo Executivo
+                    </h2>
+                  </div>
+                  {!aiAnalysis && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAiAnalysis}
+                      disabled={aiLoadingAnalysis}
+                      className="gap-2"
+                    >
+                      {aiLoadingAnalysis ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Analisando...</>
+                      ) : (
+                        <><Sparkles className="h-4 w-4" /> Gerar Análise</>
+                      )}
+                    </Button>
+                  )}
+                </div>
+                {!aiAnalysis && !aiLoadingAnalysis && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Receba uma análise de M&A gerada por IA com pontos fortes, riscos e perfil ideal do comprador.
+                  </p>
+                )}
+                {aiAnalysis && (
+                  <div className="mt-4 space-y-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                    {aiAnalysis}
+                  </div>
+                )}
               </div>
 
               {/* Features */}
@@ -187,11 +353,11 @@ const Anuncio = () => {
                 )}
 
                 {/* Area */}
-                {listing.areaM2 && (
+                {listing.area_m2 && (
                   <div className="border-b border-border pb-4 mb-4">
                     <p className="text-sm text-muted-foreground">Área</p>
                     <p className="mt-1 font-display text-xl font-bold text-foreground">
-                      {listing.areaM2} m²
+                      {listing.area_m2} m²
                     </p>
                   </div>
                 )}
@@ -207,7 +373,7 @@ const Anuncio = () => {
                 </div>
 
                 {/* Revenue */}
-                {listing.faturamentoMensal > 0 && (
+                {listing.faturamento_mensal > 0 && (
                   <div className="border-b border-border py-6">
                     <div className="flex items-center justify-between">
                       <div>
@@ -215,7 +381,7 @@ const Anuncio = () => {
                         <div className="mt-1 flex items-center gap-2">
                           <TrendingUp className="h-5 w-5 text-success" />
                           <span className="font-display text-xl font-bold text-success">
-                            {formatCurrency(listing.faturamentoMensal)}
+                            {formatCurrency(listing.faturamento_mensal)}
                           </span>
                         </div>
                       </div>
@@ -224,11 +390,11 @@ const Anuncio = () => {
                 )}
 
                 {/* ROI */}
-                {listing.faturamentoMensal > 0 && (
+                {listing.faturamento_mensal > 0 && listing.preco > 0 && (
                   <div className="border-b border-border py-6">
                     <p className="text-sm text-muted-foreground">Retorno Estimado</p>
                     <p className="mt-1 font-display text-lg font-semibold text-foreground">
-                      ~{Math.round(listing.preco / listing.faturamentoMensal)} meses
+                      ~{Math.round(listing.preco / listing.faturamento_mensal)} meses
                     </p>
                   </div>
                 )}
@@ -245,13 +411,17 @@ const Anuncio = () => {
                   </Button>
 
                   <div className="flex gap-3">
-                    <Button variant="outline" className="flex-1 gap-2">
-                      <Heart className="h-4 w-4" />
-                      Salvar
+                    <Button
+                      variant="outline"
+                      className={`flex-1 gap-2 ${isFav ? "border-red-400 text-red-500 hover:bg-red-50" : ""}`}
+                      onClick={() => toggleFavorite(listing.id)}
+                    >
+                      <Heart className={`h-4 w-4 ${isFav ? "fill-red-500 text-red-500" : ""}`} />
+                      {isFav ? "Salvo" : "Salvar"}
                     </Button>
-                    <Button variant="outline" className="flex-1 gap-2">
+                    <Button variant="outline" className="flex-1 gap-2 relative" onClick={handleShare}>
                       <Share2 className="h-4 w-4" />
-                      Compartilhar
+                      {shareMsg || "Compartilhar"}
                     </Button>
                   </div>
                 </div>
@@ -266,9 +436,29 @@ const Anuncio = () => {
             </div>
           </div>
         </div>
+
+        {/* Negócios Similares */}
+        {similares.length > 0 && (
+          <div className="container-app mt-16 pb-8">
+            <h2 className="font-display text-xl font-bold text-foreground mb-6">
+              Negócios Similares
+            </h2>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {similares.map((s) => (
+                <ListingCard key={s.id} listing={s} />
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />
+
+      <StickyMobileCTA
+        onContact={() => navigate(`/contato/${listing.id}`)}
+        preco={formatCurrency(listing.preco)}
+        tipo={listing.tipo}
+      />
     </div>
   );
 };

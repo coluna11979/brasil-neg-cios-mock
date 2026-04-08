@@ -1,0 +1,34 @@
+[
+  {
+    "nome": "Galeria do Brás Shopping Center",
+    "endereco": "Rua Oriente, 890 – Brás",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "descricao": "Galeria comercial tradicional no coração do polo de moda do Brás. Alto fluxo de compradores atacadistas e varejistas. Lojas, boxes e quiosques disponíveis.",
+    "imagem": "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800"
+  },
+  {
+    "nome": "Galeria Pinheiros Business",
+    "endereco": "Rua dos Pinheiros, 450 – Pinheiros",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "descricao": "Galeria comercial moderna em Pinheiros voltada para serviços, escritórios e lojas de nicho. Clientela formada por moradores de alta renda e profissionais liberais.",
+    "imagem": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800"
+  },
+  {
+    "nome": "Galeria Vila Madalena Arte & Comércio",
+    "endereco": "Rua Harmonia, 124 – Vila Madalena",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "descricao": "Galeria criativa na Vila Madalena com ateliês, lojas de design, cafés e espaços coworking. Região de alto fluxo turístico e cultural durante toda a semana.",
+    "imagem": "https://images.unsplash.com/photo-1464938050520-ef2270bb8ce8?w=800"
+  },
+  {
+    "nome": "Galeria Santana Norte",
+    "endereco": "Av. Luís Dumont Villares, 1000 – Santana",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "descricao": "Galeria comercial de bairro em Santana com lojas de serviços, saúde, alimentação e varejo. Excelente fluxo de moradores locais. Próxima ao metrô Santana.",
+    "imagem": "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=800"
+  }
+]
