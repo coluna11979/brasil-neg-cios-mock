@@ -343,9 +343,12 @@ Deno.serve(async (req: Request) => {
               // Transcrição de áudio via Gemini
               if (prefix === "[AUDIO]:" && GOOGLE_API_KEY) {
                 try {
+                  console.log(`[transcricao] iniciando mime=${mime} bytes=${bytes.length} key=${GOOGLE_API_KEY.slice(0,8)}...`);
                   const b64audio = encodeBase64(bytes);
+                  // Normaliza mime para o que Gemini aceita
+                  const geminiMime = mime.startsWith("audio/ogg") ? "audio/ogg" : mime.startsWith("audio/mp") ? "audio/mpeg" : mime;
                   const geminiRes = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+                    `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`,
                     {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
@@ -353,14 +356,15 @@ Deno.serve(async (req: Request) => {
                         contents: [{
                           parts: [
                             { text: "Transcreva este áudio em português brasileiro. Retorne APENAS a transcrição, sem comentários." },
-                            { inline_data: { mime_type: mime, data: b64audio } },
+                            { inline_data: { mime_type: geminiMime, data: b64audio } },
                           ],
                         }],
                       }),
                     }
                   );
+                  const geminiData = await geminiRes.json().catch(() => null);
+                  console.log(`[transcricao] HTTP ${geminiRes.status} resp=${JSON.stringify(geminiData).slice(0, 300)}`);
                   if (geminiRes.ok) {
-                    const geminiData = await geminiRes.json().catch(() => null);
                     const transcript = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
                     if (transcript) {
                       text = `${prefix}${urlData.publicUrl}|TRANSCRIPT:${transcript}`;
@@ -370,6 +374,8 @@ Deno.serve(async (req: Request) => {
                 } catch (te) {
                   console.error("[transcricao] erro:", te instanceof Error ? te.message : String(te));
                 }
+              } else {
+                console.log(`[transcricao] pulado — prefix=${prefix} hasKey=${!!GOOGLE_API_KEY}`);
               }
             } else {
               console.error(`[fetch-media] upload err: ${upErr.message}`);
