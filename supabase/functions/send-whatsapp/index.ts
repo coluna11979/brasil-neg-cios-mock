@@ -348,7 +348,7 @@ Deno.serve(async (req: Request) => {
                   // Normaliza mime para o que Gemini aceita
                   const geminiMime = mime.startsWith("audio/ogg") ? "audio/ogg" : mime.startsWith("audio/mp") ? "audio/mpeg" : mime;
                   const geminiRes = await fetch(
-                    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+                    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${GOOGLE_API_KEY}`,
                     {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
