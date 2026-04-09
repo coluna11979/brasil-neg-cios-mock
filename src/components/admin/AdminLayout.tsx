@@ -11,6 +11,7 @@ import {
   Store,
   UserCheck,
   UserCog,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout, getAdminEmail } from "@/stores/authStore";
@@ -22,6 +23,7 @@ const navItems = [
   { to: "/admin/negocios", label: "Negócios", icon: Store },
   { to: "/admin/leads", label: "Leads", icon: Users },
   { to: "/admin/corretores", label: "Corretores", icon: UserCheck },
+  { to: "/admin/materiais", label: "Materiais", icon: Package },
   { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
 ];
 

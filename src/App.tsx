@@ -44,6 +44,7 @@ const CorretorLeads = lazy(() => import("./pages/corretor/Leads"));
 const CorretorPipeline = lazy(() => import("./pages/corretor/Pipeline"));
 const CorretorDesempenho = lazy(() => import("./pages/corretor/Desempenho"));
 const CorretorMateriais = lazy(() => import("./pages/corretor/Materiais"));
+const AdminMateriais = lazy(() => import("./pages/admin/Materiais"));
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ const App = () => (
                   <Route path="/admin/leads" element={<ProtectedRoute><AdminLeads /></ProtectedRoute>} />
                   <Route path="/admin/negocios" element={<ProtectedRoute><AdminNegocios /></ProtectedRoute>} />
                   <Route path="/admin/corretores" element={<ProtectedRoute><AdminCorretores /></ProtectedRoute>} />
+                  <Route path="/admin/materiais" element={<ProtectedRoute><AdminMateriais /></ProtectedRoute>} />
                   <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
 
                   {/* Corretor */}
