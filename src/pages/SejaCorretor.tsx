@@ -235,7 +235,7 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
         `Após a aprovação, acesse seu painel em:\n` +
         `🔗 brasil-neg-cios-mock.vercel.app/corretor/login\n` +
         `📧 Login: *${form.email}*\n` +
-        `🔑 Senha temporária: *${senhaTemp}*\n\n` +
+        `🔑 Senha temporária: ${senhaTemp}\n\n` +
         `_Recomendamos trocar a senha no primeiro acesso._\n\n` +
         `Qualquer dúvida, é só responder aqui! 😊`
       ).catch(() => {});
