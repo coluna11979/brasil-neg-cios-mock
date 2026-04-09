@@ -137,7 +137,22 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: senhaTemp,
-      options: { data: { nome: form.nome } },
+      options: {
+        data: {
+          nome: form.nome,
+          telefone: form.whatsapp.replace(/\D/g, ""),
+          regiao: `${form.cidade} — SP`,
+          creci: form.creci.trim() || null,
+          experiencia: form.experiencia,
+          atuacao: form.atuacao,
+          sobre: form.sobre,
+          motivacao: form.motivacao || null,
+          objetivo: form.objetivo || null,
+          comprometido: form.comprometido,
+          bairro: form.bairro.trim() || null,
+          cep: form.cep.trim() || null,
+        },
+      },
     });
 
     if (authError && !authError.message.includes("already registered")) {
