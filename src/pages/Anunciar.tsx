@@ -119,7 +119,7 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
 
   // Campos dinâmicos por tipo
   const [negocio, setNegocio] = useState({
-    categoria: "", nome: "", anosOperacao: "", faturamento: "", valorPedido: "", descricao: "",
+    categoria: "", nome: "", anosOperacao: "", faturamento: "", valorPedido: "", descricao: "", bairro: "",
   });
   const [imovel, setImovel] = useState({
     operacao: "venda", tipoImovel: "", area: "", valor: "", endereco: "", descricao: "",
@@ -128,7 +128,7 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
     nome: "", endereco: "", totalEspacos: "", valorMedio: "", descricao: "",
   });
   const [franquia, setFranquia] = useState({
-    marca: "", segmento: "", investimento: "", taxaFranquia: "", royalties: "", descricao: "",
+    marca: "", segmento: "", investimento: "", taxaFranquia: "", royalties: "", descricao: "", bairro: "",
   });
 
   // Contato — sempre igual
@@ -335,11 +335,18 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
                             onChange={(e) => setNegocio((p) => ({ ...p, anosOperacao: e.target.value }))} />
                         </div>
                       </div>
-                      <div>
-                        <Label>Nome do negócio *</Label>
-                        <Input className={`mt-2 ${errors.nome ? "border-destructive" : ""}`} placeholder="Ex: Pizzaria Bella Napoli"
-                          value={negocio.nome} onChange={(e) => setNegocio((p) => ({ ...p, nome: e.target.value }))} />
-                        {err("nome")}
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <div>
+                          <Label>Nome do negócio *</Label>
+                          <Input className={`mt-2 ${errors.nome ? "border-destructive" : ""}`} placeholder="Ex: Pizzaria Bella Napoli"
+                            value={negocio.nome} onChange={(e) => setNegocio((p) => ({ ...p, nome: e.target.value }))} />
+                          {err("nome")}
+                        </div>
+                        <div>
+                          <Label>Bairro / Região</Label>
+                          <Input className="mt-2" placeholder="Ex: Moema, Pinheiros, Centro..."
+                            value={negocio.bairro} onChange={(e) => setNegocio((p) => ({ ...p, bairro: e.target.value }))} />
+                        </div>
                       </div>
                       <div className="grid gap-5 sm:grid-cols-2">
                         <div>
@@ -517,6 +524,11 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
                             value={franquia.segmento} onChange={(e) => setFranquia((p) => ({ ...p, segmento: e.target.value }))} />
                           {err("segmento")}
                         </div>
+                      </div>
+                      <div>
+                        <Label>Bairro / Região preferencial</Label>
+                        <Input className="mt-2" placeholder="Ex: Zona Sul, Zona Oeste, qualquer bairro de SP..."
+                          value={franquia.bairro} onChange={(e) => setFranquia((p) => ({ ...p, bairro: e.target.value }))} />
                       </div>
                       <div className="grid gap-5 sm:grid-cols-3">
                         <div>

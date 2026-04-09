@@ -173,6 +173,10 @@ const WhatsAppCRM = () => {
   const [uploadingFile, setUploadingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Cadência
+  const [cadenciaEstagio, setCadenciaEstagio] = useState<string | null>(null);
+  const [cadenciaMsg, setCadenciaMsg] = useState("");
+  const [cadenciaLoading, setCadenciaLoading] = useState(false);
 
   useEffect(() => {
     getAllLeads().then((data) => {
@@ -321,6 +325,63 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
       setAiSuggestions(["Não foi possível gerar sugestões agora. Tente novamente."]);
     }
     setAiLoading(false);
+  };
+
+  // Detecta estágio da cadência quando lead/mensagens mudam
+  useEffect(() => {
+    if (!selectedLead) { setCadenciaEstagio(null); setCadenciaMsg(""); return; }
+    const outbound = messages.filter((m) => m.sender_type === "corretor");
+    const inbound = messages.filter((m) => m.sender_type === "lead");
+    if (messages.length === 0) {
+      setCadenciaEstagio("boas-vindas");
+    } else if (outbound.length > 0 && inbound.length === 0) {
+      const lastOut = outbound[outbound.length - 1];
+      const hrs = (Date.now() - new Date(lastOut.created_at).getTime()) / 3600000;
+      if (hrs >= 144) setCadenciaEstagio("urgencia");
+      else if (hrs >= 60) setCadenciaEstagio("reengajamento");
+      else if (hrs >= 20) setCadenciaEstagio("followup");
+      else setCadenciaEstagio(null);
+    } else if (inbound.length > 0) {
+      setCadenciaEstagio("qualificacao");
+    } else {
+      setCadenciaEstagio(null);
+    }
+    setCadenciaMsg("");
+  }, [selectedLead?.id, messages.length]);
+
+  type CadenciaMeta = { label: string; emoji: string; color: string };
+  const CADENCIA_META: Record<string, CadenciaMeta> = {
+    "boas-vindas": { label: "Boas-vindas", emoji: "👋", color: "bg-emerald-50 border-emerald-200" },
+    "followup":    { label: "Follow-up (Dia 1)", emoji: "📬", color: "bg-blue-50 border-blue-200" },
+    "reengajamento": { label: "Reengajamento (Dia 3)", emoji: "🔄", color: "bg-amber-50 border-amber-200" },
+    "urgencia":    { label: "Última tentativa (Dia 7)", emoji: "🚨", color: "bg-red-50 border-red-200" },
+    "qualificacao": { label: "Qualificação", emoji: "🎯", color: "bg-violet-50 border-violet-200" },
+  };
+
+  const getCadenciaPrompt = (estagio: string): string => {
+    const nome = selectedLead?.nome || "Lead";
+    const interesse = selectedLead?.negocio_titulo || selectedLead?.galeria_nome || "negócio à venda";
+    const msgInicial = selectedLead?.mensagem || "nenhuma";
+    if (estagio === "boas-vindas") return `Você é especialista em vendas de negócios e franquias no Brasil.\nLead: ${nome}, interesse em: ${interesse}.\nMensagem inicial do lead: "${msgInicial}".\nEscreva UMA mensagem de WhatsApp de boas-vindas calorosa e profissional.\n- Apresente a plataforma NegócioJá brevemente\n- Confirme o interesse dele\n- Mostre entusiasmo e disponibilidade\n- Termine com UMA pergunta aberta\nMáximo 4 linhas. Apenas o texto, sem aspas.`;
+    if (estagio === "followup") return `Lead ${nome} não respondeu à primeira mensagem sobre ${interesse}.\nEscreva um follow-up leve para WhatsApp:\n- Reconheça que pode ter ficado ocupado\n- Destaque 1 ponto de valor do negócio\n- Ofereça ajuda para tirar dúvidas\nMáximo 3 linhas. Apenas o texto, sem aspas.`;
+    if (estagio === "reengajamento") return `Lead ${nome} não respondeu há 3+ dias (interesse em ${interesse}).\nEscreva uma mensagem de reengajamento para WhatsApp:\n- Use um gatilho de escassez ou novidade\n- Mencione algo novo (outro interessado, prazo)\n- Crie senso de urgência leve\nMáximo 3 linhas. Apenas o texto, sem aspas.`;
+    if (estagio === "urgencia") return `Lead ${nome} não respondeu há 7+ dias. Última tentativa antes de arquivar.\nEscreva uma mensagem final para WhatsApp:\n- Tom direto mas respeitoso\n- Mencione que vai fechar o contato se não houver resposta\n- Deixe a porta aberta\nMáximo 2 linhas. Apenas o texto, sem aspas.`;
+    if (estagio === "qualificacao") return `Lead ${nome} está em conversa ativa sobre ${interesse}.\nEscreva uma pergunta de qualificação para WhatsApp:\n- Descubra budget, prazo ou experiência anterior\n- Tom conversacional e natural\n- UMA pergunta objetiva\nMáximo 2 linhas. Apenas o texto, sem aspas.`;
+    return "";
+  };
+
+  const gerarMensagemCadencia = async () => {
+    if (!cadenciaEstagio || !selectedLead || cadenciaLoading) return;
+    setCadenciaLoading(true);
+    setCadenciaMsg("");
+    try {
+      const prompt = getCadenciaPrompt(cadenciaEstagio);
+      const msg = await callClaude(prompt);
+      setCadenciaMsg(msg.trim());
+    } catch {
+      setCadenciaMsg("Não foi possível gerar a mensagem. Tente novamente.");
+    }
+    setCadenciaLoading(false);
   };
 
   useEffect(() => {
@@ -873,6 +934,50 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
                   </>
                 )}
               </div>
+
+              {/* Cadência de Vendas */}
+              {cadenciaEstagio && CADENCIA_META[cadenciaEstagio] && (
+                <div className={`mx-4 mb-2 mt-1 rounded-xl border ${CADENCIA_META[cadenciaEstagio].color} p-3`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{CADENCIA_META[cadenciaEstagio].emoji}</span>
+                      <span className="text-xs font-semibold text-foreground">
+                        Cadência: {CADENCIA_META[cadenciaEstagio].label}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={gerarMensagemCadencia}
+                      disabled={cadenciaLoading}
+                      className="flex items-center gap-1 rounded-lg bg-white border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                    >
+                      {cadenciaLoading
+                        ? <><Loader2 className="h-3 w-3 animate-spin" />Gerando...</>
+                        : <><Sparkles className="h-3 w-3 text-primary" />Gerar mensagem</>}
+                    </button>
+                  </div>
+                  {cadenciaMsg && (
+                    <>
+                      <p className="text-xs text-foreground leading-relaxed mb-2 bg-white/60 rounded-lg px-3 py-2 border border-white/80">
+                        {cadenciaMsg}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => { setNewMessage(cadenciaMsg); setCadenciaMsg(""); }}
+                        className="flex items-center gap-1.5 rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-background hover:opacity-90 transition-opacity"
+                      >
+                        <Send className="h-3 w-3" />
+                        Usar esta mensagem
+                      </button>
+                    </>
+                  )}
+                  {!cadenciaMsg && !cadenciaLoading && (
+                    <p className="text-xs text-muted-foreground">
+                      Clique em "Gerar mensagem" para a IA criar uma mensagem personalizada para este estágio.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* IA7 — Sugestões IA */}
               <div className="border-t border-border bg-gradient-to-r from-primary/5 to-transparent">

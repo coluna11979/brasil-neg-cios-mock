@@ -8,7 +8,7 @@ import {
   UserCircle, MapPin, Calendar, MessageSquare, UserPlus, X,
 } from "lucide-react";
 import { checkInstanceStatus } from "@/lib/uazapi";
-import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, type Lead } from "@/stores/leadStore";
+import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, markAiSugestaoUsada, type Lead } from "@/stores/leadStore";
 import {
   getMessagesByLead,
   sendMessage,
@@ -790,6 +790,41 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
                 </div>
               )}
             </div>
+
+            {/* AI First Contact Suggestion Banner */}
+            {selectedLead.ai_sugestao && !selectedLead.ai_sugestao_usada && (
+              <div className="mx-4 mb-2 rounded-xl border border-violet-200 bg-violet-50 p-3">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-violet-600 shrink-0" />
+                    <span className="text-xs font-semibold text-violet-700">Sugestão de primeiro contato</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await markAiSugestaoUsada(selectedLead.id);
+                      setSelectedLead({ ...selectedLead, ai_sugestao_usada: true });
+                    }}
+                    className="text-violet-400 hover:text-violet-600 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-violet-800 leading-relaxed mb-2">{selectedLead.ai_sugestao}</p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setNewMessage(selectedLead.ai_sugestao!);
+                    await markAiSugestaoUsada(selectedLead.id);
+                    setSelectedLead({ ...selectedLead, ai_sugestao_usada: true });
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 transition-colors"
+                >
+                  <Send className="h-3 w-3" />
+                  Usar esta mensagem
+                </button>
+              </div>
+            )}
 
             {/* Input */}
             <form onSubmit={handleSend} className="flex items-center gap-2 px-4 py-3 border-t border-border bg-muted/30">

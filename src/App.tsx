@@ -41,6 +41,8 @@ const VenderTerreno = lazy(() => import("./pages/VenderTerreno"));
 const CorretorLogin = lazy(() => import("./pages/corretor/Login"));
 const CorretorMensagens = lazy(() => import("./pages/corretor/Mensagens"));
 const CorretorLeads = lazy(() => import("./pages/corretor/Leads"));
+const CorretorPipeline = lazy(() => import("./pages/corretor/Pipeline"));
+const CorretorDesempenho = lazy(() => import("./pages/corretor/Desempenho"));
 
 const queryClient = new QueryClient();
 
@@ -93,6 +95,8 @@ const App = () => (
                   <Route path="/corretor" element={<Navigate to="/corretor/mensagens" replace />} />
                   <Route path="/corretor/mensagens" element={<CorretorMensagens />} />
                   <Route path="/corretor/leads" element={<CorretorLeads />} />
+                  <Route path="/corretor/pipeline" element={<CorretorPipeline />} />
+                  <Route path="/corretor/desempenho" element={<CorretorDesempenho />} />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>

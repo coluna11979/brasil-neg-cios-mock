@@ -720,7 +720,7 @@ const AIChatbot = () => {
             (finalVendedor.bairro ? `📍 Local: *${finalVendedor.bairro} — SP*\n` : "") +
             (precoNum ? `💰 Valor pedido: *R$ ${precoNum.toLocaleString("pt-BR")}*\n` : "") +
             (fatNum ? `📊 Faturamento: *R$ ${fatNum.toLocaleString("pt-BR")}/mês*\n` : "") +
-            `\n⚡ Revise e publique:\nnegocioja.com.br/admin`
+            `\n⚡ Revise e publique:\nbrasil-neg-cios-mock.vercel.app/admin`
           ).catch(() => {});
         }
 
@@ -825,7 +825,7 @@ const AIChatbot = () => {
           `Recebi seu contato aqui na *NegócioJá*. ✅\n\n` +
           `Nosso consultor vai entrar em contato com você em breve pelo WhatsApp para te ajudar!\n\n` +
           `Enquanto isso, você pode ver nossas oportunidades em:\n` +
-          `🔗 negocioja.com.br`
+          `🔗 brasil-neg-cios-mock.vercel.app`
         ).catch(() => {});
       }
 
@@ -842,7 +842,7 @@ const AIChatbot = () => {
           `🎯 Intenção: *${intencaoLabel}*\n` +
           (leadContext.categoria ? `📂 Setor: *${leadContext.categoria}*\n` : "") +
           (leadContext.mensagensLivres.length > 0 ? `💬 Disse: _"${leadContext.mensagensLivres[0]}"_\n` : "") +
-          `\n⚡ Acesse o painel agora:\nnegocioja.com.br/admin`
+          `\n⚡ Acesse o painel agora:\nbrasil-neg-cios-mock.vercel.app/admin`
         ).catch(() => {});
       }
 

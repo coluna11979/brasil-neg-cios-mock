@@ -3,7 +3,7 @@ import usePageTitle from "@/hooks/usePageTitle";
 import {
   UserCheck, UserX, Loader2, Phone, Mail, Clock, CheckCircle,
   MessageCircle, TrendingUp, Trophy, Star, Award, MapPin,
-  ChevronDown, ChevronUp, Briefcase,
+  ChevronDown, ChevronUp, Briefcase, Target, Lightbulb,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,9 @@ interface Corretor {
   experiencia?: string;
   atuacao?: string;
   sobre?: string;
+  motivacao?: string;
+  objetivo?: string;
+  comprometido?: boolean;
   ativo: boolean;
   criado_em: string;
 }
@@ -127,7 +130,7 @@ const AdminCorretores = () => {
           `✅ *Parabéns, ${corretor.nome.split(" ")[0]}!*\n\n` +
           `Sua conta de corretor na *NegócioJá* foi *aprovada*! 🎉\n\n` +
           `Agora você já pode acessar seu painel e começar a atender leads:\n\n` +
-          `🔗 *negocioja.com.br/corretor/login*\n` +
+          `🔗 *brasil-neg-cios-mock.vercel.app/corretor/login*\n` +
           `📧 Login: *${corretor.email}*\n\n` +
           `Boas vendas! 🚀`
         ).catch(() => {});
@@ -283,6 +286,11 @@ const CorretorCard = ({ corretor, stats, updating, onToggle, expanded, onExpand 
               <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${corretor.ativo ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
                 {corretor.ativo ? "Ativo" : "Pendente"}
               </span>
+              {corretor.comprometido && (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />Comprometido ✅
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
               {corretor.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{corretor.email}</span>}
@@ -368,6 +376,30 @@ const CorretorCard = ({ corretor, stats, updating, onToggle, expanded, onExpand 
             <p className="text-sm text-foreground bg-card rounded-lg px-3 py-2 border border-border">
               {corretor.sobre}
             </p>
+          </div>
+        )}
+
+        {(corretor.motivacao || corretor.objetivo) && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+            <p className="text-xs font-semibold text-primary uppercase tracking-wide">Motivações & Objetivos</p>
+            {corretor.motivacao && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Lightbulb className="h-3.5 w-3.5 text-primary" />
+                  <p className="text-xs font-medium text-muted-foreground">Por que quer ser corretor</p>
+                </div>
+                <p className="text-sm text-foreground">{corretor.motivacao}</p>
+              </div>
+            )}
+            {corretor.objetivo && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Target className="h-3.5 w-3.5 text-primary" />
+                  <p className="text-xs font-medium text-muted-foreground">Como pretende contribuir</p>
+                </div>
+                <p className="text-sm text-foreground">{corretor.objetivo}</p>
+              </div>
+            )}
           </div>
         )}
 

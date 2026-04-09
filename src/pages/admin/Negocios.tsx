@@ -22,8 +22,10 @@ import {
   Ruler,
   Save,
   Pencil,
+  Sparkles,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { callClaude } from "@/lib/anthropic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +101,7 @@ const EMPTY_FORM = {
   categoria: "",
   cidade: "",
   estado: "",
+  bairro: "",
   preco: "",
   faturamento_mensal: "",
   area_m2: "",
@@ -118,6 +121,30 @@ const NovoNegocioModal = ({ onClose, onSaved }: NovoNegocioModalProps) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleGerarDescricao = async () => {
+    if (!form.titulo && !form.categoria) return;
+    setAiLoading(true);
+    try {
+      const prompt = `Gere uma descrição de venda profissional e atraente para este negócio:
+Nome: ${form.titulo || "não informado"}
+Categoria: ${form.categoria || "não informada"}
+Cidade: ${form.cidade || "São Paulo"}
+Área: ${form.area_m2 ? `${form.area_m2} m²` : "não informada"}
+Faturamento mensal: ${form.faturamento_mensal ? `R$ ${Number(form.faturamento_mensal).toLocaleString("pt-BR")}` : "não informado"}
+Valor pedido: ${form.preco ? `R$ ${Number(form.preco).toLocaleString("pt-BR")}` : "não informado"}
+
+Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal de comprador. Tom profissional e direto. Não use asteriscos nem markdown.`;
+      const desc = await callClaude(prompt);
+      setForm((p) => ({ ...p, descricao: desc.trim() }));
+      setErrors((p) => ({ ...p, descricao: "" }));
+    } catch {
+      /* silently fail */
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -154,6 +181,7 @@ const NovoNegocioModal = ({ onClose, onSaved }: NovoNegocioModalProps) => {
         categoria: form.categoria,
         cidade: form.cidade,
         estado: form.estado,
+        bairro: form.bairro || null,
         preco: form.preco ? Number(form.preco) : null,
         faturamento_mensal: form.faturamento_mensal ? Number(form.faturamento_mensal) : null,
         area_m2: form.area_m2 ? Number(form.area_m2) : null,
@@ -332,7 +360,35 @@ const NovoNegocioModal = ({ onClose, onSaved }: NovoNegocioModalProps) => {
             </div>
 
             <div>
-              <Label htmlFor="m-desc">Descrição *</Label>
+              <Label htmlFor="m-bairro">Bairro / Região</Label>
+              <div className="relative mt-1.5">
+                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="m-bairro"
+                  name="bairro"
+                  value={form.bairro}
+                  onChange={handleChange}
+                  placeholder="Ex: Pinheiros, Moema, Centro..."
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <Label htmlFor="m-desc">Descrição *</Label>
+                <button
+                  type="button"
+                  onClick={handleGerarDescricao}
+                  disabled={aiLoading || (!form.titulo && !form.categoria)}
+                  className="flex items-center gap-1.5 rounded-lg bg-violet-50 border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-40"
+                >
+                  {aiLoading
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Sparkles className="h-3.5 w-3.5" />}
+                  {aiLoading ? "Gerando..." : "Melhorar com IA"}
+                </button>
+              </div>
               <Textarea
                 id="m-desc"
                 name="descricao"
@@ -340,7 +396,7 @@ const NovoNegocioModal = ({ onClose, onSaved }: NovoNegocioModalProps) => {
                 onChange={handleChange}
                 placeholder="Tempo de operação, ponto comercial, equipe, diferenciais, motivo da venda..."
                 rows={4}
-                className={`mt-1.5 ${errors.descricao ? "border-destructive" : ""}`}
+                className={errors.descricao ? "border-destructive" : ""}
               />
               {errors.descricao && <p className="mt-1 text-xs text-destructive">{errors.descricao}</p>}
             </div>

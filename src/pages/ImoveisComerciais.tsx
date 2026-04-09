@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import usePageTitle from "@/hooks/usePageTitle";
-import { ArrowLeft, Building2, Filter, X } from "lucide-react";
+import { ArrowLeft, Building2, Filter, X, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -24,10 +24,19 @@ const TIPOS_IMOVEL = [
   { value: "venda-imovel", label: "Imóvel à Venda" },
 ];
 
+const BAIRROS_SP = [
+  "Centro", "Paulista", "Jardins", "Pinheiros", "Moema", "Itaim Bibi",
+  "Vila Olímpia", "Vila Mariana", "Consolação", "Perdizes", "Lapa",
+  "Santana", "Tatuapé", "Penha", "Ipiranga", "Santo André",
+  "São Bernardo", "Guarulhos", "Osasco", "Zona Norte", "Zona Sul",
+  "Zona Leste", "Zona Oeste",
+];
+
 const ImoveisComerciais = () => {
   usePageTitle("Salões & Imóveis Comerciais");
   const [tipo, setTipo] = useState("");
   const [preco, setPreco] = useState("");
+  const [bairro, setBairro] = useState("");
   const [busca, setBusca] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -38,12 +47,13 @@ const ImoveisComerciais = () => {
     busca: busca || undefined,
     preco_min: faixa?.min,
     preco_max: faixa?.max,
+    bairro: bairro || undefined,
   });
 
   const listings = negociosRaw.map(adaptNegocio);
-  const hasFilters = tipo || preco || busca;
+  const hasFilters = tipo || preco || busca || bairro;
 
-  const clearFilters = () => { setTipo(""); setPreco(""); setBusca(""); };
+  const clearFilters = () => { setTipo(""); setPreco(""); setBairro(""); setBusca(""); };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -98,7 +108,7 @@ const ImoveisComerciais = () => {
             )}
           </div>
 
-          <div className={`mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 ${showFilters ? "block" : "hidden md:grid"}`}>
+          <div className={`mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-4 ${showFilters ? "block" : "hidden md:grid"}`}>
             <div>
               <label className="mb-2 block text-sm font-medium">Tipo</label>
               <Select value={tipo || "all"} onValueChange={(v) => setTipo(v === "all" ? "" : v)}>
@@ -118,6 +128,18 @@ const ImoveisComerciais = () => {
                   <SelectItem value="all">Qualquer valor</SelectItem>
                   {faixasPreco.map((f) => (
                     <SelectItem key={f.label} value={f.label}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium">Bairro / Região</label>
+              <Select value={bairro || "all"} onValueChange={(v) => setBairro(v === "all" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Qualquer bairro" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer bairro</SelectItem>
+                  {BAIRROS_SP.map((b) => (
+                    <SelectItem key={b} value={b}>{b}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -155,6 +177,12 @@ const ImoveisComerciais = () => {
                 <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm">
                   {preco}
                   <button onClick={() => setPreco("")} className="ml-1 hover:text-destructive"><X className="h-3 w-3" /></button>
+                </span>
+              )}
+              {bairro && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm">
+                  <MapPin className="h-3 w-3" />{bairro}
+                  <button onClick={() => setBairro("")} className="ml-1 hover:text-destructive"><X className="h-3 w-3" /></button>
                 </span>
               )}
             </div>

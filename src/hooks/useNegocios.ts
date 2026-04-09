@@ -28,6 +28,7 @@ export interface NegocioSupabase {
   tipo: "venda" | "venda-imovel" | "aluguel-imovel" | "franquia" | "galeria";
   cidade: string;
   estado: string;
+  bairro: string | null;
   preco: number;
   faturamento_mensal: number;
   area_m2: number | null;
@@ -74,6 +75,7 @@ export function useNegocios(filters?: {
   preco_max?: number;
   faturamento_min?: number;
   cidade?: string;
+  bairro?: string;
 }) {
   const [negocios, setNegocios] = useState<NegocioSupabase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +104,7 @@ export function useNegocios(filters?: {
       if (filters?.preco_max) query = query.lte("preco", filters.preco_max);
       if (filters?.faturamento_min) query = query.gte("faturamento_mensal", filters.faturamento_min);
       if (filters?.cidade) query = query.ilike("cidade", `%${filters.cidade}%`);
+      if (filters?.bairro) query = query.ilike("bairro", `%${filters.bairro}%`);
       if (filters?.busca) {
         query = query.or(
           `titulo.ilike.%${filters.busca}%,descricao.ilike.%${filters.busca}%`
@@ -123,6 +126,7 @@ export function useNegocios(filters?: {
     filters?.preco_max,
     filters?.faturamento_min,
     filters?.cidade,
+    filters?.bairro,
   ]);
 
   return { negocios, loading, error };

@@ -38,6 +38,14 @@ const FATURAMENTOS = [
   { label: "A partir de R$ 100.000/mês", value: 100000 },
 ];
 
+const BAIRROS_SP = [
+  "Centro", "Paulista", "Jardins", "Pinheiros", "Moema", "Itaim Bibi",
+  "Vila Olímpia", "Vila Mariana", "Consolação", "Perdizes", "Lapa",
+  "Santana", "Tatuapé", "Penha", "Ipiranga", "Santo André",
+  "São Bernardo", "Guarulhos", "Osasco", "Zona Norte", "Zona Sul",
+  "Zona Leste", "Zona Oeste",
+];
+
 const Busca = () => {
   usePageTitle("Oportunidades de Negócio");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -49,11 +57,13 @@ const Busca = () => {
   const tipoParam = searchParams.get("tipo") || "";
   const precoParam = searchParams.get("preco") || "";
   const faturamentoParam = searchParams.get("faturamento") || "0";
+  const bairroParam = searchParams.get("bairro") || "";
 
   const [categoria, setCategoria] = useState(categoriaParam);
   const [tipo, setTipo] = useState(tipoParam);
   const [preco, setPreco] = useState(precoParam);
   const [faturamento, setFaturamento] = useState(faturamentoParam);
+  const [bairro, setBairro] = useState(bairroParam);
   const [busca, setBusca] = useState(query);
 
   useEffect(() => {
@@ -61,8 +71,9 @@ const Busca = () => {
     setTipo(tipoParam);
     setPreco(precoParam);
     setFaturamento(faturamentoParam);
+    setBairro(bairroParam);
     setBusca(query);
-  }, [categoriaParam, tipoParam, precoParam, faturamentoParam, query]);
+  }, [categoriaParam, tipoParam, precoParam, faturamentoParam, bairroParam, query]);
 
   const faixa = faixasPreco.find((f) => f.label === preco);
   const faturamentoMin = parseInt(faturamento, 10) || 0;
@@ -74,10 +85,11 @@ const Busca = () => {
     preco_min: faixa?.min,
     preco_max: faixa?.max,
     faturamento_min: faturamentoMin > 0 ? faturamentoMin : undefined,
+    bairro: bairro || undefined,
   });
 
   const filteredListings = negociosRaw.map(adaptNegocio);
-  const hasActiveFilters = categoria || tipo || preco || busca || faturamentoMin > 0;
+  const hasActiveFilters = categoria || tipo || preco || busca || faturamentoMin > 0 || bairro;
 
   // Group listings by category for categorized view
   const listingsByCategory: Record<string, typeof filteredListings> = {};
@@ -122,6 +134,7 @@ const Busca = () => {
     if (type === "categoria") setCategoria(value === "all" ? "" : value);
     if (type === "preco") setPreco(value === "all" ? "" : value);
     if (type === "faturamento") setFaturamento(value === "0" ? "0" : value);
+    if (type === "bairro") setBairro(value === "all" ? "" : value);
   };
 
   const clearFilters = () => {
@@ -130,6 +143,7 @@ const Busca = () => {
     setTipo("");
     setPreco("");
     setFaturamento("0");
+    setBairro("");
     setBusca("");
   };
 
@@ -196,7 +210,7 @@ const Busca = () => {
 
           {/* Filters */}
           <div
-            className={`mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-4 ${
+            className={`mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 ${
               showFilters ? "block" : "hidden md:grid"
             }`}
           >
@@ -265,7 +279,27 @@ const Busca = () => {
               </Select>
             </div>
 
-            <div className="hidden items-end md:flex">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Bairro / Região
+              </label>
+              <Select
+                value={bairro || "all"}
+                onValueChange={(value) => handleFilterChange("bairro", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Qualquer bairro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer bairro</SelectItem>
+                  {BAIRROS_SP.map((b) => (
+                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="hidden items-end lg:flex">
               {hasActiveFilters ? (
                 <Button variant="ghost" onClick={clearFilters} className="gap-2 w-full">
                   <X className="h-4 w-4" />
@@ -332,6 +366,17 @@ const Busca = () => {
                   {faturamentoLabel}
                   <button
                     onClick={() => handleFilterChange("faturamento", "0")}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              {bairro && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground">
+                  <MapPin className="h-3 w-3" />{bairro}
+                  <button
+                    onClick={() => handleFilterChange("bairro", "all")}
                     className="ml-1 hover:text-destructive"
                   >
                     <X className="h-3 w-3" />

@@ -4,7 +4,8 @@ import usePageTitle from "@/hooks/usePageTitle";
 import { supabase } from "@/lib/supabase";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
 import { login } from "@/stores/authStore";
-import { ArrowLeft, CheckCircle, UserCheck, TrendingUp, Handshake, Wallet, LogIn, AlertCircle, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle, UserCheck, TrendingUp, Handshake, Wallet, LogIn, AlertCircle, Clock, Sparkles, Loader2 } from "lucide-react";
+import { callClaude } from "@/lib/anthropic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -72,8 +73,12 @@ const SejaCorretor = () => {
   const [form, setForm] = useState({
     nome: "", whatsapp: "", email: "", cidade: "São Paulo",
     creci: "", experiencia: "", atuacao: "", sobre: "",
+    dataNascimento: "", cidadeNascimento: "", estadoNascimento: "",
+    motivacao: "", objetivo: "", comprometido: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [iaLoading, setIaLoading] = useState(false);
+  const [iaSugestoes, setIaSugestoes] = useState<string[]>([]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -83,6 +88,43 @@ const SejaCorretor = () => {
     if (!form.atuacao) e.atuacao = "Obrigatório";
     setErrors(e);
     return Object.keys(e).length === 0;
+  };
+
+  const handleGerarSugestoes = async () => {
+    setIaLoading(true);
+    setIaSugestoes([]);
+    try {
+      const prompt = `Você é um assistente que ajuda corretores de negócios a escrever uma apresentação profissional e autêntica sobre si mesmos para uma plataforma de compra e venda de empresas.
+
+Dados do corretor:
+- Nome: ${form.nome || "não informado"}
+- Cidade de atuação: ${form.cidade}
+- Data de nascimento: ${form.dataNascimento || "não informada"}
+- Cidade/Estado de nascimento: ${form.cidadeNascimento ? `${form.cidadeNascimento}/${form.estadoNascimento}` : "não informado"}
+- Área de atuação: ${form.atuacao || "não informada"}
+- Experiência: ${form.experiencia || "não informada"}
+- CRECI: ${form.creci || "não informado"}
+- Por que quer ser corretor: ${form.motivacao || "não informado"}
+- Como pretende contribuir: ${form.objetivo || "não informado"}
+- Comprometido com 3 captações em 30 dias: ${form.comprometido ? "SIM" : "não"}
+
+Use as motivações e objetivos dele para dar autenticidade ao texto. Se ele se comprometeu com 3 captações em 30 dias, isso indica alto engajamento — reflita isso na descrição.
+
+Gere EXATAMENTE 3 descrições profissionais diferentes para o campo "Sobre você". Cada uma com tom diferente:
+1. Formal e experiente
+2. Acolhedor e próximo
+3. Moderno e direto ao ponto
+
+Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem título, sem explicação.`;
+
+      const resposta = await callClaude(prompt);
+      const partes = resposta.split("---").map((s) => s.trim()).filter(Boolean);
+      setIaSugestoes(partes.slice(0, 3));
+    } catch {
+      setIaSugestoes(["Erro ao gerar sugestões. Tente novamente."]);
+    } finally {
+      setIaLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,6 +158,9 @@ const SejaCorretor = () => {
         experiencia: form.experiencia,
         atuacao: form.atuacao,
         sobre: form.sobre,
+        motivacao: form.motivacao || null,
+        objetivo: form.objetivo || null,
+        comprometido: form.comprometido,
         ativo: false,
       });
     } else {
@@ -134,6 +179,9 @@ const SejaCorretor = () => {
           experiencia: form.experiencia,
           atuacao: form.atuacao,
           sobre: form.sobre,
+          motivacao: form.motivacao || null,
+          objetivo: form.objetivo || null,
+          comprometido: form.comprometido,
           ativo: false,
         }).eq("id", existing.id);
       }
@@ -152,7 +200,7 @@ const SejaCorretor = () => {
         `💼 Atuação: *${form.atuacao || "não informado"}*\n` +
         `🪪 CRECI: *${form.creci.trim() || "não informado"}*\n\n` +
         `Acesse o painel admin para aprovar:\n` +
-        `https://negocioja.com.br/admin/corretores`
+        `https://brasil-neg-cios-mock.vercel.app/admin/corretores`
       ).catch(() => {});
     }
 
@@ -165,7 +213,7 @@ const SejaCorretor = () => {
         `Recebemos sua candidatura na *NegócioJá* e já está em análise pela nossa equipe.\n\n` +
         `⏳ Em até 24h você será aprovado e receberá outro aviso aqui.\n\n` +
         `Após a aprovação, acesse seu painel em:\n` +
-        `🔗 negocioja.com.br/corretor/login\n` +
+        `🔗 brasil-neg-cios-mock.vercel.app/corretor/login\n` +
         `📧 Login: *${form.email}*\n` +
         `🔑 Senha temporária: *${senhaTemp}*\n\n` +
         `_Recomendamos trocar a senha no primeiro acesso._\n\n` +
@@ -407,11 +455,126 @@ const SejaCorretor = () => {
                     </div>
                   </div>
 
+                  {/* Data e local de nascimento */}
+                  <div className="grid gap-5 sm:grid-cols-3">
+                    <div>
+                      <Label htmlFor="dataNascimento">Data de nascimento</Label>
+                      <Input id="dataNascimento" type="date" className="mt-2"
+                        value={form.dataNascimento}
+                        onChange={(e) => setForm((p) => ({ ...p, dataNascimento: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label htmlFor="cidadeNascimento">Cidade natal</Label>
+                      <Input id="cidadeNascimento" className="mt-2" placeholder="Ex: Recife"
+                        value={form.cidadeNascimento}
+                        onChange={(e) => setForm((p) => ({ ...p, cidadeNascimento: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label htmlFor="estadoNascimento">Estado natal</Label>
+                      <Input id="estadoNascimento" className="mt-2" placeholder="Ex: PE"
+                        maxLength={2}
+                        value={form.estadoNascimento}
+                        onChange={(e) => setForm((p) => ({ ...p, estadoNascimento: e.target.value.toUpperCase() }))} />
+                    </div>
+                  </div>
+
+                  {/* Motivação e Objetivos */}
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wide">Motivações & Objetivos</p>
+
+                    <div>
+                      <Label htmlFor="motivacao">Por que você quer ser corretor NegócioJá?</Label>
+                      <Textarea
+                        id="motivacao"
+                        className="mt-2 bg-card"
+                        rows={2}
+                        placeholder="Ex: Tenho paixão por conectar empreendedores e ajudar negócios a crescerem..."
+                        value={form.motivacao}
+                        onChange={(e) => setForm((p) => ({ ...p, motivacao: e.target.value }))}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="objetivo">Como pretende contribuir para o crescimento da plataforma?</Label>
+                      <Textarea
+                        id="objetivo"
+                        className="mt-2 bg-card"
+                        rows={2}
+                        placeholder="Ex: Vou prospectar ativamente negócios na minha região e fortalecer a rede de corretores..."
+                        value={form.objetivo}
+                        onChange={(e) => setForm((p) => ({ ...p, objetivo: e.target.value }))}
+                      />
+                    </div>
+
+                    {/* Checkbox de comprometimento */}
+                    <label className={`flex items-start gap-3 cursor-pointer rounded-xl border-2 p-4 transition-all ${
+                      form.comprometido
+                        ? "border-green-500 bg-green-50"
+                        : "border-border bg-card hover:border-primary/40"
+                    }`}>
+                      <div className="relative mt-0.5 shrink-0">
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={form.comprometido}
+                          onChange={(e) => setForm((p) => ({ ...p, comprometido: e.target.checked }))}
+                        />
+                        <div className={`h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                          form.comprometido ? "border-green-500 bg-green-500" : "border-border bg-background"
+                        }`}>
+                          {form.comprometido && (
+                            <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <p className={`text-sm font-semibold ${form.comprometido ? "text-green-700" : "text-foreground"}`}>
+                          Me comprometo a trazer ao menos 3 captações nos próximos 30 dias
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Corretores comprometidos têm prioridade na distribuição de leads da plataforma.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Sobre você com IA */}
                   <div>
-                    <Label htmlFor="sobre">Sobre você (opcional)</Label>
-                    <Textarea id="sobre" className="mt-2" rows={3}
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="sobre">Sobre você (opcional)</Label>
+                      <button
+                        type="button"
+                        onClick={handleGerarSugestoes}
+                        disabled={iaLoading}
+                        className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+                      >
+                        {iaLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                        {iaLoading ? "Gerando..." : "Gerar com IA"}
+                      </button>
+                    </div>
+                    <Textarea id="sobre" className="mt-1" rows={4}
                       placeholder="Conte um pouco sobre sua experiência, região de atuação em SP, etc."
                       value={form.sobre} onChange={(e) => setForm((p) => ({ ...p, sobre: e.target.value }))} />
+
+                    {/* Sugestões da IA */}
+                    {iaSugestoes.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Escolha uma sugestão para usar:</p>
+                        {iaSugestoes.map((s, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => { setForm((p) => ({ ...p, sobre: s })); setIaSugestoes([]); }}
+                            className="w-full text-left rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-foreground hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                          >
+                            <span className="block font-semibold text-primary text-xs mb-1">Opção {i + 1}</span>
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <Button type="submit" className="w-full font-semibold" size="lg">

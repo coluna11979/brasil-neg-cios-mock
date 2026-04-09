@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { callClaude } from "@/lib/anthropic";
+import { sendWhatsAppMessage } from "@/lib/uazapi";
 
 export interface Lead {
   id: string;
@@ -13,6 +15,9 @@ export interface Lead {
   galeria_nome?: string;
   espaco_id?: string;
   espaco_numero?: string;
+  corretor_id?: string;
+  ai_sugestao?: string;
+  ai_sugestao_usada?: boolean;
   criado_em: string;
   status: "novo" | "em-andamento" | "convertido" | "perdido";
 }
@@ -34,10 +39,9 @@ export async function getAllLeads(): Promise<Lead[]> {
     .select("*")
     .order("criado_em", { ascending: false });
 
-  // Só filtra por corretor_id se o usuário for explicitamente corretor
-  // Admin ou sem profile vê tudo
+  // Corretor só vê leads atribuídos a ele — admin vê tudo
   if (profile?.role === "corretor") {
-    query = query.or(`corretor_id.eq.${user.id},corretor_id.is.null`);
+    query = query.eq("corretor_id", user.id);
   }
 
   const { data, error } = await query;
@@ -161,6 +165,89 @@ export function getScoreLabel(score: number): {
     return { label: "Morno", color: "bg-amber-100 text-amber-700" };
   if (score >= 25) return { label: "Frio", color: "bg-blue-100 text-blue-700" };
   return { label: "Gelado", color: "bg-slate-100 text-slate-500" };
+}
+
+export async function assignLead(
+  leadId: string,
+  corretorId: string
+): Promise<{ ok: boolean; sugestao?: string }> {
+  // 1. Busca dados do lead e do negócio para contexto da IA
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("*")
+    .eq("id", leadId)
+    .single();
+
+  if (!lead) return { ok: false };
+
+  let negocioDesc = "";
+  if (lead.negocio_id) {
+    const { data: neg } = await supabase
+      .from("negocios")
+      .select("titulo, categoria, descricao, cidade")
+      .eq("id", lead.negocio_id)
+      .single();
+    if (neg) negocioDesc = `${neg.titulo} (${neg.categoria} — ${neg.cidade}): ${neg.descricao?.slice(0, 200)}`;
+  }
+
+  // 2. Gera sugestão de primeira mensagem com IA
+  let sugestao = "";
+  try {
+    const prompt = `Você é um assistente de vendas especializado em negócios e imóveis comerciais em São Paulo.
+
+Um lead entrou em contato com interesse em um negócio à venda.
+Nome do lead: ${lead.nome}
+Mensagem do lead: "${lead.mensagem || "Nenhuma"}"
+Negócio de interesse: ${negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado"}
+
+Escreva UMA mensagem de WhatsApp de primeiro contato para o corretor enviar ao lead.
+- Curta (máximo 3 linhas)
+- Calorosa e profissional
+- Mencione o nome do lead
+- Mencione o negócio de interesse
+- Termine com UMA pergunta aberta para engajar
+
+Responda APENAS com o texto da mensagem, sem aspas, sem explicação.`;
+
+    sugestao = (await callClaude(prompt)).trim();
+  } catch {
+    sugestao = `Olá ${lead.nome}! Tudo bem? Vi que você tem interesse em ${lead.negocio_titulo || "nosso negócio"}. Posso te contar mais detalhes — quando seria um bom momento para conversarmos?`;
+  }
+
+  // 3. Atualiza lead com corretor_id e sugestão da IA
+  const { error } = await supabase
+    .from("leads")
+    .update({ corretor_id: corretorId, ai_sugestao: sugestao, status: "novo" })
+    .eq("id", leadId);
+
+  if (error) return { ok: false };
+
+  // 4. Notifica corretor via WhatsApp
+  const { data: corretor } = await supabase
+    .from("profiles")
+    .select("nome, telefone")
+    .eq("id", corretorId)
+    .single();
+
+  if (corretor?.telefone) {
+    const primeiroNome = corretor.nome?.split(" ")[0] || "Corretor";
+    await sendWhatsAppMessage(
+      corretor.telefone,
+      `🆕 *Novo lead atribuído a você, ${primeiroNome}!*\n\n` +
+      `👤 *${lead.nome}*\n` +
+      `📱 ${lead.telefone || "sem telefone"}\n` +
+      `💼 Interesse: ${lead.negocio_titulo || lead.galeria_nome || "Contato geral"}\n` +
+      (lead.mensagem ? `💬 "${lead.mensagem.slice(0, 100)}"\n` : "") +
+      `\n✨ Uma sugestão de mensagem já está preparada no seu CRM!\n` +
+      `🔗 brasil-neg-cios-mock.vercel.app/corretor/mensagens`
+    ).catch(() => {});
+  }
+
+  return { ok: true, sugestao };
+}
+
+export async function markAiSugestaoUsada(leadId: string): Promise<void> {
+  await supabase.from("leads").update({ ai_sugestao_usada: true }).eq("id", leadId);
 }
 
 export async function getLeadStats() {
