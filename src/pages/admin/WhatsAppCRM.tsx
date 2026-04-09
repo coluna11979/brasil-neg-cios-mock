@@ -177,8 +177,23 @@ const WhatsAppCRM = () => {
   const [cadenciaEstagio, setCadenciaEstagio] = useState<string | null>(null);
   const [cadenciaMsg, setCadenciaMsg] = useState("");
   const [cadenciaLoading, setCadenciaLoading] = useState(false);
+  // Sender profiles map: id → nome
+  const [senderProfiles, setSenderProfiles] = useState<Record<string, string>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Corretores map: id → nome (para o header e intel)
+  const [corretoresMap, setCorretoresMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
+    supabase.from("profiles").select("id, nome").eq("role", "corretor").then(({ data }) => {
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach((p: { id: string; nome: string }) => { map[p.id] = p.nome; });
+        setCorretoresMap(map);
+      }
+    });
     getAllLeads().then((data) => {
       setLeads(data);
       setLoading(false);
@@ -279,10 +294,20 @@ Retorne APENAS este JSON (sem markdown, sem explicação):
     setLoadingMessages(true);
     setAiSuggestions([]);
     setShowAi(false);
-    getMessagesByLead(selectedLead.id).then((msgs) => {
+    getMessagesByLead(selectedLead.id).then(async (msgs) => {
       setMessages(msgs);
       setLoadingMessages(false);
       markMessagesAsRead(selectedLead.id);
+      // Carrega nomes dos remetentes únicos
+      const ids = [...new Set(msgs.map((m) => m.sender_id).filter(Boolean))] as string[];
+      if (ids.length > 0) {
+        const { data } = await supabase.from("profiles").select("id, nome").in("id", ids);
+        if (data) {
+          const map: Record<string, string> = { ...senderProfiles };
+          data.forEach((p: { id: string; nome: string }) => { map[p.id] = p.nome; });
+          setSenderProfiles(map);
+        }
+      }
     });
   }, [selectedLead]);
 
@@ -736,8 +761,13 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {lead.telefone ? formatPhoneDisplay(lead.telefone) : lead.email || "Sem contato"}
                     </p>
-                    {/* WhatsApp indicator */}
-                    {lead.telefone ? (
+                    {/* Corretor badge or WhatsApp indicator */}
+                    {lead.corretor_id && corretoresMap[lead.corretor_id] ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-violet-600 mt-0.5">
+                        <UserCircle className="h-2.5 w-2.5" />
+                        {corretoresMap[lead.corretor_id]}
+                      </span>
+                    ) : lead.telefone ? (
                       <span className="inline-flex items-center gap-1 text-[10px] text-green-600 mt-0.5">
                         <Wifi className="h-2.5 w-2.5" />
                         WhatsApp disponível
@@ -778,7 +808,15 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground">{selectedLead.nome}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-foreground">{selectedLead.nome}</p>
+                    {selectedLead.corretor_id && corretoresMap[selectedLead.corretor_id] && (
+                      <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                        <UserCircle className="h-3 w-3" />
+                        {corretoresMap[selectedLead.corretor_id]}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     {selectedLead.telefone ? (
                       <span className="flex items-center gap-1 text-xs text-green-600">
@@ -906,28 +944,44 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
                             {group.date}
                           </span>
                         </div>
-                        {group.msgs.map((msg) => (
-                          <div
-                            key={msg.id}
-                            className={`flex mb-1 ${msg.sender_type === "corretor" ? "justify-end" : "justify-start"}`}
-                          >
+                        {group.msgs.map((msg) => {
+                          const isOutbound = msg.sender_type === "corretor";
+                          const isMe = msg.sender_id === currentUserId;
+                          const senderName = isOutbound
+                            ? (isMe ? "Você" : msg.sender_id ? (senderProfiles[msg.sender_id] || "Corretor") : "Corretor")
+                            : null;
+                          return (
                             <div
-                              className={`max-w-[75%] rounded-lg px-3 py-2 shadow-sm ${
-                                msg.sender_type === "corretor"
-                                  ? "bg-[#d9fdd3] rounded-tr-none"
-                                  : "bg-white rounded-tl-none"
-                              }`}
+                              key={msg.id}
+                              className={`flex mb-2 ${isOutbound ? "justify-end" : "justify-start"}`}
                             >
-                              {renderMessageContent(msg.message)}
-                              <div className="flex items-center justify-end gap-1 mt-1">
-                                <span className="text-[10px] text-muted-foreground">{formatTime(msg.created_at)}</span>
-                                {msg.sender_type === "corretor" && (
-                                  <CheckCheck className={`h-3.5 w-3.5 ${msg.is_read ? "text-blue-500" : "text-muted-foreground/50"}`} />
+                              <div className={`max-w-[75%] ${isOutbound ? "items-end" : "items-start"} flex flex-col`}>
+                                {isOutbound && senderName && (
+                                  <span className={`text-[10px] font-semibold mb-0.5 px-1 ${isMe ? "text-green-700" : "text-violet-600"}`}>
+                                    {isMe ? "Você (Admin)" : `↩ ${senderName}`}
+                                  </span>
                                 )}
+                                <div
+                                  className={`rounded-lg px-3 py-2 shadow-sm ${
+                                    isOutbound
+                                      ? isMe
+                                        ? "bg-[#d9fdd3] rounded-tr-none"
+                                        : "bg-[#e9d8fd] rounded-tr-none"
+                                      : "bg-white rounded-tl-none"
+                                  }`}
+                                >
+                                  {renderMessageContent(msg.message)}
+                                  <div className="flex items-center justify-end gap-1 mt-1">
+                                    <span className="text-[10px] text-muted-foreground">{formatTime(msg.created_at)}</span>
+                                    {isOutbound && (
+                                      <CheckCheck className={`h-3.5 w-3.5 ${msg.is_read ? "text-blue-500" : "text-muted-foreground/50"}`} />
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ))}
                     <div ref={messagesEndRef} />
