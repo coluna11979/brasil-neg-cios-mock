@@ -13,6 +13,7 @@ import {
   getScoreLabel, assignLead, type Lead,
 } from "@/stores/leadStore";
 import { supabase } from "@/lib/supabase";
+import { callClaude } from "@/lib/anthropic";
 
 const statusColors: Record<string, string> = {
   novo: "bg-blue-100 text-blue-700",
@@ -50,7 +51,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-interface Corretor { id: string; nome: string; telefone?: string; }
+interface Corretor { id: string; nome: string; telefone?: string; bairro?: string; regiao?: string; }
 
 // ─── Modal Atribuir ───────────────────────────────────────────────────────────
 function AtribuirModal({ lead, corretores, onClose, onAssigned }: {
@@ -62,6 +63,45 @@ function AtribuirModal({ lead, corretores, onClose, onAssigned }: {
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [aiRecomendado, setAiRecomendado] = useState<string | null>(null);
+  const [aiJustificativa, setAiJustificativa] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
+  useEffect(() => {
+    if (corretores.length === 0) return;
+    setAiLoading(true);
+    const corretoresInfo = corretores.map((c) =>
+      `ID: ${c.id} | Nome: ${c.nome}${c.bairro ? ` | Bairro: ${c.bairro}` : ""}${c.regiao ? ` | Região: ${c.regiao}` : ""}`
+    ).join("\n");
+    const prompt = `Você é um assistente de distribuição de leads imobiliários/comerciais.
+
+Lead chegou com os seguintes dados:
+- Nome: ${lead.nome}
+- Mensagem: ${lead.mensagem || "sem mensagem"}
+- Negócio de interesse: ${lead.negocio_titulo || lead.galeria_nome || "não especificado"}
+- Origem: ${lead.origem}
+
+Corretores disponíveis:
+${corretoresInfo}
+
+Com base na localização, perfil do lead e área de atuação de cada corretor, qual deles tem maior chance de conversão?
+
+Responda APENAS no formato JSON:
+{"id": "UUID_DO_CORRETOR_RECOMENDADO", "motivo": "frase curta de justificativa (máx 80 chars)"}`;
+
+    callClaude(prompt)
+      .then((res) => {
+        try {
+          const json = JSON.parse(res.replace(/```json\n?|```/g, "").trim());
+          if (json.id && corretores.find((c) => c.id === json.id)) {
+            setAiRecomendado(json.id);
+            setAiJustificativa(json.motivo || "");
+          }
+        } catch { /* ignore parse errors */ }
+      })
+      .catch(() => {})
+      .finally(() => setAiLoading(false));
+  }, []);
 
   const handleAssign = async () => {
     if (!selected) return;
@@ -105,43 +145,79 @@ function AtribuirModal({ lead, corretores, onClose, onAssigned }: {
             <div className="p-5 space-y-3">
               <p className="text-sm text-muted-foreground">Selecione o corretor que vai atender este lead:</p>
 
+              {/* AI loading */}
+              {aiLoading && (
+                <div className="flex items-center gap-2 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2 text-xs text-violet-700">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-500" />
+                  IA analisando melhor corretor...
+                </div>
+              )}
+
+              {/* AI recommendation justification */}
+              {!aiLoading && aiRecomendado && aiJustificativa && (
+                <div className="flex items-start gap-2 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
+                  <Sparkles className="h-4 w-4 text-violet-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-violet-700"><strong>IA recomenda:</strong> {aiJustificativa}</p>
+                </div>
+              )}
+
               {corretores.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic text-center py-4">Nenhum corretor ativo encontrado.</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {corretores.map((c) => (
-                    <label
-                      key={c.id}
-                      className={`flex items-center gap-3 cursor-pointer rounded-xl border-2 px-4 py-3 transition-all ${
-                        selected === c.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        className="sr-only"
-                        checked={selected === c.id}
-                        onChange={() => setSelected(c.id)}
-                      />
-                      <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        selected === c.id ? "border-primary" : "border-muted-foreground"
-                      }`}>
-                        {selected === c.id && <div className="h-2 w-2 rounded-full bg-primary" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-foreground">{c.nome}</p>
-                        {c.telefone && <p className="text-xs text-muted-foreground">{c.telefone}</p>}
-                      </div>
-                    </label>
-                  ))}
+                  {[...corretores].sort((a, b) => (b.id === aiRecomendado ? 1 : 0) - (a.id === aiRecomendado ? 1 : 0)).map((c) => {
+                    const isRecomendado = c.id === aiRecomendado;
+                    return (
+                      <label
+                        key={c.id}
+                        className={`flex items-center gap-3 cursor-pointer rounded-xl border-2 px-4 py-3 transition-all ${
+                          selected === c.id
+                            ? "border-primary bg-primary/5"
+                            : isRecomendado
+                            ? "border-violet-400 bg-violet-50 hover:border-violet-500"
+                            : "border-border hover:border-primary/40"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          checked={selected === c.id}
+                          onChange={() => setSelected(c.id)}
+                        />
+                        <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          selected === c.id ? "border-primary" : isRecomendado ? "border-violet-500" : "border-muted-foreground"
+                        }`}>
+                          {selected === c.id && <div className="h-2 w-2 rounded-full bg-primary" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm text-foreground">{c.nome}</p>
+                            {isRecomendado && (
+                              <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                                <Sparkles className="h-2.5 w-2.5" /> IA Recomenda
+                              </span>
+                            )}
+                          </div>
+                          {(c.bairro || c.telefone) && (
+                            <p className="text-xs text-muted-foreground">
+                              {[c.bairro, c.telefone].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
 
-              <div className="rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5 flex items-start gap-2">
-                <Sparkles className="h-4 w-4 text-violet-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-violet-700">
-                  A IA vai gerar automaticamente uma sugestão de primeira mensagem para o corretor usar no CRM.
-                </p>
-              </div>
+              {!aiLoading && !aiRecomendado && (
+                <div className="rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5 flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 text-violet-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-violet-700">
+                    A IA vai gerar automaticamente uma sugestão de primeira mensagem para o corretor usar no CRM.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 border-t border-border px-5 py-4">
@@ -186,7 +262,7 @@ const Leads = () => {
     fetchLeads();
     supabase
       .from("profiles")
-      .select("id, nome, telefone")
+      .select("id, nome, telefone, bairro, regiao")
       .eq("role", "corretor")
       .eq("ativo", true)
       .then(({ data }) => setCorretores((data as Corretor[]) || []));

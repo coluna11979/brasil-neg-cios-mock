@@ -75,6 +75,7 @@ const SejaCorretor = () => {
     creci: "", experiencia: "", atuacao: "", sobre: "",
     dataNascimento: "", cidadeNascimento: "", estadoNascimento: "",
     motivacao: "", objetivo: "", comprometido: false,
+    bairro: "", cep: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [iaLoading, setIaLoading] = useState(false);
@@ -161,6 +162,8 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
         motivacao: form.motivacao || null,
         objetivo: form.objetivo || null,
         comprometido: form.comprometido,
+        bairro: form.bairro.trim() || null,
+        cep: form.cep.trim() || null,
         ativo: false,
       });
     } else {
@@ -182,6 +185,8 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
           motivacao: form.motivacao || null,
           objetivo: form.objetivo || null,
           comprometido: form.comprometido,
+          bairro: form.bairro.trim() || null,
+          cep: form.cep.trim() || null,
           ativo: false,
         }).eq("id", existing.id);
       }
@@ -420,6 +425,22 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                       value={form.creci}
                       onChange={(e) => setForm((p) => ({ ...p, creci: e.target.value }))} />
                     <p className="mt-1 text-xs text-muted-foreground">Se ainda não tiver, pode deixar em branco.</p>
+                  </div>
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="cep">CEP de atuação</Label>
+                      <Input id="cep" className="mt-2" placeholder="00000-000"
+                        maxLength={9}
+                        value={form.cep}
+                        onChange={(e) => setForm((p) => ({ ...p, cep: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label htmlFor="bairro">Bairro / Região principal</Label>
+                      <Input id="bairro" className="mt-2" placeholder="Ex: Vila Madalena"
+                        value={form.bairro}
+                        onChange={(e) => setForm((p) => ({ ...p, bairro: e.target.value }))} />
+                    </div>
                   </div>
 
                   <div className="grid gap-5 sm:grid-cols-2">
