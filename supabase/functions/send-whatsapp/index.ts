@@ -2,7 +2,7 @@
 // verify_jwt: false
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { decodeBase64, encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -343,7 +343,7 @@ Deno.serve(async (req: Request) => {
               // Transcrição de áudio via Gemini
               if (prefix === "[AUDIO]:" && GOOGLE_API_KEY) {
                 try {
-                  const b64audio = btoa(String.fromCharCode(...bytes));
+                  const b64audio = encodeBase64(bytes);
                   const geminiRes = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
                     {
