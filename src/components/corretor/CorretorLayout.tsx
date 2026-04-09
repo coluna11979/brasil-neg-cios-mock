@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { MessageCircle, Users, LogOut, UserCircle, Menu, X, Clock, Phone, Loader2, AlertTriangle, TrendingUp, BarChart3 } from "lucide-react";
+import { MessageCircle, Users, LogOut, UserCircle, Menu, X, Clock, Phone, Loader2, AlertTriangle, TrendingUp, BarChart3, Camera, Package } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { logout } from "@/stores/authStore";
 
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/corretor/leads", label: "Meus Leads", icon: Users },
   { to: "/corretor/pipeline", label: "Pipeline", icon: TrendingUp },
   { to: "/corretor/desempenho", label: "Desempenho", icon: BarChart3 },
+  { to: "/corretor/materiais", label: "Materiais", icon: Package },
 ];
 
 const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
@@ -20,6 +21,9 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
   const [semTelefone, setSemTelefone] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estado do formulário de telefone
   const [telefoneInput, setTelefoneInput] = useState("");
@@ -37,11 +41,13 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("ativo, telefone")
+        .select("ativo, telefone, foto_url, nome, email, creci, bairro, regiao")
         .eq("id", data.session.user.id)
         .single();
 
       setAtivo(profile?.ativo ?? true);
+      if (profile?.foto_url) setFotoUrl(profile.foto_url);
+      if (profile?.nome) setNomeCorretor(profile.nome);
 
       // Bloqueia se não tiver telefone
       if (!profile?.telefone || profile.telefone.trim() === "") {
@@ -76,6 +82,79 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
       setSemTelefone(false);
     }
     setSavingTelefone(false);
+  };
+
+  const handleFotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profileId) return;
+    setUploadingFoto(true);
+    try {
+      const path = `profiles/${profileId}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("lead-images")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("lead-images")
+        .getPublicUrl(path);
+
+      const publicUrl = urlData.publicUrl;
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ foto_url: publicUrl })
+        .eq("id", profileId);
+      if (updateError) throw updateError;
+
+      setFotoUrl(publicUrl + "?t=" + Date.now());
+    } catch (err) {
+      console.error("Erro ao fazer upload da foto:", err);
+    } finally {
+      setUploadingFoto(false);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
+
+  const AvatarWidget = ({ size = "sm" }: { size?: "sm" | "md" }) => {
+    const dim = size === "md" ? "h-10 w-10" : "h-8 w-8";
+    const textSize = size === "md" ? "text-sm" : "text-xs";
+    return (
+      <div className={`relative ${dim} shrink-0 group cursor-pointer`} onClick={() => fileInputRef.current?.click()}>
+        {uploadingFoto ? (
+          <div className={`flex ${dim} items-center justify-center rounded-full bg-primary/10`}>
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          </div>
+        ) : fotoUrl ? (
+          <img
+            src={fotoUrl}
+            alt={nomeCorretor}
+            className={`${dim} rounded-full object-cover`}
+          />
+        ) : (
+          <div className={`flex ${dim} items-center justify-center rounded-full bg-primary/10`}>
+            <span className={`${textSize} font-semibold text-primary`}>{getInitials(nomeCorretor)}</span>
+          </div>
+        )}
+        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Camera className="h-3 w-3 text-white" />
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFotoSelect}
+        />
+      </div>
+    );
   };
 
   if (loadingProfile) {
@@ -204,9 +283,7 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
 
         <div className="border-t border-border p-4">
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
-              <UserCircle className="h-4 w-4 text-primary" />
-            </div>
+            <AvatarWidget size="sm" />
             <p className="text-sm font-medium text-foreground truncate">{nomeCorretor}</p>
           </div>
           <button
