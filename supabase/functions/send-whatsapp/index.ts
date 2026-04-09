@@ -45,8 +45,16 @@ function extractUazapiMessage(body: Record<string, unknown>): ExtractedMessage |
     const caption = text;
 
 
-    if (mediaType === "audio" || mediaType === "ptt") return { phone, text: "🎤 Áudio recebido" };
-    if (mediaType === "video") return { phone, text: "🎥 Vídeo recebido" };
+    if (mediaType === "audio" || mediaType === "ptt") {
+      const msgId = (msg.id as string) || (msg.messageid as string) || "";
+      if (msgId) return { phone, text: `[FETCH_MEDIA_audio]:${msgId}` };
+      return { phone, text: "🎤 Áudio recebido" };
+    }
+    if (mediaType === "video") {
+      const msgId = (msg.id as string) || (msg.messageid as string) || "";
+      if (msgId) return { phone, text: `[FETCH_MEDIA_video]:${msgId}` };
+      return { phone, text: "🎥 Vídeo recebido" };
+    }
     if (mediaType === "document") return { phone, text: "📎 Arquivo recebido" };
 
     const msgId = (msg.id as string) || (msg.messageid as string) || "";
@@ -104,6 +112,7 @@ Deno.serve(async (req: Request) => {
   const UAZAPI_TOKEN = Deno.env.get("UAZAPI_TOKEN");
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("VITE_GOOGLE_API_KEY") || "";
 
   // ── Ping ─────────────────────────────────────────────────────────────────
   if (body?.__ping) {
@@ -280,12 +289,14 @@ Deno.serve(async (req: Request) => {
   let { phone, text } = extracted;
 
   // ── Download de mídia via POST /message/download do Uazapi ──────────────
-  if (text.startsWith("[FETCH_MEDIA]:") && UAZAPI_URL && UAZAPI_TOKEN) {
-    const msgId = text.replace("[FETCH_MEDIA]:", "");
-    console.log(`[fetch-media] id=${msgId}`);
-    text = "📸 Imagem recebida"; // fallback
+  const fetchMediaMatch = text.match(/^\[FETCH_MEDIA(_\w+)?]:(.+)$/);
+  if (fetchMediaMatch && UAZAPI_URL && UAZAPI_TOKEN) {
+    const mediaHint = fetchMediaMatch[1]?.replace("_", "") || "image"; // audio, video, image
+    const msgId = fetchMediaMatch[2];
+    console.log(`[fetch-media] id=${msgId} hint=${mediaHint}`);
+    // Fallbacks por tipo
+    text = mediaHint === "audio" ? "🎤 Áudio recebido" : mediaHint === "video" ? "🎥 Vídeo recebido" : "📸 Imagem recebida";
     try {
-      // POST /message/download retorna { fileURL, mimetype }
       const dlRes = await fetch(`${UAZAPI_URL}/message/download`, {
         method: "POST",
         headers: { "Content-Type": "application/json", token: UAZAPI_TOKEN },
@@ -295,25 +306,71 @@ Deno.serve(async (req: Request) => {
       if (dlRes.ok) {
         const dlData = await dlRes.json().catch(() => null);
         const fileURL: string = dlData?.fileURL || "";
-        const mime: string = dlData?.mimetype || "image/jpeg";
+        const mime: string = dlData?.mimetype || (mediaHint === "audio" ? "audio/ogg" : mediaHint === "video" ? "video/mp4" : "image/jpeg");
         console.log(`[fetch-media] fileURL=${fileURL} mime=${mime}`);
 
         if (fileURL) {
-          // Baixa o arquivo da URL e faz re-upload pro Supabase Storage
-          const imgRes = await fetch(fileURL, { headers: { token: UAZAPI_TOKEN } });
-          console.log(`[fetch-media] img fetch HTTP ${imgRes.status}`);
-          if (imgRes.ok) {
-            const buf = await imgRes.arrayBuffer();
+          const mediaRes = await fetch(fileURL, { headers: { token: UAZAPI_TOKEN } });
+          console.log(`[fetch-media] file fetch HTTP ${mediaRes.status}`);
+          if (mediaRes.ok) {
+            const buf = await mediaRes.arrayBuffer();
             const bytes = new Uint8Array(buf);
-            const ext = mime.includes("webp") ? "webp" : mime.includes("png") ? "png" : "jpg";
-            const path = `whatsapp/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+            let ext = "bin";
+            let folder = "whatsapp";
+            let prefix = "[IMAGE]:";
+            if (mime.startsWith("audio/")) {
+              ext = mime.includes("ogg") ? "ogg" : mime.includes("mpeg") ? "mp3" : "ogg";
+              folder = "crm/audio";
+              prefix = "[AUDIO]:";
+            } else if (mime.startsWith("video/")) {
+              ext = "mp4";
+              folder = "crm/video";
+              prefix = "[VIDEO]:";
+            } else {
+              ext = mime.includes("webp") ? "webp" : mime.includes("png") ? "png" : "jpg";
+              folder = "whatsapp";
+              prefix = "[IMAGE]:";
+            }
+            const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
             const { error: upErr } = await supabase.storage
               .from("lead-images")
               .upload(path, bytes, { contentType: mime, cacheControl: "3600", upsert: false });
             if (!upErr) {
               const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
-              text = `[IMAGE]:${urlData.publicUrl}`;
-              console.log(`[fetch-media] OK: ${urlData.publicUrl}`);
+              text = `${prefix}${urlData.publicUrl}`;
+              console.log(`[fetch-media] OK: ${text}`);
+
+              // Transcrição de áudio via Gemini
+              if (prefix === "[AUDIO]:" && GOOGLE_API_KEY) {
+                try {
+                  const b64audio = btoa(String.fromCharCode(...bytes));
+                  const geminiRes = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        contents: [{
+                          parts: [
+                            { text: "Transcreva este áudio em português brasileiro. Retorne APENAS a transcrição, sem comentários." },
+                            { inline_data: { mime_type: mime, data: b64audio } },
+                          ],
+                        }],
+                      }),
+                    }
+                  );
+                  if (geminiRes.ok) {
+                    const geminiData = await geminiRes.json().catch(() => null);
+                    const transcript = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                    if (transcript) {
+                      text = `${prefix}${urlData.publicUrl}|TRANSCRIPT:${transcript}`;
+                      console.log(`[transcricao] OK: "${transcript.slice(0, 80)}"`);
+                    }
+                  }
+                } catch (te) {
+                  console.error("[transcricao] erro:", te instanceof Error ? te.message : String(te));
+                }
+              }
             } else {
               console.error(`[fetch-media] upload err: ${upErr.message}`);
             }

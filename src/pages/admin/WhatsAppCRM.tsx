@@ -101,10 +101,22 @@ function renderMessageContent(text: string) {
       </span>
     );
   }
-  // Áudio enviado pelo corretor
+  // Áudio (com transcrição opcional)
   if (text.startsWith("[AUDIO]:")) {
-    const url = text.replace("[AUDIO]:", "");
-    return <audio controls src={url} className="max-w-[240px] rounded-lg" />;
+    const raw = text.replace("[AUDIO]:", "");
+    const sepIdx = raw.indexOf("|TRANSCRIPT:");
+    const url = sepIdx >= 0 ? raw.slice(0, sepIdx) : raw;
+    const transcript = sepIdx >= 0 ? raw.slice(sepIdx + 12) : null;
+    return (
+      <div className="flex flex-col gap-1.5">
+        <audio controls src={url} className="max-w-[240px] rounded-lg" />
+        {transcript && (
+          <p className="text-xs text-muted-foreground italic leading-relaxed border-l-2 border-muted-foreground/30 pl-2">
+            🎤 "{transcript}"
+          </p>
+        )}
+      </div>
+    );
   }
   // Vídeo enviado pelo corretor
   if (text.startsWith("[VIDEO]:")) {

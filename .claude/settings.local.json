@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(node node_modules/vite/bin/vite.js build)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(netstat -ano)",
+      "Bash(wc -l /c/Users/lucas domingues/TODOS-PROJETOS/crm-analise/src/**/*.tsx /c/Users/lucas domingues/TODOS-PROJETOS/crm-analise/src/**/*.ts)",
+      "Bash(node node_modules/vite/bin/vite.js preview --port 4173)",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/ncqlkdbablgwthfaxgap/database/query\" -H \"Authorization: Bearer sbp_03d59c52ec11e6e55cf98d1e914479d768924898\" -H \"Content-Type: application/json\" -d '{\"\"query\"\": \"\"ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS experiencia TEXT; ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS atuacao TEXT; ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS sobre TEXT;\"\"}')"
+    ]
+  }
+}
