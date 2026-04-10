@@ -16,7 +16,9 @@ interface Corretor {
   foto_url?: string;
 }
 
-const PRIMARY = "#2563eb";
+const GOLD = "#C49A1E";
+const NAVY = "#0d1f3c";
+const BLUE = "#1d4ed8";
 
 function getInitials(nome: string) {
   return nome.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
@@ -25,88 +27,97 @@ function getInitials(nome: string) {
 function formatPhone(phone?: string) {
   if (!phone) return "";
   const d = phone.replace(/\D/g, "");
-  if (d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
-  if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return phone;
 }
 
-function Card1({ corretor, cardRef }: { corretor: Corretor; cardRef: React.RefObject<HTMLDivElement> }) {
+/* ─── Card Noir ────────────────────────────────────────────────────────────── */
+function CardNoir({ corretor, cardRef }: { corretor: Corretor; cardRef: React.RefObject<HTMLDivElement> }) {
   return (
-    <div
-      ref={cardRef}
-      style={{
-        width: 400, height: 250, borderRadius: 12, overflow: "hidden",
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%)",
-        position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between",
-        padding: "24px 20px 20px 24px", fontFamily: "Arial, sans-serif",
-      }}
-    >
-      {/* Barra lateral */}
-      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 6, background: PRIMARY, borderRadius: "0 12px 12px 0" }} />
-      {/* Badge NJ */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ background: PRIMARY, borderRadius: 6, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ color: "#fff", fontWeight: 900, fontSize: 13 }}>NJ</span>
+    <div ref={cardRef} style={{
+      width: 400, height: 240, borderRadius: 14, overflow: "hidden",
+      background: NAVY, position: "relative",
+      display: "flex", flexDirection: "column", justifyContent: "space-between",
+      padding: "26px 28px 22px 30px",
+      fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box",
+    }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: `linear-gradient(180deg, ${GOLD} 0%, #e8c84a 50%, ${GOLD} 100%)` }} />
+      <div style={{ position: "absolute", right: -12, bottom: -20, fontSize: 160, fontWeight: 900, color: "rgba(255,255,255,0.025)", fontFamily: "Arial Black, Arial, sans-serif", userSelect: "none", lineHeight: 1 }}>NJ</div>
+      <div style={{ position: "absolute", right: -50, top: -50, width: 180, height: 180, borderRadius: "50%", border: `1px solid rgba(196,154,30,0.12)` }} />
+      <div style={{ position: "absolute", right: -30, top: -30, width: 120, height: 120, borderRadius: "50%", border: `1px solid rgba(196,154,30,0.08)` }} />
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: GOLD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: "#000" }}>NJ</div>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 9.5, letterSpacing: 2, textTransform: "uppercase" }}>NegócioJá</span>
         </div>
-        <span style={{ color: "#94a3b8", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" }}>NegócioJá</span>
-      </div>
-      {/* Nome */}
-      <div>
-        <div style={{ color: "#ffffff", fontWeight: 800, fontSize: 22, lineHeight: 1.2, marginBottom: 4 }}>{corretor.nome}</div>
-        <div style={{ color: "#94a3b8", fontSize: 12, letterSpacing: 0.5 }}>Corretor de Negócios</div>
-      </div>
-      {/* Contatos */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {corretor.telefone && (
-          <div style={{ color: "#cbd5e1", fontSize: 11 }}>📱 {formatPhone(corretor.telefone)}</div>
-        )}
-        <div style={{ color: "#cbd5e1", fontSize: 11 }}>✉️ {corretor.email}</div>
         {corretor.creci && (
-          <div style={{ color: "#64748b", fontSize: 10 }}>CRECI: {corretor.creci}</div>
+          <div style={{ border: `1px solid rgba(196,154,30,0.4)`, borderRadius: 20, padding: "3px 10px", fontSize: 9, color: GOLD, letterSpacing: 1 }}>
+            CRECI {corretor.creci}
+          </div>
         )}
       </div>
+
+      <div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: "#ffffff", lineHeight: 1.1, marginBottom: 6, letterSpacing: -0.5 }}>{corretor.nome}</div>
+        <div style={{ fontSize: 11, color: GOLD, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Corretor de Negócios</div>
+      </div>
+
+      <div style={{ borderTop: `1px solid rgba(196,154,30,0.2)`, paddingTop: 12, display: "flex", gap: 18, flexWrap: "wrap" }}>
+        {corretor.telefone && <span style={{ fontSize: 10, color: "#94a3b8" }}>📱 {formatPhone(corretor.telefone)}</span>}
+        <span style={{ fontSize: 10, color: "#94a3b8" }}>✉️ {corretor.email}</span>
+      </div>
     </div>
   );
 }
 
-function Card2({ corretor, cardRef }: { corretor: Corretor; cardRef: React.RefObject<HTMLDivElement> }) {
+/* ─── Card Corporate ───────────────────────────────────────────────────────── */
+function CardCorporate({ corretor, cardRef }: { corretor: Corretor; cardRef: React.RefObject<HTMLDivElement> }) {
   return (
-    <div
-      ref={cardRef}
-      style={{
-        width: 400, height: 250, borderRadius: 12, overflow: "hidden",
-        background: "#ffffff", border: "1.5px solid #e2e8f0",
-        display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-        padding: "20px 28px", fontFamily: "Arial, sans-serif", gap: 8,
-      }}
-    >
-      <div style={{ color: PRIMARY, fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>NegócioJá</div>
-      {/* Avatar */}
-      <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", border: `2.5px solid ${PRIMARY}`, background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {corretor.foto_url
-          ? <img src={corretor.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
-          : <span style={{ color: PRIMARY, fontWeight: 800, fontSize: 18 }}>{getInitials(corretor.nome)}</span>
-        }
+    <div ref={cardRef} style={{
+      width: 400, height: 240, borderRadius: 14, overflow: "hidden",
+      display: "flex", fontFamily: "Arial, Helvetica, sans-serif",
+      boxSizing: "border-box", border: "1px solid #e2e8f0",
+    }}>
+      <div style={{ width: 88, background: `linear-gradient(180deg, #1e3a8a 0%, ${BLUE} 100%)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", padding: "22px 10px 18px" }}>
+        <div style={{ width: 40, height: 40, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>NJ</div>
+        <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 8.5, letterSpacing: 2.5, transform: "rotate(-90deg)", whiteSpace: "nowrap", textTransform: "uppercase" }}>NegócioJá</div>
+        {corretor.creci ? <div style={{ textAlign: "center", color: "rgba(255,255,255,0.55)", fontSize: 8 }}>CRECI<br />{corretor.creci}</div> : <div />}
       </div>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ color: "#0f172a", fontWeight: 800, fontSize: 18, lineHeight: 1.2 }}>{corretor.nome}</div>
-        <div style={{ color: "#64748b", fontSize: 11, marginTop: 2 }}>Corretor de Negócios</div>
-      </div>
-      <div style={{ width: "100%", height: 1, background: "#e2e8f0", margin: "4px 0" }} />
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-        {corretor.telefone && <span style={{ color: "#475569", fontSize: 10 }}>📱 {formatPhone(corretor.telefone)}</span>}
-        <span style={{ color: "#475569", fontSize: 10 }}>✉️ {corretor.email}</span>
-        {corretor.creci && <span style={{ color: "#94a3b8", fontSize: 10 }}>CRECI: {corretor.creci}</span>}
-        {corretor.bairro && <span style={{ color: "#94a3b8", fontSize: 10 }}>📍 {corretor.bairro}</span>}
+
+      <div style={{ flex: 1, background: "#ffffff", padding: "22px 22px 18px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", border: `2.5px solid ${BLUE}`, overflow: "hidden", flexShrink: 0, background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {corretor.foto_url
+              ? <img src={corretor.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
+              : <span style={{ fontSize: 18, fontWeight: 800, color: BLUE }}>{getInitials(corretor.nome)}</span>
+            }
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>{corretor.nome}</div>
+            <div style={{ fontSize: 10, color: BLUE, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, marginTop: 3 }}>Corretor de Negócios</div>
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: "#e2e8f0" }} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {corretor.telefone && <div style={{ fontSize: 10.5, color: "#334155" }}><span style={{ color: "#94a3b8", marginRight: 6 }}>📱</span>{formatPhone(corretor.telefone)}</div>}
+          <div style={{ fontSize: 10.5, color: "#334155" }}><span style={{ color: "#94a3b8", marginRight: 6 }}>✉️</span>{corretor.email}</div>
+          {(corretor.bairro || corretor.regiao) && (
+            <div style={{ fontSize: 10, color: "#94a3b8" }}><span style={{ marginRight: 6 }}>📍</span>{[corretor.bairro, corretor.regiao].filter(Boolean).join(" · ")}</div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
+/* ─── MateriaisCorretor accordion ─────────────────────────────────────────── */
 function MateriaisCorretor({ corretor }: { corretor: Corretor }) {
-  const card1Ref = useRef<HTMLDivElement>(null);
-  const card2Ref = useRef<HTMLDivElement>(null);
-  const storyRef = useRef<HTMLDivElement>(null);
+  const cardRef1 = useRef<HTMLDivElement>(null);
+  const cardRef2 = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -120,17 +131,26 @@ function MateriaisCorretor({ corretor }: { corretor: Corretor }) {
     link.click();
   };
 
-  const assinatura = `<table cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:13px;color:#333333;max-width:480px">
+  const assinatura = `<table cellpadding="0" cellspacing="0" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#0f172a;border-collapse:collapse;max-width:520px">
   <tr>
-    ${corretor.foto_url ? `<td style="padding-right:16px;border-right:3px solid ${PRIMARY};vertical-align:middle">
-      <img src="${corretor.foto_url}" width="60" height="60" style="border-radius:50%;display:block" />
-    </td>` : ""}
-    <td style="padding-left:${corretor.foto_url ? "16" : "0"}px;vertical-align:middle">
-      <strong style="font-size:15px;color:#0f172a">${corretor.nome}</strong><br/>
-      <span style="color:#64748b;font-size:12px">Corretor de Negócios · NegócioJá</span><br/>
-      <span style="font-size:12px">${formatPhone(corretor.telefone)} ${corretor.telefone && corretor.email ? "·" : ""} ${corretor.email}</span><br/>
-      ${corretor.creci ? `<span style="font-size:11px;color:#94a3b8">CRECI: ${corretor.creci}</span><br/>` : ""}
-      <a href="https://brasil-neg-cios-mock.vercel.app" style="color:${PRIMARY};font-size:11px;text-decoration:none">brasil-neg-cios-mock.vercel.app</a>
+    <td style="padding-right:0;vertical-align:top">
+      <table cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding-right:18px;vertical-align:middle">
+            ${corretor.foto_url
+              ? `<img src="${corretor.foto_url}" width="64" height="64" style="border-radius:50%;display:block;border:2px solid ${BLUE}" />`
+              : `<div style="width:64px;height:64px;border-radius:50%;background:${BLUE};text-align:center;line-height:64px;font-size:22px;font-weight:800;color:#fff">${getInitials(corretor.nome)}</div>`
+            }
+          </td>
+          <td style="border-left:3px solid ${GOLD};padding-left:18px;vertical-align:middle">
+            <p style="margin:0 0 2px;font-size:16px;font-weight:800;color:#0f172a">${corretor.nome}</p>
+            <p style="margin:0 0 6px;font-size:11px;font-weight:600;color:${BLUE};letter-spacing:1px;text-transform:uppercase">Corretor de Negócios · NegócioJá</p>
+            <p style="margin:0 0 2px;font-size:12px;color:#475569">${corretor.telefone ? formatPhone(corretor.telefone) : ""}${corretor.telefone && corretor.email ? " &nbsp;|&nbsp; " : ""}${corretor.email}</p>
+            ${corretor.creci ? `<p style="margin:0 0 4px;font-size:11px;color:#94a3b8">CRECI: ${corretor.creci}</p>` : ""}
+            <a href="https://negocioja.com.br" style="font-size:11px;color:${BLUE};text-decoration:none;font-weight:600">negocioja.com.br</a>
+          </td>
+        </tr>
+      </table>
     </td>
   </tr>
 </table>`;
@@ -143,10 +163,8 @@ function MateriaisCorretor({ corretor }: { corretor: Corretor }) {
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors"
-      >
+      <button onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-bold text-sm text-primary shrink-0 overflow-hidden">
             {corretor.foto_url
@@ -163,23 +181,25 @@ function MateriaisCorretor({ corretor }: { corretor: Corretor }) {
       </button>
 
       {open && (
-        <div className="border-t border-border px-5 py-5 space-y-6 bg-muted/10">
+        <div className="border-t border-border px-5 py-5 space-y-8 bg-muted/10">
           {/* Cartões */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cartões de Visita</p>
-            <div className="flex flex-wrap gap-6">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Cartões de Visita</p>
+            <div className="flex flex-wrap gap-8">
               <div className="space-y-2">
-                <Card1 corretor={corretor} cardRef={card1Ref} />
-                <button onClick={() => downloadCard(card1Ref, `cartao-moderno-${corretor.nome}.png`)}
-                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors w-full justify-center">
-                  <Download className="h-3.5 w-3.5" /> Baixar Moderno
+                <p className="text-xs text-muted-foreground">Executivo Noir</p>
+                <CardNoir corretor={corretor} cardRef={cardRef1} />
+                <button onClick={() => downloadCard(cardRef1, `noir-${corretor.nome}.png`)}
+                  className="flex items-center gap-1.5 rounded-lg bg-[#0d1f3c] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0d1f3c]/80 transition-colors w-full justify-center">
+                  <Download className="h-3.5 w-3.5" /> Baixar Noir
                 </button>
               </div>
               <div className="space-y-2">
-                <Card2 corretor={corretor} cardRef={card2Ref} />
-                <button onClick={() => downloadCard(card2Ref, `cartao-clean-${corretor.nome}.png`)}
-                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors w-full justify-center">
-                  <Download className="h-3.5 w-3.5" /> Baixar Clean
+                <p className="text-xs text-muted-foreground">Corporate</p>
+                <CardCorporate corretor={corretor} cardRef={cardRef2} />
+                <button onClick={() => downloadCard(cardRef2, `corporate-${corretor.nome}.png`)}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 transition-colors w-full justify-center">
+                  <Download className="h-3.5 w-3.5" /> Baixar Corporate
                 </button>
               </div>
             </div>
@@ -194,7 +214,7 @@ function MateriaisCorretor({ corretor }: { corretor: Corretor }) {
               dangerouslySetInnerHTML={{ __html: assinatura }} />
             <button onClick={copyAssinatura}
               className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors">
-              {copied ? <><Check className="h-3.5 w-3.5 text-green-600" />Copiado!</> : <><Copy className="h-3.5 w-3.5" />Copiar HTML</>}
+              {copied ? <><Check className="h-3.5 w-3.5 text-green-600" /> Copiado!</> : <><Copy className="h-3.5 w-3.5" /> Copiar HTML</>}
             </button>
           </div>
         </div>
@@ -203,6 +223,7 @@ function MateriaisCorretor({ corretor }: { corretor: Corretor }) {
   );
 }
 
+/* ─── Page ─────────────────────────────────────────────────────────────────── */
 const AdminMateriais = () => {
   usePageTitle("Admin - Materiais");
   const [corretores, setCorretores] = useState<Corretor[]>([]);
