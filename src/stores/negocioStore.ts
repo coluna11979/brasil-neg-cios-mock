@@ -13,6 +13,7 @@ export interface Negocio {
   proprietario_nome: string;
   proprietario_email: string;
   proprietario_telefone?: string;
+  foto_url?: string;
   status: "pendente" | "ativo" | "rejeitado" | "vendido" | "rascunho";
   criado_em: string;
   /** @deprecated use criado_em */

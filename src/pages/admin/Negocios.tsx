@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import usePageTitle from "@/hooks/usePageTitle";
 import {
   Building2,
@@ -23,6 +23,8 @@ import {
   Save,
   Pencil,
   Sparkles,
+  Camera,
+  ImageIcon,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { callClaude } from "@/lib/anthropic";
@@ -122,6 +124,16 @@ const NovoNegocioModal = ({ onClose, onSaved }: NovoNegocioModalProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState("");
+  const fotoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingPhoto(file);
+    setPendingPreview(URL.createObjectURL(file));
+  };
 
   const handleGerarDescricao = async () => {
     if (!form.titulo && !form.categoria) return;
@@ -200,7 +212,20 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
       setErrors({ submit: "Erro ao salvar. Tente novamente." });
       return;
     }
-    onSaved(data as Negocio);
+
+    let savedNegocio = data as Negocio;
+
+    // Upload foto se selecionada
+    if (pendingPhoto && savedNegocio.id) {
+      const path = `negocios/${savedNegocio.id}.jpg`;
+      await supabase.storage.from("lead-images").upload(path, pendingPhoto, { upsert: true, contentType: pendingPhoto.type });
+      const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
+      const foto_url = urlData.publicUrl;
+      await supabase.from("negocios").update({ foto_url }).eq("id", savedNegocio.id);
+      savedNegocio = { ...savedNegocio, foto_url };
+    }
+
+    onSaved(savedNegocio);
   };
 
   // Close on backdrop click
@@ -263,6 +288,38 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
                 <SelectItem value="vendido">🏆 Vendido</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Foto do Negócio */}
+          <div className="space-y-3">
+            <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+              <Camera className="h-4 w-4 text-primary" />
+              Foto do Negócio
+              <span className="text-xs font-normal text-muted-foreground">(opcional, mas recomendada)</span>
+            </h3>
+            <div
+              onClick={() => fotoInputRef.current?.click()}
+              className="relative cursor-pointer rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden"
+              style={{ height: 160 }}
+            >
+              {pendingPreview ? (
+                <>
+                  <img src={pendingPreview} alt="preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-foreground">
+                      <Camera className="h-3.5 w-3.5" /> Trocar foto
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                  <ImageIcon className="h-10 w-10 opacity-20" />
+                  <p className="text-sm font-medium">Clique para adicionar foto</p>
+                  <p className="text-xs opacity-60">JPG, PNG — recomendado 1200×800</p>
+                </div>
+              )}
+            </div>
+            <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoSelect} />
           </div>
 
           {/* Sobre o Negócio */}
@@ -545,6 +602,27 @@ const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModalProps) 
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [fotoUrl, setFotoUrl] = useState(negocio.foto_url || "");
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingFoto(true);
+    try {
+      const path = `negocios/${negocio.id}.jpg`;
+      await supabase.storage.from("lead-images").upload(path, file, { upsert: true, contentType: file.type });
+      const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
+      const url = urlData.publicUrl + "?t=" + Date.now();
+      await supabase.from("negocios").update({ foto_url: urlData.publicUrl }).eq("id", negocio.id);
+      setFotoUrl(url);
+    } catch (err) {
+      console.error("Erro ao fazer upload:", err);
+    } finally {
+      setUploadingFoto(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -648,6 +726,43 @@ const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModalProps) 
                 <SelectItem value="vendido">🏆 Vendido</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Foto do Negócio */}
+          <div className="space-y-3">
+            <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+              <Camera className="h-4 w-4 text-primary" />
+              Foto do Negócio
+              <span className="text-xs font-normal text-muted-foreground">(usada nas artes de redes sociais)</span>
+            </h3>
+            <div
+              onClick={() => fotoInputRef.current?.click()}
+              className="relative cursor-pointer rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden"
+              style={{ height: 160 }}
+            >
+              {uploadingFoto ? (
+                <div className="flex h-full items-center justify-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="text-sm">Enviando foto...</span>
+                </div>
+              ) : fotoUrl ? (
+                <>
+                  <img src={fotoUrl} alt="foto do negócio" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-foreground">
+                      <Camera className="h-3.5 w-3.5" /> Trocar foto
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                  <ImageIcon className="h-10 w-10 opacity-20" />
+                  <p className="text-sm font-medium">Clique para adicionar foto</p>
+                  <p className="text-xs opacity-60">JPG, PNG — recomendado 1200×800</p>
+                </div>
+              )}
+            </div>
+            <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoSelect} />
           </div>
 
           {/* Sobre o Negócio */}

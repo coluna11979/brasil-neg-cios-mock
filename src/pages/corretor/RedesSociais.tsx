@@ -59,29 +59,42 @@ function PostInstagram({ negocio, profile, divRef }: {
         background: `radial-gradient(ellipse at 70% 30%, ${c.bg2} 0%, ${c.photo} 100%)`,
         display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
       }}>
-        {/* Background pattern circles */}
-        <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: `${c.accent}18` }} />
-        <div style={{ position: "absolute", bottom: -20, left: -30, width: 120, height: 120, borderRadius: "50%", background: `${c.accent}10` }} />
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 200, height: 200, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}20 0%, transparent 70%)` }} />
+        {/* Real photo background */}
+        {negocio.foto_url && (
+          <>
+            <img src={negocio.foto_url} crossOrigin="anonymous"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.55) 100%)" }} />
+          </>
+        )}
+
+        {/* Placeholder circles (only when no photo) */}
+        {!negocio.foto_url && <>
+          <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: `${c.accent}18` }} />
+          <div style={{ position: "absolute", bottom: -20, left: -30, width: 120, height: 120, borderRadius: "50%", background: `${c.accent}10` }} />
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 200, height: 200, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}20 0%, transparent 70%)` }} />
+        </>}
 
         {/* Top bar overlaid */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 2 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 26, height: 26, borderRadius: 6, background: c.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "#000" }}>NJ</div>
-            <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 8.5, letterSpacing: 1.5, textTransform: "uppercase" }}>NegócioJá</span>
+            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8.5, letterSpacing: 1.5, textTransform: "uppercase" }}>NegócioJá</span>
           </div>
-          <div style={{ background: `${c.accent}30`, border: `1px solid ${c.accent}60`, borderRadius: 20, padding: "2px 8px", fontSize: 8.5, color: c.light, letterSpacing: 0.5 }}>
+          <div style={{ background: "rgba(0,0,0,0.45)", border: `1px solid ${c.accent}80`, borderRadius: 20, padding: "2px 8px", fontSize: 8.5, color: c.light, letterSpacing: 0.5 }}>
             {negocio.categoria}
           </div>
         </div>
 
-        {/* Big category icon */}
-        <div style={{ fontSize: 58, filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))", zIndex: 1 }}>
-          {getCat(negocio.categoria).icon}
-        </div>
+        {/* Category icon (only when no photo) */}
+        {!negocio.foto_url && (
+          <div style={{ fontSize: 58, filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))", zIndex: 1 }}>
+            {getCat(negocio.categoria).icon}
+          </div>
+        )}
 
         {/* Bottom fade overlay */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 40, background: `linear-gradient(to bottom, transparent, ${c.bg1})` }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 40, background: `linear-gradient(to bottom, transparent, ${c.bg1})`, zIndex: 2 }} />
       </div>
 
       {/* ── INFO AREA ── */}
@@ -158,28 +171,42 @@ function StoryPost({ negocio, profile, divRef }: {
         background: `radial-gradient(ellipse at 65% 35%, ${c.bg2} 0%, ${c.photo} 100%)`,
         display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
       }}>
-        <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: `${c.accent}15` }} />
-        <div style={{ position: "absolute", bottom: -20, left: -30, width: 130, height: 130, borderRadius: "50%", background: `${c.accent}10` }} />
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 180, height: 180, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}25 0%, transparent 70%)` }} />
+        {/* Real photo */}
+        {negocio.foto_url && (
+          <>
+            <img src={negocio.foto_url} crossOrigin="anonymous"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.65) 100%)" }} />
+          </>
+        )}
+
+        {/* Placeholder circles */}
+        {!negocio.foto_url && <>
+          <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: `${c.accent}15` }} />
+          <div style={{ position: "absolute", bottom: -20, left: -30, width: 130, height: 130, borderRadius: "50%", background: `${c.accent}10` }} />
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 180, height: 180, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}25 0%, transparent 70%)` }} />
+        </>}
 
         {/* Top bar */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 2 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 30, height: 30, borderRadius: 7, background: c.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#000" }}>NJ</div>
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" }}>NegócioJá</span>
+            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" }}>NegócioJá</span>
           </div>
-          <div style={{ background: `${c.accent}25`, border: `1px solid ${c.accent}50`, borderRadius: 20, padding: "2px 9px", fontSize: 8, color: c.light }}>
+          <div style={{ background: "rgba(0,0,0,0.45)", border: `1px solid ${c.accent}80`, borderRadius: 20, padding: "2px 9px", fontSize: 8, color: c.light }}>
             {negocio.categoria}
           </div>
         </div>
 
-        {/* Big icon */}
-        <div style={{ fontSize: 72, filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))", zIndex: 1 }}>
-          {getCat(negocio.categoria).icon}
-        </div>
+        {/* Icon placeholder */}
+        {!negocio.foto_url && (
+          <div style={{ fontSize: 72, filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))", zIndex: 1 }}>
+            {getCat(negocio.categoria).icon}
+          </div>
+        )}
 
         {/* Bottom fade */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 50, background: `linear-gradient(to bottom, transparent, ${c.bg1})` }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 50, background: `linear-gradient(to bottom, transparent, ${c.bg1})`, zIndex: 2 }} />
       </div>
 
       {/* ── INFO AREA ── */}
