@@ -1,5 +1,5 @@
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-2.5-flash-lite";
 
 export async function callClaude(
   prompt: string,
