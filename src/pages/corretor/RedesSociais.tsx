@@ -426,21 +426,29 @@ const CorretorRedesSociais = () => {
               {/* ── Seletor de categoria ── */}
               {!catSelecionada && (
                 <div className="grid grid-cols-2 gap-2">
-                  {catsComProdutos.length === 0 ? (
-                    <p className="col-span-2 text-center py-4 text-sm text-muted-foreground">Nenhum negócio ativo disponível</p>
-                  ) : catsComProdutos.map((cat) => {
+                  {TODAS_CATS.map((cat) => {
                     const c = getCat(cat);
                     const count = negocios.filter((n) => n.categoria === cat).length;
+                    const hasProducts = count > 0;
                     return (
-                      <button key={cat} onClick={() => handleSelectCategoria(cat)}
-                        className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 p-3 text-left hover:bg-muted/50 hover:border-primary/30 transition-all group">
-                        <div style={{ background: `${c.accent}20`, border: `1px solid ${c.accent}40` }}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-xl shrink-0">
+                      <button key={cat}
+                        onClick={() => hasProducts && handleSelectCategoria(cat)}
+                        disabled={!hasProducts}
+                        className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                          hasProducts
+                            ? "border-border bg-muted/20 hover:bg-muted/50 hover:border-primary/30 cursor-pointer"
+                            : "border-border/40 bg-muted/10 opacity-40 cursor-not-allowed"
+                        }`}>
+                        <div
+                          style={hasProducts ? { background: `${c.accent}20`, border: `1px solid ${c.accent}40` } : {}}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-xl shrink-0 bg-muted/30">
                           {c.icon}
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-foreground truncate">{cat}</p>
-                          <p className="text-xs text-muted-foreground">{count} produto{count !== 1 ? "s" : ""}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {hasProducts ? `${count} produto${count !== 1 ? "s" : ""}` : "sem produtos"}
+                          </p>
                         </div>
                       </button>
                     );
