@@ -7,6 +7,7 @@ import { getAllNegocios, formatCurrency, type Negocio } from "@/stores/negocioSt
 import {
   Instagram, MessageCircle, Download, Copy, Check, Loader2,
   Sparkles, Search, Megaphone, RefreshCw, ChevronLeft,
+  Store, TrendingUp, Target, Package,
 } from "lucide-react";
 
 interface Profile {
@@ -272,7 +273,171 @@ function StoryPost({ negocio, profile, divRef }: {
   );
 }
 
+// ─── Captação: Vendedor (360×360) ────────────────────────────────────────────
+function PostCaptacaoVendedor({ profile, bairro, divRef }: {
+  profile: Profile; bairro: string; divRef: React.RefObject<HTMLDivElement>;
+}) {
+  return (
+    <div ref={divRef} style={{
+      width: 360, height: 360, borderRadius: 14, overflow: "hidden",
+      display: "flex", flexDirection: "column",
+      fontFamily: "Arial, Helvetica, sans-serif",
+      background: "linear-gradient(145deg, #05140a 0%, #082010 40%, #0a2e18 100%)",
+      position: "relative", boxSizing: "border-box",
+    }}>
+      {/* Background decorations */}
+      <div style={{ position: "absolute", top: -60, right: -60, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle, #22c55e18 0%, transparent 70%)" }} />
+      <div style={{ position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, #16a34a12 0%, transparent 70%)" }} />
+      <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%,-50%)", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, #22c55e08 0%, transparent 65%)" }} />
+
+      {/* Top bar */}
+      <div style={{ position: "relative", zIndex: 2, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#000" }}>NA</div>
+          <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 8, letterSpacing: 2, textTransform: "uppercase" }}>NegociaAky</span>
+        </div>
+        <div style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", borderRadius: 20, padding: "3px 10px", fontSize: 8, color: "#86efac", fontWeight: 700, letterSpacing: 0.5 }}>
+          CAPTAÇÃO
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div style={{ flex: 1, position: "relative", zIndex: 2, padding: "8px 20px 0", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        {/* Big icon */}
+        <div style={{ fontSize: 42, marginBottom: 10, filter: "drop-shadow(0 4px 12px rgba(34,197,94,0.4))" }}>🏪</div>
+
+        {/* Headline */}
+        <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 6 }}>
+          Quer vender<br /><span style={{ color: "#4ade80" }}>seu negócio?</span>
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 14, lineHeight: 1.5 }}>
+          Intermediamos com segurança e sigilo total
+        </div>
+
+        {/* Value props */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          {[
+            "✅ Avaliação gratuita do negócio",
+            "✅ Base de compradores qualificados",
+            "✅ Processo 100% discreto",
+          ].map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "7px 10px" }}>
+              <span style={{ fontSize: 9.5, color: "#d1fae5", fontWeight: 600 }}>{item}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Bairro badge */}
+        {bairro && (
+          <div style={{ marginTop: 10, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, padding: "5px 10px", display: "inline-block" }}>
+            <span style={{ fontSize: 9, color: "#86efac", fontWeight: 700 }}>📍 Atendendo: {bairro}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom: corretor */}
+      <div style={{ position: "relative", zIndex: 2, padding: "10px 16px 14px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #22c55e", flexShrink: 0, background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {profile.foto_url
+            ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
+            : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(profile.nome)}</span>}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{profile.nome}</div>
+          {profile.creci && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)" }}>CRECI {profile.creci}</div>}
+        </div>
+        <div style={{ background: "#22c55e", borderRadius: 20, padding: "5px 12px", fontSize: 9, fontWeight: 800, color: "#000" }}>
+          💬 Fale comigo
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Captação: Investidor (360×360) ─────────────────────────────────────────
+function PostCaptacaoInvestidor({ profile, bairro, divRef }: {
+  profile: Profile; bairro: string; divRef: React.RefObject<HTMLDivElement>;
+}) {
+  return (
+    <div ref={divRef} style={{
+      width: 360, height: 360, borderRadius: 14, overflow: "hidden",
+      display: "flex", flexDirection: "column",
+      fontFamily: "Arial, Helvetica, sans-serif",
+      background: "linear-gradient(145deg, #030b1a 0%, #060f2a 40%, #091535 100%)",
+      position: "relative", boxSizing: "border-box",
+    }}>
+      {/* Background decorations */}
+      <div style={{ position: "absolute", top: -50, right: -50, width: 210, height: 210, borderRadius: "50%", background: "radial-gradient(circle, #3b82f618 0%, transparent 70%)" }} />
+      <div style={{ position: "absolute", bottom: -40, left: -30, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, #1d4ed810 0%, transparent 70%)" }} />
+      <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%,-50%)", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, #6366f108 0%, transparent 65%)" }} />
+
+      {/* Top bar */}
+      <div style={{ position: "relative", zIndex: 2, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: "#C49A1E", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#000" }}>NA</div>
+          <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 8, letterSpacing: 2, textTransform: "uppercase" }}>NegociaAky</span>
+        </div>
+        <div style={{ background: "rgba(196,154,30,0.15)", border: "1px solid rgba(196,154,30,0.4)", borderRadius: 20, padding: "3px 10px", fontSize: 8, color: "#fde68a", fontWeight: 700, letterSpacing: 0.5 }}>
+          OPORTUNIDADE
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div style={{ flex: 1, position: "relative", zIndex: 2, padding: "8px 20px 0", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        {/* Big icon */}
+        <div style={{ fontSize: 42, marginBottom: 10, filter: "drop-shadow(0 4px 12px rgba(196,154,30,0.4))" }}>📈</div>
+
+        {/* Headline */}
+        <div style={{ fontSize: 21, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 6 }}>
+          Quer investir em<br /><span style={{ color: "#C49A1E" }}>um negócio lucrativo?</span>
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 14, lineHeight: 1.5 }}>
+          Negócios com ROI comprovado disponíveis agora
+        </div>
+
+        {/* Value props */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          {[
+            "🏆 Vários segmentos e ticket de entrada",
+            "📊 Dados financeiros verificados",
+            "🤝 Suporte completo na transação",
+          ].map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "7px 10px" }}>
+              <span style={{ fontSize: 9.5, color: "#fef9c3", fontWeight: 600 }}>{item}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Bairro badge */}
+        {bairro && (
+          <div style={{ marginTop: 10, background: "rgba(196,154,30,0.12)", border: "1px solid rgba(196,154,30,0.3)", borderRadius: 8, padding: "5px 10px", display: "inline-block" }}>
+            <span style={{ fontSize: 9, color: "#fde68a", fontWeight: 700 }}>📍 Região: {bairro}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom: corretor */}
+      <div style={{ position: "relative", zIndex: 2, padding: "10px 16px 14px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #C49A1E", flexShrink: 0, background: "#1c1208", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {profile.foto_url
+            ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
+            : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(profile.nome)}</span>}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{profile.nome}</div>
+          {profile.creci && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)" }}>CRECI {profile.creci}</div>}
+        </div>
+        <div style={{ background: "#C49A1E", borderRadius: 20, padding: "5px 12px", fontSize: 9, fontWeight: 800, color: "#000" }}>
+          💬 Fale comigo
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
+type Aba = "negocios" | "captacao";
+type TipoCaptacao = "vendedor" | "investidor";
 type Formato = "post" | "story" | "status";
 
 const FORMATO_CONFIG: Record<Formato, { label: string; icon: React.ReactNode; desc: string; color: string }> = {
@@ -289,6 +454,19 @@ const CorretorRedesSociais = () => {
   const [negocios, setNegocios]       = useState<Negocio[]>([]);
   const [profile, setProfile]         = useState<Profile>({ nome: "", telefone: "", foto_url: "", creci: "" });
   const [loading, setLoading]         = useState(true);
+
+  // Abas
+  const [aba, setAba]                 = useState<Aba>("negocios");
+
+  // Captação
+  const [tipoCaptacao, setTipoCaptacao] = useState<TipoCaptacao>("vendedor");
+  const [bairro, setBairro]           = useState("");
+  const [copyCaptacao, setCopyCaptacao] = useState("");
+  const [generatingCopyCaptacao, setGeneratingCopyCaptacao] = useState(false);
+  const [copiedCaptacao, setCopiedCaptacao] = useState(false);
+  const [downloadingCaptacao, setDownloadingCaptacao] = useState(false);
+  const captacaoVendedorRef = useRef<HTMLDivElement>(null);
+  const captacaoInvestidorRef = useRef<HTMLDivElement>(null);
 
   // Seleção por categoria
   const [catSelecionada, setCatSelecionada] = useState<string | null>(null);
@@ -350,6 +528,51 @@ const CorretorRedesSociais = () => {
     setSelected(null);
     setShowNegociosPicker(false);
     setCopy("");
+  };
+
+  const handleGerarCopyCaptacao = async () => {
+    setGeneratingCopyCaptacao(true);
+    setCopyCaptacao("");
+    const corretorInfo = `Corretor: ${profile.nome}${profile.creci ? " · CRECI " + profile.creci : ""}${profile.telefone ? " · " + formatPhone(profile.telefone) : ""}`;
+    const localInfo = bairro ? `Região/bairro de atuação: ${bairro}` : "";
+
+    const prompts: Record<TipoCaptacao, Record<Formato, string>> = {
+      vendedor: {
+        post: `Você é especialista em marketing imobiliário e de negócios no Brasil.\nCrie APENAS uma legenda para Instagram voltada para DONOS DE NEGÓCIO que podem querer VENDER seu estabelecimento.\nTom: profissional, empático, direto. Use emojis estratégicos. Máx 10 linhas. CTA para WhatsApp no final. Finalize com 15 hashtags focadas em venda de negócios.\n\n${localInfo}\n${corretorInfo}`,
+        story: `Crie APENAS um texto curto para Instagram Story (máx 4 linhas) voltado para donos de negócio que querem vender. Tom urgente e direto. CTA "Me chama no WhatsApp". Sem hashtags.\n\n${localInfo}\n${corretorInfo}`,
+        status: `Crie APENAS um texto curto para Status WhatsApp (máx 5 linhas) direcionado a donos de negócio do bairro que pensam em vender. Linguagem descontraída, com emojis. CTA "Me chama". Sem hashtags.\n\n${localInfo}\n${corretorInfo}`,
+      },
+      investidor: {
+        post: `Você é especialista em marketing de investimentos e negócios no Brasil.\nCrie APENAS uma legenda para Instagram voltada para INVESTIDORES que buscam comprar um negócio lucrativo.\nTom: entusiasmado, confiante, persuasivo. Use emojis estratégicos. Máx 10 linhas. CTA para WhatsApp. Finalize com 15 hashtags focadas em investimento em negócios.\n\n${localInfo}\n${corretorInfo}`,
+        story: `Crie APENAS um texto curto para Instagram Story (máx 4 linhas) voltado para quem quer investir comprando um negócio. Tom direto e instigante. CTA "Me chama no WhatsApp". Sem hashtags.\n\n${localInfo}\n${corretorInfo}`,
+        status: `Crie APENAS um texto curto para Status WhatsApp (máx 5 linhas) voltado a investidores do bairro interessados em comprar negócios. Linguagem descontraída com emojis. CTA "Me chama". Sem hashtags.\n\n${localInfo}\n${corretorInfo}`,
+      },
+    };
+
+    try {
+      const result = await callClaude(prompts[tipoCaptacao][formato]);
+      setCopyCaptacao(result.trim());
+    } catch {
+      setCopyCaptacao("Erro ao gerar copy. Verifique sua conexão e tente novamente.");
+    } finally {
+      setGeneratingCopyCaptacao(false);
+    }
+  };
+
+  const handleDownloadCaptacao = async () => {
+    const ref = tipoCaptacao === "vendedor" ? captacaoVendedorRef : captacaoInvestidorRef;
+    if (!ref.current) return;
+    setDownloadingCaptacao(true);
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(ref.current, { scale: 3, useCORS: true, backgroundColor: null });
+      const link = document.createElement("a");
+      link.download = `captacao-${tipoCaptacao}-${Date.now()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setDownloadingCaptacao(false);
+    }
   };
 
   const handleGerarCopy = async () => {
@@ -430,6 +653,166 @@ const CorretorRedesSociais = () => {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-2 rounded-2xl border border-border bg-card p-1.5">
+          <button
+            onClick={() => setAba("negocios")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all ${aba === "negocios" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/40"}`}>
+            <Package className="h-4 w-4" />
+            Negócios à Venda
+          </button>
+          <button
+            onClick={() => setAba("captacao")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all ${aba === "captacao" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/40"}`}>
+            <Target className="h-4 w-4" />
+            Captação de Clientes
+          </button>
+        </div>
+
+        {/* ──────────────────── ABA: CAPTAÇÃO ──────────────────── */}
+        {aba === "captacao" && (
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Coluna esquerda */}
+            <div className="space-y-4">
+
+              {/* STEP 1: Tipo */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">1</div>
+                  <p className="font-semibold text-foreground text-sm">Tipo de captação</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => { setTipoCaptacao("vendedor"); setCopyCaptacao(""); }}
+                    className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all ${tipoCaptacao === "vendedor" ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-700 text-xl">🏪</div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Captação Vendedor</p>
+                      <p className="text-xs text-muted-foreground leading-tight mt-0.5">Para donos de negócio que querem vender</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => { setTipoCaptacao("investidor"); setCopyCaptacao(""); }}
+                    className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all ${tipoCaptacao === "investidor" ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-700 text-xl">📈</div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Captação Investidor</p>
+                      <p className="text-xs text-muted-foreground leading-tight mt-0.5">Para quem quer comprar um negócio</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* STEP 2: Bairro/Região */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">2</div>
+                  <p className="font-semibold text-foreground text-sm">Bairro / Região <span className="text-muted-foreground font-normal">(opcional)</span></p>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Ex: Centro, Vila Madalena, Savassi..."
+                  value={bairro}
+                  onChange={(e) => setBairro(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <p className="text-xs text-muted-foreground">Personaliza a arte e o copy para o seu território de atuação</p>
+              </div>
+
+              {/* STEP 3: Formato */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">3</div>
+                  <p className="font-semibold text-foreground text-sm">Formato</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(Object.entries(FORMATO_CONFIG) as [Formato, typeof FORMATO_CONFIG[Formato]][]).map(([key, cfg]) => (
+                    <button key={key} onClick={() => { setFormato(key); setCopyCaptacao(""); }}
+                      className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-medium transition-all ${formato === key ? "border-primary bg-primary/5 text-primary" : "border-border bg-muted/20 text-muted-foreground hover:bg-muted/40"}`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${cfg.color} text-white`}>{cfg.icon}</div>
+                      <span className="leading-tight text-center">{cfg.label}</span>
+                      <span className="text-[10px] opacity-60">{cfg.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* STEP 4: Copy com IA */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">4</div>
+                  <p className="font-semibold text-foreground text-sm">Texto / Copy com IA</p>
+                </div>
+                <button onClick={handleGerarCopyCaptacao} disabled={generatingCopyCaptacao}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-40">
+                  {generatingCopyCaptacao
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Gerando com IA...</>
+                    : <><Sparkles className="h-4 w-4" /> Gerar Copy com IA</>}
+                </button>
+                {copyCaptacao && (
+                  <div className="space-y-2">
+                    <textarea value={copyCaptacao} onChange={(e) => setCopyCaptacao(e.target.value)} rows={8}
+                      className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                    <div className="flex gap-2">
+                      <button onClick={() => { navigator.clipboard.writeText(copyCaptacao); setCopiedCaptacao(true); setTimeout(() => setCopiedCaptacao(false), 2500); }}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary/90">
+                        {copiedCaptacao ? <><Check className="h-3.5 w-3.5" /> Copiado!</> : <><Copy className="h-3.5 w-3.5" /> Copiar texto</>}
+                      </button>
+                      <button onClick={handleGerarCopyCaptacao} disabled={generatingCopyCaptacao}
+                        className="flex items-center gap-1 rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/70 disabled:opacity-40">
+                        <RefreshCw className={`h-3.5 w-3.5 ${generatingCopyCaptacao ? "animate-spin" : ""}`} /> Regerar
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {!copyCaptacao && !generatingCopyCaptacao && (
+                  <div className="flex flex-col items-center justify-center py-4 text-center">
+                    <Sparkles className="h-8 w-8 opacity-15 mb-2" />
+                    <p className="text-xs text-muted-foreground">Clique em gerar para criar o texto</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Coluna direita: preview */}
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-foreground text-sm">Preview da Arte</p>
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground font-medium">
+                    {tipoCaptacao === "vendedor" ? "🏪 Vendedor" : "📈 Investidor"}
+                  </span>
+                </div>
+                <div className="flex justify-center">
+                  {tipoCaptacao === "vendedor"
+                    ? <PostCaptacaoVendedor profile={profile} bairro={bairro} divRef={captacaoVendedorRef} />
+                    : <PostCaptacaoInvestidor profile={profile} bairro={bairro} divRef={captacaoInvestidorRef} />
+                  }
+                </div>
+                <button onClick={handleDownloadCaptacao} disabled={downloadingCaptacao}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-bold text-background hover:bg-foreground/90 transition-colors disabled:opacity-50">
+                  {downloadingCaptacao
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Gerando PNG...</>
+                    : <><Download className="h-4 w-4" /> Baixar Arte em PNG</>}
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs font-semibold text-amber-700 mb-1">🎯 Como usar no WhatsApp</p>
+                <ol className="text-xs text-amber-600 space-y-1 list-decimal list-inside">
+                  <li>Escolha o tipo: <strong>Vendedor</strong> (dono que quer vender) ou <strong>Investidor</strong> (quem quer comprar)</li>
+                  <li>Adicione o bairro para personalizar</li>
+                  <li>Gere o copy com IA e ajuste</li>
+                  <li>Baixe a arte e poste no grupo de negócios do bairro</li>
+                  <li>Cole o texto junto com a imagem</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ──────────────────── ABA: NEGÓCIOS À VENDA ──────────────────── */}
+        {aba === "negocios" && (
         <div className="grid gap-6 lg:grid-cols-2">
 
           {/* ─── COLUNA ESQUERDA ─── */}
@@ -643,6 +1026,7 @@ const CorretorRedesSociais = () => {
             </div>
           </div>
         </div>
+        )} {/* fim aba negocios */}
       </div>
     </CorretorLayout>
   );
