@@ -3,6 +3,7 @@ import usePageTitle from "@/hooks/usePageTitle";
 import CorretorLayout from "@/components/corretor/CorretorLayout";
 import { callClaude } from "@/lib/anthropic";
 import { supabase } from "@/lib/supabase";
+import { getEmpresaConfig, type EmpresaConfig } from "@/lib/empresaConfig";
 import {
   Calculator, TrendingUp, DollarSign, Clock, Sparkles,
   Copy, Check, Loader2, ChevronDown, ChevronUp, Info,
@@ -122,26 +123,26 @@ function CampoMoeda({ label, value, onChange, placeholder, hint, autoCalc, onRes
 const CalculadoraROI = () => {
   usePageTitle("Calculadora ROI | Área do Corretor");
 
-  // ── Perfil do corretor ──
-  const [corretor, setCorretor] = useState<{
-    nome: string; creci: string; telefone: string; email: string;
-  }>({ nome: "", creci: "", telefone: "", email: "" });
+  // ── Perfil do corretor + config da empresa ──
+  const [corretor, setCorretor] = useState<{ nome: string; creci: string }>({ nome: "", creci: "" });
+  const [empresa,  setEmpresa]  = useState<EmpresaConfig | null>(null);
 
   useEffect(() => {
+    // Busca perfil do corretor (só nome + CRECI)
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("nome, creci, telefone, email")
+        .select("nome, creci")
         .eq("id", data.session.user.id)
         .single();
       if (profile) setCorretor({
-        nome:     profile.nome     || data.session.user.user_metadata?.nome || "",
-        creci:    profile.creci    || "",
-        telefone: profile.telefone || "",
-        email:    profile.email    || data.session.user.email || "",
+        nome:  profile.nome  || data.session.user.user_metadata?.nome || "",
+        creci: profile.creci || "",
       });
     });
+    // Busca dados da empresa para contato nos PDFs
+    getEmpresaConfig().then(setEmpresa);
   }, []);
 
   // ── Inputs ──
@@ -229,12 +230,13 @@ const CalculadoraROI = () => {
 
   const pronto = precoTotal > 0 && faturamento > 0 && lucroLiquido > 0;
 
-  // ── Credenciais para assinatura ───────────────────────────────────────────
+  // ── Assinatura: corretor (nome+CRECI) + contato da empresa ───────────────
   const assinatura = [
-    corretor.nome  ? `${corretor.nome}`              : "",
-    corretor.creci ? `CRECI: ${corretor.creci}`      : "",
-    corretor.telefone ? `WhatsApp: ${corretor.telefone}` : "",
-    corretor.email ? corretor.email                  : "",
+    corretor.nome  ? corretor.nome             : "",
+    corretor.creci ? `CRECI: ${corretor.creci}`: "",
+    empresa?.whatsapp ? `WhatsApp: ${empresa.whatsapp}` : "",
+    empresa?.email    ? empresa.email          : "",
+    empresa?.site     ? empresa.site           : "",
   ].filter(Boolean).join(" | ");
 
   // ── Gerar argumento IA ───────────────────────────────────────────────────
@@ -669,17 +671,26 @@ ${dados}`
                 </div>
               )}
 
-              {/* Rodapé com credenciais do corretor */}
-              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 10, color: "#94a3b8" }}>
-                  Os valores são baseados nos dados informados. Valide com documentação real.
+              {/* Rodapé — corretor credenciado + contato da empresa */}
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 4 }}>
+                    Os valores são baseados nos dados informados. Valide com documentação real.
+                  </div>
+                  {corretor.nome && (
+                    <div style={{ fontSize: 11, color: "#64748b" }}>
+                      Apresentado por: <strong style={{ color: "#374151" }}>{corretor.nome}</strong>
+                      {corretor.creci ? ` — CRECI: ${corretor.creci}` : ""}
+                    </div>
+                  )}
                 </div>
-                {assinatura && (
+                {empresa && (
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8" }}>{corretor.nome}</div>
-                    {corretor.creci    && <div style={{ fontSize: 10, color: "#64748b" }}>CRECI: {corretor.creci}</div>}
-                    {corretor.telefone && <div style={{ fontSize: 10, color: "#64748b" }}>📱 {corretor.telefone}</div>}
-                    {corretor.email    && <div style={{ fontSize: 10, color: "#64748b" }}>{corretor.email}</div>}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>{empresa.nome}</div>
+                    {empresa.whatsapp  && <div style={{ fontSize: 10, color: "#64748b" }}>📱 {empresa.whatsapp}</div>}
+                    {empresa.email     && <div style={{ fontSize: 10, color: "#64748b" }}>✉️ {empresa.email}</div>}
+                    {empresa.site      && <div style={{ fontSize: 10, color: "#64748b" }}>🌐 {empresa.site}</div>}
+                    {empresa.instagram && <div style={{ fontSize: 10, color: "#64748b" }}>📸 {empresa.instagram}</div>}
                   </div>
                 )}
               </div>
@@ -788,11 +799,13 @@ ${dados}`
                 <Sparkles className="h-5 w-5 text-violet-600" />
                 <h2 className="font-semibold text-foreground text-sm">Argumento de Investimento com IA</h2>
               </div>
-              {corretor.nome && (
-                <div className="flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/20 px-3 py-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+              {(corretor.nome || empresa) && (
+                <div className="flex items-start gap-2 rounded-xl bg-primary/5 border border-primary/20 px-3 py-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
                   <p className="text-xs text-primary">
-                    O argumento será assinado com suas credenciais: <strong>{assinatura}</strong>
+                    Assinado por <strong>{corretor.nome || "você"}</strong>{corretor.creci ? ` (CRECI: ${corretor.creci})` : ""}
+                    {empresa?.whatsapp ? ` · ${empresa.whatsapp}` : ""}
+                    {empresa?.site     ? ` · ${empresa.site}`     : ""}
                   </p>
                 </div>
               )}

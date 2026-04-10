@@ -48,6 +48,7 @@ const CorretorRedesSociais = lazy(() => import("./pages/corretor/RedesSociais"))
 const CorretorCalculadoraROI = lazy(() => import("./pages/corretor/CalculadoraROI"));
 const CorretorPerfil = lazy(() => import("./pages/corretor/Perfil"));
 const AdminMateriais = lazy(() => import("./pages/admin/Materiais"));
+const AdminConfiguracoes = lazy(() => import("./pages/admin/Configuracoes"));
 
 const queryClient = new QueryClient();
 
@@ -94,6 +95,7 @@ const App = () => (
                   <Route path="/admin/negocios" element={<ProtectedRoute><AdminNegocios /></ProtectedRoute>} />
                   <Route path="/admin/corretores" element={<ProtectedRoute><AdminCorretores /></ProtectedRoute>} />
                   <Route path="/admin/materiais" element={<ProtectedRoute><AdminMateriais /></ProtectedRoute>} />
+                  <Route path="/admin/configuracoes" element={<ProtectedRoute><AdminConfiguracoes /></ProtectedRoute>} />
                   <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
 
                   {/* Corretor */}
