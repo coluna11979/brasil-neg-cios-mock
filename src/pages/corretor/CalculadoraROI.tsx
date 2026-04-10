@@ -356,11 +356,11 @@ ${dados}`
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Entrada */}
-              <CampoMoeda label="Entrada *"
+              <CampoMoeda label="Entrada (parte inicial) *"
                 value={entradaInput}
                 onChange={(v) => setEntradaInput(v)}
-                placeholder={precoTotal > 0 ? precoTotal.toLocaleString("pt-BR") : "150.000"}
-                hint="Capital inicial do comprador" />
+                placeholder="150.000"
+                hint={precoTotal > 0 ? `Preço total: ${fmt(precoTotal)}` : "Capital inicial do comprador"} />
 
               {/* Nº parcelas */}
               <div className="space-y-1.5">
@@ -379,20 +379,30 @@ ${dados}`
                 label="Valor da parcela"
                 value={valorParcelaInput}
                 onChange={(v) => { setValorParcelaInput(v); setParcelaManual(true); }}
-                placeholder={parcelaAutoCalc > 0 ? parcelaAutoCalc.toLocaleString("pt-BR") : "—"}
+                placeholder={parcelaAutoCalc > 0 ? parcelaAutoCalc.toLocaleString("pt-BR") : "10.000"}
                 disabled={numParcelas === 0}
                 autoCalc={!parcelaManual && parcelaAutoCalc > 0}
                 onReset={() => { setParcelaManual(false); }}
               />
             </div>
 
+            {/* Alerta: entrada >= preço total */}
+            {numParcelas > 0 && entrada > 0 && precoTotal > 0 && entrada >= precoTotal && (
+              <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-700">
+                  <strong>A entrada ({fmt(entrada)}) cobre o valor total.</strong> Para calcular as parcelas automaticamente, informe uma entrada <em>menor</em> que o preço total ({fmt(precoTotal)}).
+                  <br />Ou deixe o campo de parcela em branco e digite o valor manualmente.
+                </div>
+              </div>
+            )}
+
             {/* Resumo do deal — sempre visível quando preço preenchido */}
             {precoTotal > 0 && (
               <div className="rounded-xl overflow-hidden border border-border">
                 {/* linha de status do parcelamento */}
-                {numParcelas > 0 && entrada > 0 && (
-                  <div className={`px-4 py-2 text-xs font-medium flex items-center justify-between
-                    ${restanteParcelar > 0 ? "bg-amber-50 text-amber-700 border-b border-amber-100" : "bg-green-50 text-green-700 border-b border-green-100"}`}>
+                {numParcelas > 0 && entrada > 0 && restanteParcelar > 0 && (
+                  <div className="px-4 py-2 text-xs font-medium flex items-center justify-between bg-amber-50 text-amber-700 border-b border-amber-100">
                     <span>Restante a parcelar: <strong>{fmt(restanteParcelar)}</strong></span>
                     {parcelaAutoCalc > 0 && <span>{numParcelas}× de <strong>{fmt(parcelaAutoCalc)}</strong></span>}
                   </div>
