@@ -44,6 +44,7 @@ const CorretorLeads = lazy(() => import("./pages/corretor/Leads"));
 const CorretorPipeline = lazy(() => import("./pages/corretor/Pipeline"));
 const CorretorDesempenho = lazy(() => import("./pages/corretor/Desempenho"));
 const CorretorMateriais = lazy(() => import("./pages/corretor/Materiais"));
+const CorretorRedesSociais = lazy(() => import("./pages/corretor/RedesSociais"));
 const CorretorPerfil = lazy(() => import("./pages/corretor/Perfil"));
 const AdminMateriais = lazy(() => import("./pages/admin/Materiais"));
 
@@ -101,6 +102,7 @@ const App = () => (
                   <Route path="/corretor/leads" element={<CorretorLeads />} />
                   <Route path="/corretor/pipeline" element={<CorretorPipeline />} />
                   <Route path="/corretor/desempenho" element={<CorretorDesempenho />} />
+                  <Route path="/corretor/redes-sociais" element={<CorretorRedesSociais />} />
                   <Route path="/corretor/materiais" element={<CorretorMateriais />} />
                   <Route path="/corretor/perfil" element={<CorretorPerfil />} />
 

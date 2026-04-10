@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { MessageCircle, Users, LogOut, UserCircle, Menu, X, Clock, Phone, Loader2, AlertTriangle, TrendingUp, BarChart3, Camera, Package, UserCog } from "lucide-react";
+import { MessageCircle, Users, LogOut, UserCircle, Menu, X, Clock, Phone, Loader2, AlertTriangle, TrendingUp, BarChart3, Camera, Package, UserCog, Megaphone } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { logout } from "@/stores/authStore";
 
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/corretor/leads", label: "Meus Leads", icon: Users },
   { to: "/corretor/pipeline", label: "Pipeline", icon: TrendingUp },
   { to: "/corretor/desempenho", label: "Desempenho", icon: BarChart3 },
+  { to: "/corretor/redes-sociais", label: "Redes Sociais", icon: Megaphone },
   { to: "/corretor/materiais", label: "Materiais", icon: Package },
   { to: "/corretor/perfil", label: "Meu Perfil", icon: UserCog },
 ];
