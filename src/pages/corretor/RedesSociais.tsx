@@ -439,12 +439,83 @@ function PostCaptacaoInvestidor({ profile, bairro, divRef }: {
 type Aba = "negocios" | "captacao";
 type TipoCaptacao = "vendedor" | "investidor";
 type Formato = "post" | "story" | "status";
+type GatilhoMental = "urgencia" | "escassez" | "fomo" | "ganancia" | "prova_social" | "curiosidade" | "autoridade" | "transformacao";
 
 const FORMATO_CONFIG: Record<Formato, { label: string; icon: React.ReactNode; desc: string; color: string }> = {
   post:   { label: "Post Instagram",  icon: <Instagram className="h-4 w-4" />,     desc: "1080×1080",     color: "from-pink-500 to-purple-600" },
   story:  { label: "Story Instagram", icon: <Instagram className="h-4 w-4" />,     desc: "1080×1920",     color: "from-violet-500 to-pink-500" },
   status: { label: "Status WhatsApp", icon: <MessageCircle className="h-4 w-4" />, desc: "9:16 pessoal",  color: "from-green-500 to-emerald-600" },
 };
+
+const GATILHOS: Record<GatilhoMental, { icon: string; label: string; desc: string; bg: string; instrucao: string }> = {
+  urgencia:      { icon: "🔥", label: "Urgência",      desc: "Agora ou nunca",         bg: "from-orange-500 to-red-600",     instrucao: "O GATILHO PRINCIPAL É URGÊNCIA. Crie pressão temporal real e irresistível. Use frases como 'não vai durar', 'última chance', 'decida hoje'. Faça o leitor sentir que cada segundo que passa é uma oportunidade perdida para sempre." },
+  escassez:      { icon: "💎", label: "Escassez",      desc: "Raro e exclusivo",        bg: "from-purple-500 to-indigo-600",  instrucao: "O GATILHO PRINCIPAL É ESCASSEZ. Enfatize que é único, raro de encontrar no mercado, que oportunidades assim surgem poucas vezes na vida. Use frases como 'único disponível', 'raridade no mercado', 'difícil encontrar algo assim'." },
+  fomo:          { icon: "😱", label: "FOMO",          desc: "Medo de perder",          bg: "from-yellow-500 to-orange-500",  instrucao: "O GATILHO PRINCIPAL É FOMO (Fear Of Missing Out). Pinte o cenário do arrependimento — como o leitor vai se sentir daqui a 6 meses quando outro aproveitou essa chance. Mencione que outros já estão de olho nisso." },
+  ganancia:      { icon: "💰", label: "ROI & Lucro",   desc: "Retorno financeiro",      bg: "from-green-500 to-emerald-600",  instrucao: "O GATILHO PRINCIPAL É GANÂNCIA/ROI. Foque 100% em dinheiro: retorno, lucro mensal, payback, quanto o dinheiro vai render. Seja concreto com números se disponíveis. Faça o leitor calcular mentalmente o quanto vai ganhar." },
+  prova_social:  { icon: "👥", label: "Prova Social",  desc: "Validado pelo mercado",   bg: "from-blue-500 to-cyan-600",      instrucao: "O GATILHO PRINCIPAL É PROVA SOCIAL. Valide com dados de mercado, mencione que negócios assim são muito procurados, que o segmento está em alta, que investidores inteligentes já estão nesse mercado. Construa consenso." },
+  curiosidade:   { icon: "🧠", label: "Curiosidade",   desc: "Intriga e teaser",        bg: "from-pink-500 to-rose-600",      instrucao: "O GATILHO PRINCIPAL É CURIOSIDADE. Comece com uma pergunta ou afirmação que o leitor nunca viu antes. Revele informações em camadas, deixando sempre algo para descobrir. O leitor deve sentir que precisa saber mais antes de agir." },
+  autoridade:    { icon: "🏆", label: "Autoridade",    desc: "Expertise e confiança",   bg: "from-amber-500 to-yellow-600",   instrucao: "O GATILHO PRINCIPAL É AUTORIDADE. Posicione o corretor e a empresa como referência absoluta no mercado de negócios da região. Use linguagem de especialista, dados de mercado, terminologia profissional. Transmita que essa é a fonte mais confiável para esse tipo de transação." },
+  transformacao: { icon: "🚀", label: "Transformação", desc: "Mude sua vida hoje",      bg: "from-violet-500 to-purple-600",  instrucao: "O GATILHO PRINCIPAL É TRANSFORMAÇÃO. Pinte o antes e depois de forma vívida. Como é a vida hoje vs como será após essa decisão. Fale sobre independência financeira, realização de sonhos, liberdade. Faça o leitor se ver no futuro que deseja." },
+};
+
+// ─── Expert copy builder ──────────────────────────────────────────────────────
+function buildCopyPrompt(params: {
+  contexto: "negocio_venda" | "captacao_vendedor" | "captacao_investidor";
+  formato: Formato;
+  gatilho: GatilhoMental;
+  dadosNegocio?: string;
+  localInfo?: string;
+  corretorInfo: string;
+}): string {
+  const { contexto, formato, gatilho, dadosNegocio, localInfo, corretorInfo } = params;
+  const g = GATILHOS[gatilho];
+
+  const formatRules: Record<Formato, string> = {
+    post:   "FORMATO: Post Instagram. Máximo 10 linhas de texto corrido. Use emojis estrategicamente (1 por linha no máximo). Finalize com exatamente 15 hashtags relevantes ao mercado de negócios no Brasil.",
+    story:  "FORMATO: Story Instagram. Máximo 4 linhas MUITO curtas e impactantes. 1 frase de CTA no final ('Manda mensagem agora!'). Sem hashtags. Tom urgente e visual.",
+    status: "FORMATO: Status WhatsApp para grupo de negócios do bairro. Máximo 5 linhas. Linguagem próxima, como se fosse de um vizinho confiável. 1 CTA simples no final. Sem hashtags.",
+  };
+
+  const audiencias: Record<typeof contexto, string> = {
+    negocio_venda:       "PÚBLICO-ALVO: Compradores e investidores que buscam adquirir um negócio lucrativo.",
+    captacao_vendedor:   "PÚBLICO-ALVO: Donos de negócio do bairro que podem estar pensando em vender seu estabelecimento.",
+    captacao_investidor: "PÚBLICO-ALVO: Investidores e empreendedores que querem comprar um negócio pronto e lucrativo.",
+  };
+
+  const contextoCopy: Record<typeof contexto, string> = {
+    negocio_venda:       "OBJETIVO: Anunciar este negócio À VENDA e atrair compradores qualificados para entrar em contato com o corretor.",
+    captacao_vendedor:   "OBJETIVO: Fazer donos de negócio do bairro entrarem em contato com o corretor para AVALIAR e LISTAR seu negócio para venda.",
+    captacao_investidor: "OBJETIVO: Fazer investidores entrarem em contato com o corretor para CONHECER as oportunidades de negócios disponíveis.",
+  };
+
+  const metodo = `
+MÉTODO DE COPYWRITING — ESTRUTURA AIDA AVANÇADA:
+• A (ATENÇÃO): Primeira linha explosiva que para o scroll instantaneamente. Use o gatilho selecionado aqui.
+• I (INTERESSE): 2-3 elementos que desenvolvem por que isso é relevante. Dados concretos valem ouro.
+• D (DESEJO): Faça o leitor se imaginar na situação ideal. Pinte a transformação ou o ganho com detalhes sensoriais.
+• A (AÇÃO): CTA único, claro, com senso de facilidade. "Manda mensagem" > "Entre em contato".`;
+
+  const dados = dadosNegocio ? `\nDADOS DO NEGÓCIO:\n${dadosNegocio}` : (localInfo ? `\nREGIÃO DE ATUAÇÃO: ${localInfo}` : "");
+
+  return `Você é um especialista em copywriting persuasivo para redes sociais no mercado de compra e venda de negócios no Brasil. Seu nível é de um redator sênior com 10+ anos de experiência em anúncios de alta conversão.
+
+${audiencias[contexto]}
+${contextoCopy[contexto]}
+
+${g.instrucao}
+
+${metodo}
+
+${formatRules[formato]}
+
+REGRAS ABSOLUTAS:
+- Retorne APENAS o texto final pronto para copiar e colar. Sem explicações, sem títulos, sem "Aqui está o texto:".
+- Nunca use clichês como "Oportunidade imperdível" sem desenvolvê-los com dados concretos.
+- O gancho da primeira linha deve ser diferente de qualquer coisa que o leitor já viu.
+- O CTA deve ser específico e direto ao ponto.
+${dados}
+${corretorInfo}`;
+}
 
 const TODAS_CATS = Object.keys(CAT);
 
@@ -457,6 +528,9 @@ const CorretorRedesSociais = () => {
 
   // Abas
   const [aba, setAba]                 = useState<Aba>("negocios");
+
+  // Gatilho mental (compartilhado entre abas)
+  const [gatilho, setGatilho]         = useState<GatilhoMental>("urgencia");
 
   // Captação
   const [tipoCaptacao, setTipoCaptacao] = useState<TipoCaptacao>("vendedor");
@@ -534,23 +608,15 @@ const CorretorRedesSociais = () => {
     setGeneratingCopyCaptacao(true);
     setCopyCaptacao("");
     const corretorInfo = `Corretor: ${profile.nome}${profile.creci ? " · CRECI " + profile.creci : ""}${profile.telefone ? " · " + formatPhone(profile.telefone) : ""}`;
-    const localInfo = bairro ? `Região/bairro de atuação: ${bairro}` : "";
-
-    const prompts: Record<TipoCaptacao, Record<Formato, string>> = {
-      vendedor: {
-        post: `Você é especialista em marketing imobiliário e de negócios no Brasil.\nCrie APENAS uma legenda para Instagram voltada para DONOS DE NEGÓCIO que podem querer VENDER seu estabelecimento.\nTom: profissional, empático, direto. Use emojis estratégicos. Máx 10 linhas. CTA para WhatsApp no final. Finalize com 15 hashtags focadas em venda de negócios.\n\n${localInfo}\n${corretorInfo}`,
-        story: `Crie APENAS um texto curto para Instagram Story (máx 4 linhas) voltado para donos de negócio que querem vender. Tom urgente e direto. CTA "Me chama no WhatsApp". Sem hashtags.\n\n${localInfo}\n${corretorInfo}`,
-        status: `Crie APENAS um texto curto para Status WhatsApp (máx 5 linhas) direcionado a donos de negócio do bairro que pensam em vender. Linguagem descontraída, com emojis. CTA "Me chama". Sem hashtags.\n\n${localInfo}\n${corretorInfo}`,
-      },
-      investidor: {
-        post: `Você é especialista em marketing de investimentos e negócios no Brasil.\nCrie APENAS uma legenda para Instagram voltada para INVESTIDORES que buscam comprar um negócio lucrativo.\nTom: entusiasmado, confiante, persuasivo. Use emojis estratégicos. Máx 10 linhas. CTA para WhatsApp. Finalize com 15 hashtags focadas em investimento em negócios.\n\n${localInfo}\n${corretorInfo}`,
-        story: `Crie APENAS um texto curto para Instagram Story (máx 4 linhas) voltado para quem quer investir comprando um negócio. Tom direto e instigante. CTA "Me chama no WhatsApp". Sem hashtags.\n\n${localInfo}\n${corretorInfo}`,
-        status: `Crie APENAS um texto curto para Status WhatsApp (máx 5 linhas) voltado a investidores do bairro interessados em comprar negócios. Linguagem descontraída com emojis. CTA "Me chama". Sem hashtags.\n\n${localInfo}\n${corretorInfo}`,
-      },
-    };
-
+    const prompt = buildCopyPrompt({
+      contexto: tipoCaptacao === "vendedor" ? "captacao_vendedor" : "captacao_investidor",
+      formato,
+      gatilho,
+      localInfo: bairro || undefined,
+      corretorInfo,
+    });
     try {
-      const result = await callClaude(prompts[tipoCaptacao][formato]);
+      const result = await callClaude(prompt);
       setCopyCaptacao(result.trim());
     } catch {
       setCopyCaptacao("Erro ao gerar copy. Verifique sua conexão e tente novamente.");
@@ -579,8 +645,9 @@ const CorretorRedesSociais = () => {
     if (!selected) return;
     setGeneratingCopy(true);
     setCopy("");
-    const info = [
-      `Nome: ${selected.titulo}`, `Categoria: ${selected.categoria}`,
+    const dadosNegocio = [
+      `Nome: ${selected.titulo}`,
+      `Categoria: ${selected.categoria}`,
       `Local: ${selected.cidade}, ${selected.estado}`,
       selected.preco              ? `Valor de venda: ${formatCurrency(selected.preco)}` : "",
       selected.faturamento_mensal ? `Faturamento mensal: ${formatCurrency(selected.faturamento_mensal)}` : "",
@@ -588,15 +655,9 @@ const CorretorRedesSociais = () => {
       selected.descricao          ? `Descrição: ${selected.descricao}` : "",
     ].filter(Boolean).join("\n");
     const corretorInfo = `Corretor: ${profile.nome}${profile.telefone ? " · " + formatPhone(profile.telefone) : ""}${profile.creci ? " · CRECI " + profile.creci : ""}`;
-
-    const prompts: Record<Formato, string> = {
-      post: `Você é especialista em marketing de negócios no Instagram Brasil.\nCrie APENAS uma legenda para Instagram anunciando este negócio à venda.\nRegras: tom entusiasmado e profissional, emojis estratégicos, máx 8 linhas, CTA para WhatsApp, finalize com 15-20 hashtags.\n\n${info}\n${corretorInfo}`,
-      story: `Você é especialista em Instagram Stories Brasil.\nCrie APENAS um texto curto para Story (máx 4 linhas), muito objetivo, com emojis chamativos, CTA "Manda mensagem" ou "Link na bio", tom urgente. Sem hashtags.\n\n${info}\n${corretorInfo}`,
-      status: `Você é especialista em marketing pelo WhatsApp Brasil.\nCrie APENAS um texto curto para Status WhatsApp (máx 5 linhas), linguagem descontraída, com emojis, CTA "Me chama no WhatsApp". Sem hashtags.\n\n${info}\n${corretorInfo}`,
-    };
-
+    const prompt = buildCopyPrompt({ contexto: "negocio_venda", formato, gatilho, dadosNegocio, corretorInfo });
     try {
-      const result = await callClaude(prompts[formato]);
+      const result = await callClaude(prompt);
       setCopy(result.trim());
     } catch {
       setCopy("Erro ao gerar copy. Verifique sua conexão e tente novamente.");
@@ -741,8 +802,33 @@ const CorretorRedesSociais = () => {
               <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">4</div>
-                  <p className="font-semibold text-foreground text-sm">Texto / Copy com IA</p>
+                  <p className="font-semibold text-foreground text-sm">Gatilho Mental + Copy com IA</p>
                 </div>
+
+                {/* Gatilho selector */}
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium">Escolha o gatilho persuasivo:</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(Object.entries(GATILHOS) as [GatilhoMental, typeof GATILHOS[GatilhoMental]][]).map(([key, g]) => (
+                      <button key={key} onClick={() => { setGatilho(key); setCopyCaptacao(""); }}
+                        title={g.desc}
+                        className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-center transition-all ${gatilho === key ? "border-primary bg-primary/8 ring-1 ring-primary/30" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
+                        <span className="text-lg leading-none">{g.icon}</span>
+                        <span className={`text-[9px] font-semibold leading-tight ${gatilho === key ? "text-primary" : "text-muted-foreground"}`}>{g.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {gatilho && (
+                    <div className="flex items-start gap-2 rounded-xl p-2.5" style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.15)" }}>
+                      <span className="text-base shrink-0">{GATILHOS[gatilho].icon}</span>
+                      <div>
+                        <p className="text-xs font-bold text-foreground">{GATILHOS[gatilho].label}</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{GATILHOS[gatilho].desc}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <button onClick={handleGerarCopyCaptacao} disabled={generatingCopyCaptacao}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-40">
                   {generatingCopyCaptacao
@@ -946,8 +1032,33 @@ const CorretorRedesSociais = () => {
             <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">3</div>
-                <p className="font-semibold text-foreground text-sm">Texto / Copy com IA</p>
+                <p className="font-semibold text-foreground text-sm">Gatilho Mental + Copy com IA</p>
               </div>
+
+              {/* Gatilho selector */}
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Escolha o gatilho persuasivo:</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(Object.entries(GATILHOS) as [GatilhoMental, typeof GATILHOS[GatilhoMental]][]).map(([key, g]) => (
+                    <button key={key} onClick={() => { setGatilho(key); setCopy(""); }}
+                      title={g.desc}
+                      className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-center transition-all ${gatilho === key ? "border-primary bg-primary/8 ring-1 ring-primary/30" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
+                      <span className="text-lg leading-none">{g.icon}</span>
+                      <span className={`text-[9px] font-semibold leading-tight ${gatilho === key ? "text-primary" : "text-muted-foreground"}`}>{g.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {gatilho && (
+                  <div className={`flex items-start gap-2 rounded-xl p-2.5 bg-gradient-to-r ${GATILHOS[gatilho].bg} bg-opacity-10`} style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.15)" }}>
+                    <span className="text-base shrink-0">{GATILHOS[gatilho].icon}</span>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">{GATILHOS[gatilho].label}</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight">{GATILHOS[gatilho].desc}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button onClick={handleGerarCopy} disabled={!selected || generatingCopy}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-40">
                 {generatingCopy
