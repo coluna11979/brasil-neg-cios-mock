@@ -156,6 +156,7 @@ const CalculadoraROI = () => {
   const [usarDespesaManual, setUsarDespesaManual]  = useState(false);
   const [nomeNegocio,       setNomeNegocio]        = useState("");
   const [segmento,          setSegmento]           = useState("");
+  const [descricao,         setDescricao]          = useState("");
 
   // ── IA / PDF ──
   const [argumento,     setArgumento]    = useState("");
@@ -245,6 +246,7 @@ const CalculadoraROI = () => {
     const dados = [
       nomeNegocio ? `Negócio: ${nomeNegocio}` : "",
       segmento    ? `Segmento: ${segmento}`    : "",
+      descricao   ? `Descrição e diferenciais: ${descricao}` : "",
       `Preço total: ${fmt(precoTotal)}`,
       temParcelamento
         ? `Estrutura: Entrada ${fmt(capitalInicial)} + ${numParcelas}x de ${fmt(valorParcela)} = Total ${fmt(totalInvestido)}`
@@ -398,6 +400,22 @@ ${dados}`
                   placeholder="Ex: Alimentação, Varejo, Serviços..."
                   className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
+            </div>
+
+            {/* Descrição / diferenciais */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                Descrição e diferenciais do negócio
+                <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">Enriquece a IA</span>
+              </label>
+              <textarea
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                rows={4}
+                placeholder="Ex: Restaurante consolidado há 12 anos no mesmo ponto, clientela fiel, localização privilegiada em avenida de alto fluxo. Potencial de expansão com delivery ainda não explorado. Equipe treinada, operação independente do dono..."
+                className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
+              />
+              <p className="text-xs text-muted-foreground">Cole a descrição do site, anúncio ou descreva os pontos fortes — a IA usa tudo isso para criar um argumento muito mais persuasivo.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
