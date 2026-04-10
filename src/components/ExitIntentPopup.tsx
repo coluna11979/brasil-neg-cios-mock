@@ -13,7 +13,7 @@ const ExitIntentPopup = () => {
     if (e.clientY <= 5) {
       if (
         sessionStorage.getItem("exit_popup_shown") === "true" ||
-        localStorage.getItem("negocioja_subscribed") === "true"
+        localStorage.getItem("negociaaky_subscribed") === "true"
       ) return;
       sessionStorage.setItem("exit_popup_shown", "true");
       setShow(true);
@@ -42,7 +42,7 @@ const ExitIntentPopup = () => {
       origem: "exit-intent",
     });
 
-    localStorage.setItem("negocioja_subscribed", "true");
+    localStorage.setItem("negociaaky_subscribed", "true");
     setSubmitted(true);
     setTimeout(() => setShow(false), 2500);
   };

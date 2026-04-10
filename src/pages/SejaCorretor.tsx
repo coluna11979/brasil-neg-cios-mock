@@ -24,11 +24,11 @@ const BENEFICIOS = [
   { icon: Wallet, titulo: "Comissão atrativa", desc: "Ganhe por cada negócio fechado na sua carteira." },
   { icon: TrendingUp, titulo: "Carteira exclusiva", desc: "Acesso antecipado a novos anúncios na sua região." },
   { icon: Handshake, titulo: "Suporte completo", desc: "Treinamento, ferramentas e suporte da plataforma." },
-  { icon: UserCheck, titulo: "Perfil verificado", desc: "Seu perfil aparece como corretor certificado NegócioJá." },
+  { icon: UserCheck, titulo: "Perfil verificado", desc: "Seu perfil aparece como corretor certificado NegociaAky." },
 ];
 
 const SejaCorretor = () => {
-  usePageTitle("Seja um Corretor – NegócioJá");
+  usePageTitle("Seja um Corretor – NegociaAky");
   const navigate = useNavigate();
 
   const [modo, setModo] = useState<"cadastro" | "login">("cadastro");
@@ -230,7 +230,7 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
       await sendWhatsAppMessage(
         telefoneCorretor,
         `Olá, *${form.nome.split(" ")[0]}*! 👋\n\n` +
-        `Recebemos sua candidatura na *NegócioJá* e já está em análise pela nossa equipe.\n\n` +
+        `Recebemos sua candidatura na *NegociaAky* e já está em análise pela nossa equipe.\n\n` +
         `⏳ Em até 24h você será aprovado e receberá outro aviso aqui.\n\n` +
         `Após a aprovação, acesse seu painel em:\n` +
         `🔗 brasil-neg-cios-mock.vercel.app/corretor/login\n` +
@@ -294,7 +294,7 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                 Seja um Parceiro
               </span>
               <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">
-                Seja um Corretor NegócioJá
+                Seja um Corretor NegociaAky
               </h1>
               <p className="mt-4 max-w-xl mx-auto text-muted-foreground">
                 Junte-se à nossa rede de corretores especializados em compra e venda de negócios em São Paulo.
@@ -519,7 +519,7 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                     <p className="text-xs font-semibold text-primary uppercase tracking-wide">Motivações & Objetivos</p>
 
                     <div>
-                      <Label htmlFor="motivacao">Por que você quer ser corretor NegócioJá?</Label>
+                      <Label htmlFor="motivacao">Por que você quer ser corretor NegociaAky?</Label>
                       <Textarea
                         id="motivacao"
                         className="mt-2 bg-card"

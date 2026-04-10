@@ -10,7 +10,7 @@ const EmailCaptureBanner = () => {
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed || sessionStorage.getItem("email_banner_dismissed") === "true") return null;
-  if (localStorage.getItem("negocioja_subscribed") === "true") return null;
+  if (localStorage.getItem("negociaaky_subscribed") === "true") return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +24,7 @@ const EmailCaptureBanner = () => {
       origem: "newsletter",
     });
 
-    localStorage.setItem("negocioja_subscribed", "true");
+    localStorage.setItem("negociaaky_subscribed", "true");
     setSubmitted(true);
   };
 

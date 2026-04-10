@@ -100,7 +100,7 @@ function CardNoir({ profile, cardRef }: { profile: Profile; cardRef: React.RefOb
             fontSize: 13, fontWeight: 900, color: "#000",
           }}>NJ</div>
           <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 9.5, letterSpacing: 2, textTransform: "uppercase" }}>
-            NegócioJá
+            NegociaAky
           </span>
         </div>
         {profile.creci && (
@@ -186,7 +186,7 @@ function CardCorporate({ profile, cardRef }: { profile: Profile; cardRef: React.
           transform: "rotate(-90deg)",
           whiteSpace: "nowrap",
           textTransform: "uppercase",
-        }}>NegócioJá</div>
+        }}>NegociaAky</div>
 
         {/* CRECI */}
         {profile.creci ? (
@@ -293,7 +293,7 @@ function StoryIG({ profile, storyRef }: { profile: Profile; storyRef: React.RefO
           marginBottom: 8,
         }}>NJ</div>
         <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: 2, textTransform: "uppercase" }}>
-          NegócioJá
+          NegociaAky
         </div>
       </div>
 
@@ -403,10 +403,10 @@ const Materiais = () => {
           </td>
           <td style="border-left:3px solid ${GOLD};padding-left:18px;vertical-align:middle">
             <p style="margin:0 0 2px;font-size:16px;font-weight:800;color:#0f172a">${profile.nome}</p>
-            <p style="margin:0 0 6px;font-size:11px;font-weight:600;color:${BLUE};letter-spacing:1px;text-transform:uppercase">Corretor de Negócios · NegócioJá</p>
+            <p style="margin:0 0 6px;font-size:11px;font-weight:600;color:${BLUE};letter-spacing:1px;text-transform:uppercase">Corretor de Negócios · NegociaAky</p>
             <p style="margin:0 0 2px;font-size:12px;color:#475569">${profile.telefone ? formatPhone(profile.telefone) : ""}${profile.telefone && profile.email ? " &nbsp;|&nbsp; " : ""}${profile.email}</p>
             ${profile.creci ? `<p style="margin:0 0 4px;font-size:11px;color:#94a3b8">CRECI: ${profile.creci}</p>` : ""}
-            <a href="https://negocioja.com.br" style="font-size:11px;color:${BLUE};text-decoration:none;font-weight:600">negocioja.com.br</a>
+            <a href="https://negociaaky.com.br" style="font-size:11px;color:${BLUE};text-decoration:none;font-weight:600">negociaaky.com.br</a>
           </td>
         </tr>
       </table>

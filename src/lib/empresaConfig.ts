@@ -12,7 +12,7 @@ export interface EmpresaConfig {
 }
 
 const DEFAULT: EmpresaConfig = {
-  nome:      "NegócioJá",
+  nome:      "NegociaAky",
   telefone:  "",
   whatsapp:  "",
   email:     "",

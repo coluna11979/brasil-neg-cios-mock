@@ -101,7 +101,7 @@ const VenderTerreno = () => {
               Recebemos seu contato!
             </h1>
             <p className="mt-3 text-muted-foreground leading-relaxed">
-              Ótimo, <strong className="text-foreground">{form.nome.split(" ")[0]}</strong>! Um consultor NegócioJá vai entrar em contato pelo seu WhatsApp em até 1 hora para entender melhor o terreno e encaminhar compradores qualificados.
+              Ótimo, <strong className="text-foreground">{form.nome.split(" ")[0]}</strong>! Um consultor NegociaAky vai entrar em contato pelo seu WhatsApp em até 1 hora para entender melhor o terreno e encaminhar compradores qualificados.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Link

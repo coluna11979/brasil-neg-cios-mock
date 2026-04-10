@@ -16,6 +16,7 @@ interface Corretor {
   email: string;
   telefone?: string;
   creci?: string;
+  bairro?: string;
   regiao?: string;
   experiencia?: string;
   atuacao?: string;
@@ -25,6 +26,7 @@ interface Corretor {
   comprometido?: boolean;
   ativo: boolean;
   criado_em: string;
+  foto_url?: string;
 }
 
 interface CorretorStats {
@@ -128,7 +130,7 @@ const AdminCorretores = () => {
         await sendWhatsAppMessage(
           corretor.telefone,
           `✅ *Parabéns, ${corretor.nome.split(" ")[0]}!*\n\n` +
-          `Sua conta de corretor na *NegócioJá* foi *aprovada*! 🎉\n\n` +
+          `Sua conta de corretor na *NegociaAky* foi *aprovada*! 🎉\n\n` +
           `Agora você já pode acessar seu painel e começar a atender leads:\n\n` +
           `🔗 *brasil-neg-cios-mock.vercel.app/corretor/login*\n` +
           `📧 Login: *${corretor.email}*\n\n` +
@@ -183,9 +185,17 @@ const AdminCorretores = () => {
                   return (
                     <div key={c.id} className="flex items-center gap-4 rounded-lg bg-card p-3 shadow-sm">
                       <span className="text-xl w-8 shrink-0 text-center">{medalha}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground text-sm">{c.nome}</p>
-                        <p className="text-xs text-muted-foreground">{c.regiao || c.email}</p>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="h-8 w-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+                          {c.foto_url
+                            ? <img src={c.foto_url} alt={c.nome} className="h-full w-full object-cover" />
+                            : <span className="text-xs font-bold text-primary">{c.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}</span>
+                          }
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground text-sm truncate">{c.nome}</p>
+                          <p className="text-xs text-muted-foreground truncate">{[c.bairro, c.regiao].filter(Boolean).join(" · ") || c.email}</p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-4 shrink-0">
                         <StatPill icon={<MessageCircle className="h-3 w-3" />} value={s.msgs_enviadas} label="msgs" />
@@ -277,8 +287,13 @@ const CorretorCard = ({ corretor, stats, updating, onToggle, expanded, onExpand 
     <div className={`p-4 ${!corretor.ativo ? "bg-amber-50/30" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0 font-display text-sm font-bold text-primary mt-0.5">
-            {corretor.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+          <div className="h-11 w-11 rounded-full shrink-0 overflow-hidden bg-primary/10 flex items-center justify-center mt-0.5 ring-2 ring-primary/10">
+            {corretor.foto_url
+              ? <img src={corretor.foto_url} alt={corretor.nome} className="h-full w-full object-cover" />
+              : <span className="font-display text-sm font-bold text-primary">
+                  {corretor.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                </span>
+            }
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">

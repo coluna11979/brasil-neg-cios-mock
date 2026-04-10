@@ -399,7 +399,7 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
     const nome = selectedLead?.nome || "Lead";
     const interesse = selectedLead?.negocio_titulo || selectedLead?.galeria_nome || "negócio à venda";
     const msgInicial = selectedLead?.mensagem || "nenhuma";
-    if (estagio === "boas-vindas") return `Você é especialista em vendas de negócios e franquias no Brasil.\nLead: ${nome}, interesse em: ${interesse}.\nMensagem inicial do lead: "${msgInicial}".\nEscreva UMA mensagem de WhatsApp de boas-vindas calorosa e profissional.\n- Apresente a plataforma NegócioJá brevemente\n- Confirme o interesse dele\n- Mostre entusiasmo e disponibilidade\n- Termine com UMA pergunta aberta\nMáximo 4 linhas. Apenas o texto, sem aspas.`;
+    if (estagio === "boas-vindas") return `Você é especialista em vendas de negócios e franquias no Brasil.\nLead: ${nome}, interesse em: ${interesse}.\nMensagem inicial do lead: "${msgInicial}".\nEscreva UMA mensagem de WhatsApp de boas-vindas calorosa e profissional.\n- Apresente a plataforma NegociaAky brevemente\n- Confirme o interesse dele\n- Mostre entusiasmo e disponibilidade\n- Termine com UMA pergunta aberta\nMáximo 4 linhas. Apenas o texto, sem aspas.`;
     if (estagio === "followup") return `Lead ${nome} não respondeu à primeira mensagem sobre ${interesse}.\nEscreva um follow-up leve para WhatsApp:\n- Reconheça que pode ter ficado ocupado\n- Destaque 1 ponto de valor do negócio\n- Ofereça ajuda para tirar dúvidas\nMáximo 3 linhas. Apenas o texto, sem aspas.`;
     if (estagio === "reengajamento") return `Lead ${nome} não respondeu há 3+ dias (interesse em ${interesse}).\nEscreva uma mensagem de reengajamento para WhatsApp:\n- Use um gatilho de escassez ou novidade\n- Mencione algo novo (outro interessado, prazo)\n- Crie senso de urgência leve\nMáximo 3 linhas. Apenas o texto, sem aspas.`;
     if (estagio === "urgencia") return `Lead ${nome} não respondeu há 7+ dias. Última tentativa antes de arquivar.\nEscreva uma mensagem final para WhatsApp:\n- Tom direto mas respeitoso\n- Mencione que vai fechar o contato se não houver resposta\n- Deixe a porta aberta\nMáximo 2 linhas. Apenas o texto, sem aspas.`;
@@ -804,7 +804,7 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted/50 mb-4">
                 <MessageCircle className="h-10 w-10 opacity-30" />
               </div>
-              <p className="font-display text-lg font-semibold">NegócioJá CRM</p>
+              <p className="font-display text-lg font-semibold">NegociaAky CRM</p>
               <p className="text-sm mt-1">Selecione um lead para iniciar a conversa</p>
             </div>
           ) : (

@@ -123,7 +123,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="mt-1 text-muted-foreground">Visão geral da plataforma NegócioJá</p>
+            <p className="mt-1 text-muted-foreground">Visão geral da plataforma NegociaAky</p>
           </div>
           <Button asChild size="sm" className="gap-2">
             <Link to="/admin/pipeline">

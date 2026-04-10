@@ -16,7 +16,7 @@ const Footer = () => {
       mensagem: "Inscrição via footer",
       origem: "newsletter",
     });
-    localStorage.setItem("negocioja_subscribed", "true");
+    localStorage.setItem("negociaaky_subscribed", "true");
     setSubscribed(true);
     setEmail("");
   };
@@ -33,7 +33,7 @@ const Footer = () => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Building2 className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-display text-lg font-bold text-white">NegócioJá</span>
+            <span className="font-display text-lg font-bold text-white">NegociaAky</span>
           </Link>
           <div className="flex items-center gap-2">
             <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-white/40 hover:bg-primary hover:text-white transition-all" aria-label="Instagram">
@@ -51,7 +51,7 @@ const Footer = () => {
           <Link to="/seja-corretor" className="text-sm text-white/60 hover:text-white">Seja Corretor</Link>
         </div>
         <p className="mt-5 text-xs text-white/30">
-          © {new Date().getFullYear()} NegócioJá · São Paulo, SP
+          © {new Date().getFullYear()} NegociaAky · São Paulo, SP
         </p>
       </div>
 
@@ -64,7 +64,7 @@ const Footer = () => {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
                 <Building2 className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="font-display text-2xl font-bold text-white">NegócioJá</span>
+              <span className="font-display text-2xl font-bold text-white">NegociaAky</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60">
               A plataforma #1 de compra, venda e locação de negócios do Brasil.
@@ -114,7 +114,7 @@ const Footer = () => {
             <ul className="mt-5 space-y-4">
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 shrink-0 text-primary" />
-                <span className="text-sm text-white/60">contato@negocioja.com</span>
+                <span className="text-sm text-white/60">contato@negociaaky.com</span>
               </li>
             </ul>
             <div className="mt-6 flex items-center gap-3">
@@ -126,7 +126,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-14 border-t border-white/10 pt-6 flex items-center justify-between gap-4">
-          <p className="text-xs text-white/40">© {new Date().getFullYear()} NegócioJá. Todos os direitos reservados.</p>
+          <p className="text-xs text-white/40">© {new Date().getFullYear()} NegociaAky. Todos os direitos reservados.</p>
           <div className="flex items-center gap-6 text-xs text-white/40">
             <span className="hover:text-white/60 cursor-pointer transition-colors">Termos de Uso</span>
             <span className="hover:text-white/60 cursor-pointer transition-colors">Política de Privacidade</span>

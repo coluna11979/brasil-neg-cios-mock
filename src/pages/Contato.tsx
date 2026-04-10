@@ -130,7 +130,7 @@ const Contato = () => {
     if (formData.telefone) {
       sendWhatsAppMessage(
         formData.telefone,
-        `Olá ${formData.nome}! 👋\n\nRecebemos seu interesse em *${negocioTitulo}* aqui pela NegócioJá.\n\nUm corretor especializado vai entrar em contato com você em breve pelo WhatsApp para dar continuidade. 🤝\n\n_NegócioJá — Compre, Venda ou Alugue com segurança_`
+        `Olá ${formData.nome}! 👋\n\nRecebemos seu interesse em *${negocioTitulo}* aqui pela NegociaAky.\n\nUm corretor especializado vai entrar em contato com você em breve pelo WhatsApp para dar continuidade. 🤝\n\n_NegociaAky — Compre, Venda ou Alugue com segurança_`
       ).catch(() => {}); // disparo silencioso
     }
 
@@ -142,7 +142,7 @@ const Contato = () => {
     if (corretorTelefone) {
       sendWhatsAppMessage(
         corretorTelefone,
-        `🔔 *Novo lead NegócioJá!*\n\n*Nome:* ${formData.nome}\n*Telefone:* ${formData.telefone || "não informado"}\n*E-mail:* ${formData.email}\n*Interesse:* ${negocioTitulo}\n*Mensagem:* ${formData.mensagem}\n\nAcesse o painel para ver todos os detalhes.`
+        `🔔 *Novo lead NegociaAky!*\n\n*Nome:* ${formData.nome}\n*Telefone:* ${formData.telefone || "não informado"}\n*E-mail:* ${formData.email}\n*Interesse:* ${negocioTitulo}\n*Mensagem:* ${formData.mensagem}\n\nAcesse o painel para ver todos os detalhes.`
       ).catch(() => {});
     }
 

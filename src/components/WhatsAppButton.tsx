@@ -29,7 +29,7 @@ const WhatsAppButton = () => {
     }
 
     const message = encodeURIComponent(
-      `Olá! Sou ${nome || "um visitante"} e gostaria de saber mais sobre as oportunidades no NegócioJá.`
+      `Olá! Sou ${nome || "um visitante"} e gostaria de saber mais sobre as oportunidades no NegociaAky.`
     );
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
     setSent(true);

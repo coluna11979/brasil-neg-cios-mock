@@ -564,7 +564,7 @@ ${dados}`
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: 11, color: "#94a3b8" }}>Gerado em {hoje()}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", marginTop: 2 }}>NegócioJá</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8", marginTop: 2 }}>NegociaAky</div>
                   </div>
                 </div>
               </div>

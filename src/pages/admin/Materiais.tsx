@@ -50,7 +50,7 @@ function CardNoir({ corretor, cardRef }: { corretor: Corretor; cardRef: React.Re
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <div style={{ width: 36, height: 36, borderRadius: 9, background: GOLD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: "#000" }}>NJ</div>
-          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 9.5, letterSpacing: 2, textTransform: "uppercase" }}>NegócioJá</span>
+          <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 9.5, letterSpacing: 2, textTransform: "uppercase" }}>NegociaAky</span>
         </div>
         {corretor.creci && (
           <div style={{ border: `1px solid rgba(196,154,30,0.4)`, borderRadius: 20, padding: "3px 10px", fontSize: 9, color: GOLD, letterSpacing: 1 }}>
@@ -82,7 +82,7 @@ function CardCorporate({ corretor, cardRef }: { corretor: Corretor; cardRef: Rea
     }}>
       <div style={{ width: 88, background: `linear-gradient(180deg, #1e3a8a 0%, ${BLUE} 100%)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", padding: "22px 10px 18px" }}>
         <div style={{ width: 40, height: 40, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>NJ</div>
-        <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 8.5, letterSpacing: 2.5, transform: "rotate(-90deg)", whiteSpace: "nowrap", textTransform: "uppercase" }}>NegócioJá</div>
+        <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 8.5, letterSpacing: 2.5, transform: "rotate(-90deg)", whiteSpace: "nowrap", textTransform: "uppercase" }}>NegociaAky</div>
         {corretor.creci ? <div style={{ textAlign: "center", color: "rgba(255,255,255,0.55)", fontSize: 8 }}>CRECI<br />{corretor.creci}</div> : <div />}
       </div>
 
@@ -144,10 +144,10 @@ function MateriaisCorretor({ corretor }: { corretor: Corretor }) {
           </td>
           <td style="border-left:3px solid ${GOLD};padding-left:18px;vertical-align:middle">
             <p style="margin:0 0 2px;font-size:16px;font-weight:800;color:#0f172a">${corretor.nome}</p>
-            <p style="margin:0 0 6px;font-size:11px;font-weight:600;color:${BLUE};letter-spacing:1px;text-transform:uppercase">Corretor de Negócios · NegócioJá</p>
+            <p style="margin:0 0 6px;font-size:11px;font-weight:600;color:${BLUE};letter-spacing:1px;text-transform:uppercase">Corretor de Negócios · NegociaAky</p>
             <p style="margin:0 0 2px;font-size:12px;color:#475569">${corretor.telefone ? formatPhone(corretor.telefone) : ""}${corretor.telefone && corretor.email ? " &nbsp;|&nbsp; " : ""}${corretor.email}</p>
             ${corretor.creci ? `<p style="margin:0 0 4px;font-size:11px;color:#94a3b8">CRECI: ${corretor.creci}</p>` : ""}
-            <a href="https://negocioja.com.br" style="font-size:11px;color:${BLUE};text-decoration:none;font-weight:600">negocioja.com.br</a>
+            <a href="https://negociaaky.com.br" style="font-size:11px;color:${BLUE};text-decoration:none;font-weight:600">negociaaky.com.br</a>
           </td>
         </tr>
       </table>

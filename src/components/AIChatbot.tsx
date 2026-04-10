@@ -6,7 +6,7 @@ import { callClaude } from "@/lib/anthropic";
 import { supabase } from "@/lib/supabase";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
 
-const AI_SYSTEM_PROMPT = `Você é a Sofia, consultora da NegócioJá — plataforma de compra, venda e aluguel de negócios, pontos comerciais e terrenos em São Paulo.
+const AI_SYSTEM_PROMPT = `Você é a Sofia, consultora da NegociaAky — plataforma de compra, venda e aluguel de negócios, pontos comerciais e terrenos em São Paulo.
 
 SUA PERSONALIDADE:
 - Simpática, direta e acolhedora — fala como gente, não como robô
@@ -87,7 +87,7 @@ interface VendedorData {
 
 const INITIAL_MESSAGE: Message = {
   id: "welcome",
-  text: "Oi! Sou a Sofia, consultora da **NegócioJá** 😊 O que você está buscando hoje?",
+  text: "Oi! Sou a Sofia, consultora da **NegociaAky** 😊 O que você está buscando hoje?",
   sender: "bot",
   options: [
     { label: "🛒 Quero comprar um negócio", action: "comprar" },
@@ -697,7 +697,7 @@ const AIChatbot = () => {
           await sendWhatsAppMessage(
             telefone,
             `Olá, *${finalVendedor.nome.split(" ")[0]}*! 👋\n\n` +
-            `Recebi as informações sobre o seu anúncio na *NegócioJá*. ✅\n\n` +
+            `Recebi as informações sobre o seu anúncio na *NegociaAky*. ✅\n\n` +
             `📋 *Resumo do que vou divulgar:*\n` +
             `• Tipo: ${finalVendedor.tipo}\n` +
             (finalVendedor.setor ? `• Ramo: ${finalVendedor.setor}\n` : "") +
@@ -822,7 +822,7 @@ const AIChatbot = () => {
         await sendWhatsAppMessage(
           telefone,
           `Olá, *${primeiroNome}*! 👋\n\n` +
-          `Recebi seu contato aqui na *NegócioJá*. ✅\n\n` +
+          `Recebi seu contato aqui na *NegociaAky*. ✅\n\n` +
           `Nosso consultor vai entrar em contato com você em breve pelo WhatsApp para te ajudar!\n\n` +
           `Enquanto isso, você pode ver nossas oportunidades em:\n` +
           `🔗 brasil-neg-cios-mock.vercel.app`

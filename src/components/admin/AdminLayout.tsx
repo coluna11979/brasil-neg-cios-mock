@@ -52,7 +52,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Building2 className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-display text-lg font-bold text-foreground">NegócioJá</span>
+          <span className="font-display text-lg font-bold text-foreground">NegociaAky</span>
           <span className="ml-auto rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
             ADMIN
           </span>

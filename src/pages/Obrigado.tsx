@@ -15,7 +15,7 @@ const Obrigado = () => {
   const tipo = searchParams.get("tipo") || "negocio"; // "negocio" | "galeria"
 
   const waLink = telefone
-    ? `https://wa.me/55${telefone.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá ${nome}! Vi seu interesse em *${negocio}* aqui pela NegócioJá. Posso te ajudar com mais informações? 😊`)}`
+    ? `https://wa.me/55${telefone.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá ${nome}! Vi seu interesse em *${negocio}* aqui pela NegociaAky. Posso te ajudar com mais informações? 😊`)}`
     : null;
 
   return (

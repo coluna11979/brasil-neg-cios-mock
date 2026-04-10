@@ -73,7 +73,7 @@ const CorretorLogin = () => {
               Área do Corretor
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              NegócioJá — Acesso exclusivo para corretores
+              NegociaAky — Acesso exclusivo para corretores
             </p>
           </div>
         </div>

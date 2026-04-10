@@ -432,7 +432,7 @@ const VenderNegocio = () => {
               </Button>
 
               <p className="text-center text-xs text-muted-foreground">
-                Ao cadastrar, você concorda que um corretor da NegócioJá entre em contato para avaliação.
+                Ao cadastrar, você concorda que um corretor da NegociaAky entre em contato para avaliação.
               </p>
             </form>
           </div>

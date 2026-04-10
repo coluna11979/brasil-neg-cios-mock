@@ -95,7 +95,7 @@ Descrição: ${listing.descricao_completa || listing.descricao}`;
 
   const handleShare = async () => {
     const url = window.location.href;
-    const title = listing?.titulo || "NegócioJá";
+    const title = listing?.titulo || "NegociaAky";
     if (navigator.share) {
       try { await navigator.share({ title, url }); } catch { /* cancelado */ }
     } else {
@@ -429,7 +429,7 @@ Descrição: ${listing.descricao_completa || listing.descricao}`;
                 {/* Trust Badges */}
                 <div className="mt-6 rounded-lg bg-muted p-4">
                   <p className="text-xs text-muted-foreground text-center">
-                    ✓ Anúncio verificado pela equipe NegócioJá
+                    ✓ Anúncio verificado pela equipe NegociaAky
                   </p>
                 </div>
               </div>

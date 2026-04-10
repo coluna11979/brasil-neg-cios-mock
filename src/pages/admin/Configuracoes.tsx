@@ -85,7 +85,7 @@ const CalculadoraROI = () => {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">Nome da empresa</label>
               <input value={form.nome} onChange={(e) => set("nome", e.target.value)}
-                placeholder="NegócioJá"
+                placeholder="NegociaAky"
                 className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -135,7 +135,7 @@ const CalculadoraROI = () => {
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input value={form.email} onChange={(e) => set("email", e.target.value)}
-                    placeholder="contato@negocioja.com.br"
+                    placeholder="contato@negociaaky.com.br"
                     type="email"
                     className="w-full rounded-xl border border-border bg-muted pl-9 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
@@ -147,7 +147,7 @@ const CalculadoraROI = () => {
                 <div className="relative">
                   <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input value={form.site} onChange={(e) => set("site", e.target.value)}
-                    placeholder="www.negocioja.com.br"
+                    placeholder="www.negociaaky.com.br"
                     className="w-full rounded-xl border border-border bg-muted pl-9 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
               </div>
@@ -156,7 +156,7 @@ const CalculadoraROI = () => {
                 <div className="relative">
                   <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input value={form.instagram} onChange={(e) => set("instagram", e.target.value)}
-                    placeholder="@negocioja"
+                    placeholder="@negociaaky"
                     className="w-full rounded-xl border border-border bg-muted pl-9 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
               </div>
@@ -176,7 +176,7 @@ const CalculadoraROI = () => {
                   Os valores são baseados nos dados informados. Valide com documentação real.
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>{form.nome || "NegócioJá"}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>{form.nome || "NegociaAky"}</div>
                   {form.whatsapp  && <div style={{ fontSize: 11, color: "#64748b" }}>📱 {form.whatsapp}</div>}
                   {form.email     && <div style={{ fontSize: 11, color: "#64748b" }}>✉️ {form.email}</div>}
                   {form.site      && <div style={{ fontSize: 11, color: "#64748b" }}>🌐 {form.site}</div>}

@@ -36,7 +36,7 @@ const SLIDES = [
   {
     id: 4,
     tag: "Parceria",
-    titulo: "Seja um Corretor NegócioJá",
+    titulo: "Seja um Corretor NegociaAky",
     desc: "Trabalhe com autonomia e ganhe comissões atrativas em SP.",
     cta: "Quero ser corretor",
     href: "/seja-corretor",

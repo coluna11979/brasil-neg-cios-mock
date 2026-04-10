@@ -33,7 +33,7 @@ const TESTIMONIALS = [
   {
     nome: "Rodrigo Mendes",
     cargo: "Empresário — Alimentação",
-    texto: "Vendi minha pizzaria em 18 dias. Nunca imaginei que seria tão rápido. O corretor da NegócioJá foi fundamental.",
+    texto: "Vendi minha pizzaria em 18 dias. Nunca imaginei que seria tão rápido. O corretor da NegociaAky foi fundamental.",
     img: "https://randomuser.me/api/portraits/men/32.jpg",
   },
   {
@@ -75,7 +75,7 @@ const TESTIMONIALS = [
   {
     nome: "Juliana Costa",
     cargo: "Empreendedora — Moda",
-    texto: "Alugamos um espaço em galeria pelo NegócioJá. Atendimento rápido e processo transparente.",
+    texto: "Alugamos um espaço em galeria pelo NegociaAky. Atendimento rápido e processo transparente.",
     img: "https://randomuser.me/api/portraits/women/52.jpg",
   },
   {
@@ -412,7 +412,7 @@ const Index = () => {
               Quem já usou, aprovou
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Histórias reais de quem comprou, vendeu ou alugou pela NegócioJá
+              Histórias reais de quem comprou, vendeu ou alugou pela NegociaAky
             </p>
           </div>
         </div>

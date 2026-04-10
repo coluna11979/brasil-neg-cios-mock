@@ -44,7 +44,7 @@ const AdminLogin = () => {
           </div>
           <div className="text-center">
             <h1 className="font-display text-2xl font-bold text-foreground">
-              NegócioJá Admin
+              NegociaAky Admin
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Painel de gestão da plataforma

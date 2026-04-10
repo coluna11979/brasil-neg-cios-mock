@@ -200,7 +200,7 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
             </h1>
             <p className="mt-3 text-muted-foreground">
               Olá <strong className="text-foreground">{contato.nome}</strong>, recebemos seu anúncio.
-              Um corretor NegócioJá entrará em contato pelo WhatsApp em breve para dar continuidade.
+              Um corretor NegociaAky entrará em contato pelo WhatsApp em breve para dar continuidade.
             </p>
             <div className="mt-6 rounded-lg border border-primary/20 bg-secondary p-4 text-sm text-left text-muted-foreground">
               <p className="font-medium text-foreground mb-1">Próximos passos:</p>
@@ -583,7 +583,7 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
                   Seus dados de contato
                 </h1>
                 <p className="mt-2 text-muted-foreground">
-                  Um corretor NegócioJá entrará em contato para finalizar seu anúncio.
+                  Um corretor NegociaAky entrará em contato para finalizar seu anúncio.
                 </p>
 
                 <div className="mt-8 space-y-5">

@@ -79,7 +79,7 @@ function PostInstagram({ negocio, profile, divRef }: {
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 2 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 26, height: 26, borderRadius: 6, background: c.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "#000" }}>NJ</div>
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8.5, letterSpacing: 1.5, textTransform: "uppercase" }}>NegócioJá</span>
+            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8.5, letterSpacing: 1.5, textTransform: "uppercase" }}>NegociaAky</span>
           </div>
           <div style={{ background: "rgba(0,0,0,0.45)", border: `1px solid ${c.accent}80`, borderRadius: 20, padding: "2px 8px", fontSize: 8.5, color: c.light, letterSpacing: 0.5 }}>
             {negocio.categoria}
@@ -191,7 +191,7 @@ function StoryPost({ negocio, profile, divRef }: {
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 2 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 30, height: 30, borderRadius: 7, background: c.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#000" }}>NJ</div>
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" }}>NegócioJá</span>
+            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" }}>NegociaAky</span>
           </div>
           <div style={{ background: "rgba(0,0,0,0.45)", border: `1px solid ${c.accent}80`, borderRadius: 20, padding: "2px 9px", fontSize: 8, color: c.light }}>
             {negocio.categoria}

@@ -635,7 +635,7 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted/50 mb-4">
               <MessageCircle className="h-10 w-10 opacity-30" />
             </div>
-            <p className="font-display text-lg font-semibold">NegócioJá</p>
+            <p className="font-display text-lg font-semibold">NegociaAky</p>
             <p className="text-sm mt-1">Selecione um lead para iniciar a conversa</p>
           </div>
         ) : (

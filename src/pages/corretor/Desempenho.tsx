@@ -564,7 +564,7 @@ const CorretorDesempenho = () => {
               <Zap className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-foreground text-sm">Dica NegócioJá</p>
+              <p className="font-semibold text-foreground text-sm">Dica NegociaAky</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Corretores que fazem <strong className="text-foreground">contato em até 2h</strong> têm{" "}
                 <strong className="text-foreground">3x mais chance</strong> de conversão. Responda seus leads rapidamente!

@@ -234,7 +234,7 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
           <h1 className="font-display text-2xl font-bold text-foreground">Cadastro em Análise</h1>
           <p className="mt-3 text-muted-foreground">
-            Seu cadastro como corretor está sendo analisado pela equipe NegócioJá.
+            Seu cadastro como corretor está sendo analisado pela equipe NegociaAky.
             Em breve você receberá acesso completo ao painel.
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
