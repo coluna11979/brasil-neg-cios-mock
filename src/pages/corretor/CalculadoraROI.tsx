@@ -179,10 +179,18 @@ const CalculadoraROI = () => {
   const roiEntradaAnual  = roiEntradaMensal * 12;
   const roiTotalMensal   = totalInvestido > 0 && lucroLiquido > 0 ? (lucroLiquido / totalInvestido) * 100 : 0;
 
-  // Payback da entrada: quantos meses de lucro para recuperar o capital inicial
-  // Usa lucroLiquido (sem descontar parcela) — mostra o potencial real do negócio
+  // Payback da entrada: acumula o fluxo REAL mês a mês (descontando parcela)
   const paybackEntradaMeses = capitalInicial > 0 && lucroLiquido > 0
-    ? Math.ceil(capitalInicial / lucroLiquido) : null;
+    ? (() => {
+        if (!temParcelamento) return Math.ceil(capitalInicial / lucroLiquido);
+        let acumulado = 0;
+        for (let m = 1; m <= 600; m++) {
+          acumulado += m <= numParcelas ? fluxoLiquidoPagando : fluxoLiquidoQuitado;
+          if (acumulado >= capitalInicial) return m;
+        }
+        return null;
+      })()
+    : null;
 
   // Payback total: considera fluxo real mês a mês (com parcelas quando aplicável)
   const paybackTotalMeses = totalInvestido > 0 && lucroLiquido > 0
