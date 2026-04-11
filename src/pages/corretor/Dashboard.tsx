@@ -7,7 +7,7 @@ import { getAllLeads, type Lead } from "@/stores/leadStore";
 import {
   Users, TrendingUp, Target, MessageCircle, ArrowRight,
   Loader2, Clock, CheckCircle2, AlertCircle, BarChart3,
-  FileText, Calculator, Megaphone, Sparkles,
+  Calculator, Megaphone, Sparkles,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -42,18 +42,20 @@ function saudacao() {
 }
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
-function StatCard({ label, value, sub, icon, color, to }: {
+function StatCard({ label, value, sub, icon, iconBg, color, to }: {
   label: string; value: number | string; sub?: string;
-  icon: React.ReactNode; color: string; to?: string;
+  icon: React.ReactNode; iconBg: string; color: string; to?: string;
 }) {
   const content = (
-    <div className={`rounded-2xl p-4 border ${color} transition-all hover:shadow-md`}>
+    <div className={`rounded-2xl p-4 border ${color} transition-all hover:shadow-md hover:-translate-y-0.5`}>
       <div className="flex items-start justify-between mb-3">
-        <div className="opacity-80">{icon}</div>
+        <div className={`flex items-center justify-center h-9 w-9 rounded-xl ${iconBg}`}>
+          {icon}
+        </div>
         {to && <ArrowRight className="h-4 w-4 opacity-40" />}
       </div>
-      <p className="font-display text-2xl font-bold">{value}</p>
-      <p className="text-xs font-medium mt-0.5 opacity-75">{label}</p>
+      <p className="font-display text-3xl font-bold leading-none">{value}</p>
+      <p className="text-xs font-semibold mt-1.5 opacity-80">{label}</p>
       {sub && <p className="text-xs opacity-50 mt-0.5">{sub}</p>}
     </div>
   );
@@ -76,6 +78,14 @@ function QuickAction({ to, icon, label, sub, color }: {
     </Link>
   );
 }
+
+// ─── Lead border by status ────────────────────────────────────────────────────
+const leadBorderColor: Record<Lead["status"], string> = {
+  "novo":         "border-l-blue-400",
+  "em-andamento": "border-l-amber-400",
+  "convertido":   "border-l-green-400",
+  "perdido":      "border-l-red-400",
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 const CorretorDashboard = () => {
@@ -115,6 +125,8 @@ const CorretorDashboard = () => {
   const taxaConversao = leads.length > 0 ? Math.round((convertidos.length / leads.length) * 100) : 0;
   const progressoMeta = Math.min(Math.round((convertidos.length / metaMes) * 100), 100);
 
+  const metaEmoji = progressoMeta >= 100 ? "🏆" : progressoMeta >= 60 ? "🔥" : "🎯";
+
   // Últimos 5 leads
   const ultimosLeads = leads.slice(0, 5);
 
@@ -137,8 +149,8 @@ const CorretorDashboard = () => {
     <CorretorLayout>
       <div className="max-w-3xl mx-auto space-y-6">
 
-        {/* Saudação */}
-        <div className="flex items-center justify-between">
+        {/* Saudação — welcome card with gradient */}
+        <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-violet-50 border border-primary/10 px-6 py-5 flex items-center justify-between">
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">
               {saudacao()}, {nomeCorretor.split(" ")[0]}!
@@ -160,18 +172,34 @@ const CorretorDashboard = () => {
 
         {/* Stats principais */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Hoje" value={leadsHoje.length} sub="novos leads"
-            icon={<Users className="h-5 w-5" />}
-            color="bg-blue-50 border-blue-100 text-blue-900" to="/corretor/leads" />
-          <StatCard label="Esta semana" value={leadsSemana.length} sub="leads recebidos"
-            icon={<TrendingUp className="h-5 w-5" />}
-            color="bg-violet-50 border-violet-100 text-violet-900" to="/corretor/leads" />
-          <StatCard label="Em contato" value={leadsAtivos.length} sub="em andamento"
-            icon={<MessageCircle className="h-5 w-5" />}
-            color="bg-amber-50 border-amber-100 text-amber-900" to="/corretor/pipeline" />
-          <StatCard label="Convertidos" value={convertidos.length} sub={`taxa ${taxaConversao}%`}
-            icon={<CheckCircle2 className="h-5 w-5" />}
-            color="bg-green-50 border-green-100 text-green-900" to="/corretor/pipeline" />
+          <StatCard
+            label="Hoje" value={leadsHoje.length} sub="novos leads"
+            icon={<Users className="h-4.5 w-4.5 text-blue-600" />}
+            iconBg="bg-blue-100"
+            color="bg-blue-50 border-blue-100 text-blue-900"
+            to="/corretor/leads"
+          />
+          <StatCard
+            label="Esta semana" value={leadsSemana.length} sub="leads recebidos"
+            icon={<TrendingUp className="h-4.5 w-4.5 text-violet-600" />}
+            iconBg="bg-violet-100"
+            color="bg-violet-50 border-violet-100 text-violet-900"
+            to="/corretor/leads"
+          />
+          <StatCard
+            label="Em contato" value={leadsAtivos.length} sub="em andamento"
+            icon={<MessageCircle className="h-4.5 w-4.5 text-amber-600" />}
+            iconBg="bg-amber-100"
+            color="bg-amber-50 border-amber-100 text-amber-900"
+            to="/corretor/pipeline"
+          />
+          <StatCard
+            label="Convertidos" value={convertidos.length} sub={`taxa ${taxaConversao}%`}
+            icon={<CheckCircle2 className="h-4.5 w-4.5 text-green-600" />}
+            iconBg="bg-green-100"
+            color="bg-green-50 border-green-100 text-green-900"
+            to="/corretor/pipeline"
+          />
         </div>
 
         {/* Meta do mês */}
@@ -179,7 +207,9 @@ const CorretorDashboard = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
-              <h2 className="font-semibold text-sm text-foreground">Meta do Mês</h2>
+              <h2 className="font-semibold text-sm text-foreground">
+                Meta do Mês {metaEmoji}
+              </h2>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">{convertidos.length} de {metaMes} conversões</span>
@@ -189,14 +219,23 @@ const CorretorDashboard = () => {
               </Link>
             </div>
           </div>
-          <div className="h-3 rounded-full bg-muted overflow-hidden">
+          {/* Progress bar — shows % label inside when wide enough */}
+          <div className="relative h-5 rounded-full bg-muted overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-700 ${progressoMeta >= 100 ? "bg-green-500" : progressoMeta >= 60 ? "bg-primary" : "bg-amber-500"}`}
+              className={`h-full rounded-full transition-all duration-700 flex items-center justify-end pr-2 ${
+                progressoMeta >= 100 ? "bg-green-500" : progressoMeta >= 60 ? "bg-primary" : "bg-amber-500"
+              }`}
               style={{ width: `${progressoMeta}%` }}
-            />
+            >
+              {progressoMeta > 30 && (
+                <span className="text-[10px] font-bold text-white leading-none select-none">
+                  {progressoMeta}%
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{progressoMeta}% da meta</span>
+            <span>{progressoMeta <= 30 ? `${progressoMeta}% da meta` : "progresso do mês"}</span>
             <span className={progressoMeta >= 100 ? "text-green-600 font-semibold" : ""}>
               {progressoMeta >= 100 ? "Meta batida! 🎉" : `Faltam ${metaMes - convertidos.length} conversões`}
             </span>
@@ -218,9 +257,10 @@ const CorretorDashboard = () => {
             <div className="divide-y divide-border">
               {ultimosLeads.map(lead => {
                 const s = statusConfig[lead.status];
+                const borderColor = leadBorderColor[lead.status];
                 return (
                   <Link key={lead.id} to="/corretor/leads"
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors">
+                    className={`flex items-center gap-3 pl-4 pr-5 py-3 border-l-4 ${borderColor} hover:bg-muted/30 transition-colors`}>
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 shrink-0">
                       <span className="text-xs font-bold text-primary">
                         {lead.nome.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
@@ -256,10 +296,10 @@ const CorretorDashboard = () => {
               label="Calculadora ROI"
               sub="Calcule retorno e convença investidores"
               color="border-green-100 bg-green-50/50 text-green-900 hover:border-green-300" />
-            <QuickAction to="/corretor/proposta"
-              icon={<FileText className="h-5 w-5 text-blue-600" />}
-              label="Proposta de Aquisição"
-              sub="Gere proposta formal com termos"
+            <QuickAction to="/corretor/pipeline"
+              icon={<TrendingUp className="h-5 w-5 text-blue-600" />}
+              label="Pipeline CRM"
+              sub="Gerencie seus leads e captações"
               color="border-blue-100 bg-blue-50/50 text-blue-900 hover:border-blue-300" />
             <QuickAction to="/corretor/redes-sociais"
               icon={<Megaphone className="h-5 w-5 text-violet-600" />}
@@ -273,15 +313,6 @@ const CorretorDashboard = () => {
               color="border-amber-100 bg-amber-50/50 text-amber-900 hover:border-amber-300" />
           </div>
         </div>
-
-        {/* Sem leads ainda */}
-        {leads.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-10 text-center rounded-2xl border-2 border-dashed border-border">
-            <Users className="h-12 w-12 opacity-15 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">Nenhum lead ainda</p>
-            <p className="text-xs text-muted-foreground mt-1">Seus leads aparecerão aqui assim que chegarem</p>
-          </div>
-        )}
 
       </div>
     </CorretorLayout>

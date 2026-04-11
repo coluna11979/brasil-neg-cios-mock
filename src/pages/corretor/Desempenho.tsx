@@ -92,17 +92,41 @@ function FunilVisual({ stages }: { stages: FunilStage[] }) {
 }
 
 // ─── StatCard ─────────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, sub, color }: { icon: React.ReactNode; label: string; value: string; sub?: string; color: string }) {
+function StatCard({ icon, label, value, sub, gradient }: { icon: React.ReactNode; label: string; value: string; sub?: string; gradient: string }) {
   return (
-    <div className={`rounded-2xl p-4 ${color}`}>
+    <div className={`rounded-2xl p-4 bg-gradient-to-br ${gradient} shadow-md`}>
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium opacity-75">{label}</p>
-          <p className="font-display text-2xl font-bold mt-1">{value}</p>
-          {sub && <p className="text-xs opacity-70 mt-0.5">{sub}</p>}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-white/70 truncate">{label}</p>
+          <p className="font-display text-2xl font-bold mt-1 text-white leading-none">{value}</p>
+          {sub && <p className="text-xs text-white/60 mt-1 truncate">{sub}</p>}
         </div>
-        <div className="opacity-80">{icon}</div>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 ml-2">
+          <span className="text-white [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+        </div>
       </div>
+    </div>
+  );
+}
+
+// ─── SectionHeader ────────────────────────────────────────────────────────────
+function SectionHeader({
+  icon, iconBg, title, subtitle, badge,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  title: string;
+  subtitle?: string;
+  badge?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 mb-1">
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+        <span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      </div>
+      <h2 className="font-display font-bold text-foreground leading-tight">{title}</h2>
+      {badge && badge}
+      {subtitle && <span className="ml-auto text-xs text-muted-foreground hidden sm:block">{subtitle}</span>}
     </div>
   );
 }
@@ -202,6 +226,9 @@ const CorretorDesempenho = () => {
 
   const conquistasData = { caps: captacoes, leads, comprometido };
 
+  // ── Meta emoji ──
+  const metaEmoji = metaPct >= 100 ? "🏆" : metaPct >= 60 ? "🔥" : "🎯";
+
   if (loading) {
     return (
       <CorretorLayout>
@@ -216,20 +243,27 @@ const CorretorDesempenho = () => {
     <CorretorLayout>
       <div className="space-y-6 max-w-3xl mx-auto">
 
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-display text-xl font-bold text-foreground">Meu Desempenho</h1>
-            <p className="text-sm text-muted-foreground">Simule, calcule e acompanhe sua evolução</p>
+        {/* ── Header ── */}
+        <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-violet-50 p-5 shadow-sm border border-primary/10">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15">
+                <BarChart3 className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="font-display text-xl font-bold text-foreground">Meu Desempenho</h1>
+                <p className="text-sm text-muted-foreground">Simule, calcule e acompanhe sua evolução</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setConfigOpen(!configOpen)}
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors shrink-0 ${configOpen ? "bg-primary/10 border-primary/30 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted"}`}
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              Configurar
+              {configOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
           </div>
-          <button
-            onClick={() => setConfigOpen(!configOpen)}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${configOpen ? "bg-primary/10 border-primary/30 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted"}`}
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-            Configurar
-            {configOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
         </div>
 
         {/* ── Painel de Configurações ── */}
@@ -304,11 +338,20 @@ const CorretorDesempenho = () => {
         )}
 
         {/* ── Stats reais ── */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard icon={<Target className="h-5 w-5" />}    label="Captações"    value={String(captacoes.length)} sub={`${captadosReais} captados`}          color="bg-violet-50 text-violet-900" />
-          <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Leads"        value={String(leads.length)}     sub={`${taxaConversaoReal}% conversão`}       color="bg-blue-50 text-blue-900" />
-          <StatCard icon={<Star className="h-5 w-5" />}       label="Fechamentos"  value={String(convertidosReais)} sub="leads convertidos"                       color="bg-green-50 text-green-900" />
-          <StatCard icon={<DollarSign className="h-5 w-5" />} label="Ganhos Est."  value={comissaoLiquida > 0 ? fmtK(comissaoLiquida) : "R$ —"} sub={`${comissaoPct}% × ${splitCorretor}% seu`} color="bg-amber-50 text-amber-900" />
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100">
+              <TrendingUp className="h-3.5 w-3.5 text-violet-600" />
+            </div>
+            <span className="font-bold text-sm text-foreground">Números Reais</span>
+            <span className="ml-auto text-xs text-muted-foreground">Baseado nos seus dados</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatCard icon={<Target className="h-4 w-4" />}    label="Captações"    value={String(captacoes.length)} sub={`${captadosReais} captados`}          gradient="from-violet-500 to-violet-700" />
+            <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Leads"        value={String(leads.length)}     sub={`${taxaConversaoReal}% conversão`}       gradient="from-blue-500 to-blue-700" />
+            <StatCard icon={<Star className="h-4 w-4" />}       label="Fechamentos"  value={String(convertidosReais)} sub="leads convertidos"                       gradient="from-emerald-500 to-green-700" />
+            <StatCard icon={<DollarSign className="h-4 w-4" />} label="Ganhos Est."  value={comissaoLiquida > 0 ? fmtK(comissaoLiquida) : "R$ —"} sub={`${comissaoPct}% × ${splitCorretor}% seu`} gradient="from-amber-500 to-orange-600" />
+          </div>
         </div>
 
         {/* ── Meta do mês + Projeção ── */}
@@ -316,19 +359,28 @@ const CorretorDesempenho = () => {
 
           {/* Meta */}
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <h2 className="font-display font-bold text-foreground">Meta do Mês</h2>
-              <span className="ml-auto text-xs text-muted-foreground">{now.toLocaleString("pt-BR", { month: "long" })}</span>
-            </div>
+            <SectionHeader
+              icon={<Calendar className="h-4 w-4 text-blue-600" />}
+              iconBg="bg-blue-100"
+              title={`${metaEmoji} Meta do Mês`}
+              subtitle={now.toLocaleString("pt-BR", { month: "long" })}
+            />
+            <p className="text-xs text-muted-foreground mb-4">Captações realizadas em {now.toLocaleString("pt-BR", { month: "long" })}</p>
             <div className="text-center mb-4">
               <span className="font-display text-4xl font-bold text-foreground">{capsMes}</span>
               <span className="text-lg text-muted-foreground">/{metaMes}</span>
               <p className="text-xs text-muted-foreground mt-1">captações realizadas</p>
             </div>
-            <div className="h-3 rounded-full bg-muted overflow-hidden mb-2">
-              <div className={`h-full rounded-full transition-all duration-700 ${metaPct >= 100 ? "bg-green-500" : metaPct >= 60 ? "bg-amber-400" : "bg-blue-500"}`}
-                style={{ width: `${metaPct}%` }} />
+            {/* Taller progress bar with inline percentage */}
+            <div className="h-4 rounded-full bg-muted overflow-hidden mb-2">
+              <div
+                className={`h-full rounded-full transition-all duration-700 relative flex items-center ${metaPct >= 100 ? "bg-gradient-to-r from-green-400 to-green-500" : metaPct >= 60 ? "bg-gradient-to-r from-amber-400 to-amber-500" : "bg-gradient-to-r from-blue-400 to-blue-500"}`}
+                style={{ width: `${metaPct}%` }}
+              >
+                {metaPct > 25 && (
+                  <span className="absolute right-2 text-xs font-bold text-white drop-shadow-sm">{metaPct}%</span>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
               <span>{metaPct}% da meta</span>
@@ -348,13 +400,15 @@ const CorretorDesempenho = () => {
 
           {/* Projeção anual */}
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <h2 className="font-display font-bold text-foreground">Projeção Anual</h2>
-            </div>
+            <SectionHeader
+              icon={<TrendingUp className="h-4 w-4 text-emerald-600" />}
+              iconBg="bg-emerald-100"
+              title="Projeção Anual"
+            />
+            <p className="text-xs text-muted-foreground mb-4">Estimativa baseada no ritmo atual</p>
             <div className="space-y-3">
               <div className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 p-4 text-center">
-                <p className="text-xs text-emerald-100 font-medium">Ganho projetado em 2025</p>
+                <p className="text-xs text-emerald-100 font-medium">Ganho projetado em {now.getFullYear()}</p>
                 <p className="font-display text-3xl font-bold text-white mt-1">
                   {projecaoAnual > 0 ? fmtK(projecaoAnual) : "—"}
                 </p>
@@ -378,11 +432,12 @@ const CorretorDesempenho = () => {
 
         {/* ── Calculadora Premium ── */}
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <Calculator className="h-5 w-5 text-green-600" />
-            <h2 className="font-display font-bold text-foreground">Calculadora de Comissão</h2>
-            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Com split</span>
-          </div>
+          <SectionHeader
+            icon={<Calculator className="h-4 w-4 text-green-600" />}
+            iconBg="bg-green-100"
+            title="Calculadora de Comissão"
+            badge={<span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Com split</span>}
+          />
           <p className="text-xs text-muted-foreground mb-5">Calcule quanto você vai receber em cada negócio</p>
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -447,12 +502,19 @@ const CorretorDesempenho = () => {
             <div className="flex flex-col justify-center gap-3">
               {calcValorNum > 0 ? (
                 <>
-                  <div className="rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 p-5 text-center">
-                    <p className="text-sm text-emerald-100 font-medium">Você recebe</p>
-                    <p className="font-display text-4xl font-bold text-white mt-1">{fmt(calcLiquido)}</p>
-                    {calcSplit < 100 && (
-                      <p className="text-xs text-emerald-100 mt-1">{calcSplit}% de {fmt(calcComissaoBruta)}</p>
-                    )}
+                  {/* Prominent result card */}
+                  <div className="rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 p-5 text-center shadow-lg relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_white,_transparent)]" />
+                    <p className="text-sm text-emerald-100 font-medium relative">Você recebe</p>
+                    <p className="font-display text-5xl font-bold text-white mt-2 relative leading-none">{fmt(calcLiquido)}</p>
+                    <p className="text-xs text-emerald-200 mt-2 relative font-semibold">
+                      {calcSplit < 100 ? `${calcSplit}% de ${fmt(calcComissaoBruta)}` : "100% da comissão"}
+                    </p>
+                    <div className="mt-3 pt-3 border-t border-white/20 relative">
+                      <p className="text-xs text-emerald-100">
+                        Comissão líquida — ganho real no bolso
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-2 text-sm">
@@ -470,8 +532,11 @@ const CorretorDesempenho = () => {
                         <span className="font-semibold text-red-600">- {fmt(calcAgencia)}</span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between rounded-lg bg-green-50 px-3 py-2">
-                      <span className="text-green-700 font-semibold">Seu ganho líquido</span>
+                    <div className="flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-3 py-2.5">
+                      <span className="text-green-700 font-semibold flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Seu ganho líquido
+                      </span>
                       <span className="font-display font-bold text-green-700">{fmt(calcLiquido)}</span>
                     </div>
                   </div>
@@ -488,11 +553,12 @@ const CorretorDesempenho = () => {
 
         {/* ── Simulador de Funil ── */}
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="h-5 w-5 text-violet-600" />
-            <h2 className="font-display font-bold text-foreground">Simulador de Captação</h2>
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">Interativo</span>
-          </div>
+          <SectionHeader
+            icon={<BarChart3 className="h-4 w-4 text-violet-600" />}
+            iconBg="bg-violet-100"
+            title="Simulador de Captação"
+            badge={<span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">Interativo</span>}
+          />
           <p className="text-xs text-muted-foreground mb-4">
             Simule com suas taxas reais — valor médio: {fmtK(valorMedio)} · comissão: {comissaoPct}% · sua parte: {splitCorretor}%
           </p>
@@ -531,25 +597,44 @@ const CorretorDesempenho = () => {
 
         {/* ── Conquistas ── */}
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <Trophy className="h-5 w-5 text-amber-500" />
-            <h2 className="font-display font-bold text-foreground">Conquistas</h2>
-            <span className="ml-auto text-xs text-muted-foreground">
-              {CONQUISTAS.filter((c) => c.check(conquistasData)).length}/{CONQUISTAS.length} desbloqueadas
-            </span>
-          </div>
+          <SectionHeader
+            icon={<Trophy className="h-4 w-4 text-amber-500" />}
+            iconBg="bg-amber-100"
+            title="Conquistas"
+            subtitle={`${CONQUISTAS.filter((c) => c.check(conquistasData)).length}/${CONQUISTAS.length} desbloqueadas`}
+          />
           <p className="text-xs text-muted-foreground mb-4">Evolua na plataforma e desbloqueie todas as conquistas</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {CONQUISTAS.map((c) => {
               const unlocked = c.check(conquistasData);
               return (
-                <div key={c.id} className={`relative rounded-xl border-2 p-3 text-center transition-all ${unlocked ? "border-transparent shadow-md" : "border-border bg-muted/20 opacity-50 grayscale"}`}>
-                  {unlocked && <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${c.cor} opacity-10`} />}
+                <div
+                  key={c.id}
+                  className={`relative rounded-xl border-2 p-3 text-center transition-all overflow-hidden ${
+                    unlocked
+                      ? "border-transparent shadow-md"
+                      : "border-border bg-muted/30 opacity-50 grayscale"
+                  }`}
+                >
+                  {unlocked && (
+                    <div className={`absolute inset-0 bg-gradient-to-br ${c.cor} opacity-10`} />
+                  )}
                   <div className="relative">
                     <span className="text-3xl">{c.icon}</span>
-                    <p className={`mt-1.5 text-xs font-bold ${unlocked ? "text-foreground" : "text-muted-foreground"}`}>{c.titulo}</p>
+                    <p className={`mt-1.5 text-xs font-bold ${unlocked ? "text-foreground" : "text-muted-foreground"}`}>
+                      {c.titulo}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{c.desc}</p>
-                    {unlocked && <div className="mt-2 flex items-center justify-center gap-1 text-xs text-green-600 font-semibold"><CheckCircle2 className="h-3 w-3" />Desbloqueada</div>}
+                    {unlocked ? (
+                      <div className={`mt-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${c.cor} px-2 py-0.5`}>
+                        <CheckCircle2 className="h-3 w-3 text-white" />
+                        <span className="text-xs text-white font-semibold">Desbloqueada</span>
+                      </div>
+                    ) : (
+                      <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
+                        <span className="text-xs text-muted-foreground font-medium">Bloqueada</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
