@@ -126,16 +126,25 @@ const AdminCorretores = () => {
       );
 
       // Notifica o corretor via WhatsApp quando aprovado
-      if (novoAtivo && corretor.telefone) {
-        await sendWhatsAppMessage(
-          corretor.telefone,
-          `✅ *Parabéns, ${corretor.nome.split(" ")[0]}!*\n\n` +
-          `Sua conta de corretor na *NegociaAky* foi *aprovada*! 🎉\n\n` +
-          `Agora você já pode acessar seu painel e começar a atender leads:\n\n` +
-          `🔗 *brasil-neg-cios-mock.vercel.app/corretor/login*\n` +
-          `📧 Login: *${corretor.email}*\n\n` +
-          `Boas vendas! 🚀`
-        ).catch(() => {});
+      if (novoAtivo) {
+        // Dispara email de redefinição de senha pelo Supabase
+        await supabase.auth.resetPasswordForEmail(corretor.email, {
+          redirectTo: "https://negociaaky.com.br/corretor/login",
+        });
+
+        if (corretor.telefone) {
+          await sendWhatsAppMessage(
+            corretor.telefone,
+            `✅ *Parabéns, ${corretor.nome.split(" ")[0]}!*\n\n` +
+            `Sua conta de corretor na *NegociaAky* foi *aprovada*! 🎉\n\n` +
+            `Para acessar seu painel, siga os passos:\n\n` +
+            `1️⃣ Verifique seu e-mail *${corretor.email}*\n` +
+            `2️⃣ Clique no link de acesso que enviamos agora\n` +
+            `3️⃣ Defina sua senha e entre no painel\n\n` +
+            `🔗 Login: *negociaaky.com.br/corretor/login*\n\n` +
+            `Boas vendas! 🚀`
+          ).catch(() => {});
+        }
       }
 
       if (novoAtivo) setExpandedId(null);
