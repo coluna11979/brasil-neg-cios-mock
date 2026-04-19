@@ -382,16 +382,7 @@ const CorretorLogin = () => {
                   />
                 </div>
                 <div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Senha</Label>
-                    <button
-                      type="button"
-                      onClick={() => { setModo("reset"); setResetEmail(email); }}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Esqueci minha senha
-                    </button>
-                  </div>
+                  <Label htmlFor="password">Senha</Label>
                   <Input
                     id="password"
                     type="password"
@@ -407,7 +398,28 @@ const CorretorLogin = () => {
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
-              <p className="mt-6 text-center text-xs text-muted-foreground">
+
+              {/* Divisor */}
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-card px-2 text-muted-foreground">ou</span>
+                </div>
+              </div>
+
+              {/* Botão Esqueci minha senha — destaque */}
+              <button
+                type="button"
+                onClick={() => { setModo("reset"); setResetEmail(email); }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10 hover:border-primary/50 transition-all"
+              >
+                <Mail className="h-4 w-4" />
+                Esqueci minha senha / Primeiro acesso
+              </button>
+
+              <p className="mt-4 text-center text-xs text-muted-foreground">
                 Não tem acesso?{" "}
                 <Link to="/seja-corretor" className="text-primary hover:underline font-medium">
                   Quero ser corretor
