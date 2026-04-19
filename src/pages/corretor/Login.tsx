@@ -43,35 +43,60 @@ const CorretorLogin = () => {
   // ── Detecta recovery session ao carregar a página ─────────────────────────
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
 
     const detectarRecovery = async () => {
-      // 1. PKCE flow → token_hash como query param
-      const params = new URLSearchParams(window.location.search);
-      const tokenHash = params.get("token_hash");
-      const urlType   = params.get("type");
+      // 1. Flag gravado pelo script inline do index.html ANTES do Supabase
+      //    apagar o hash/token da URL (resolve o race condition)
+      const recoveryFlag = sessionStorage.getItem("sb_recovery");
+      if (recoveryFlag) {
+        sessionStorage.removeItem("sb_recovery");
 
-      if (tokenHash && urlType === "recovery") {
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: "recovery",
+        // PKCE: verifica o token_hash se ainda estiver na URL
+        const params    = new URLSearchParams(window.location.search);
+        const tokenHash = params.get("token_hash");
+        const urlType   = params.get("type");
+
+        if (tokenHash && urlType === "recovery") {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: "recovery",
+          });
+          if (!cancelled && !error) setModo("nova-senha");
+          return;
+        }
+
+        // Implicit: Supabase já processou o hash e criou a sessão
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!cancelled && session) {
+          setModo("nova-senha");
+          return;
+        }
+
+        // Fallback: aguarda o evento PASSWORD_RECOVERY (timing favorável)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+          if (event === "PASSWORD_RECOVERY" && !cancelled) {
+            setModo("nova-senha");
+          }
         });
-        if (!cancelled && !error) setModo("nova-senha");
+        unsubscribe = () => subscription.unsubscribe();
         return;
       }
 
-      // 2. Implicit flow → Supabase processa o hash e dispara PASSWORD_RECOVERY
-      //    O evento chega via onAuthStateChange
+      // 2. Sem flag: escuta evento normalmente (fluxo manual "esqueci minha senha")
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
         if (event === "PASSWORD_RECOVERY" && !cancelled) {
           setModo("nova-senha");
         }
       });
-
-      return () => subscription.unsubscribe();
+      unsubscribe = () => subscription.unsubscribe();
     };
 
     detectarRecovery();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
   // ── Handlers ───────────────────────────────────────────────────────────────

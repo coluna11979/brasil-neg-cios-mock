@@ -19,6 +19,20 @@
 
   <body>
     <div id="root"></div>
+    <!-- Detecta recovery ANTES do Supabase apagar o hash/token da URL -->
+    <script>
+      (function () {
+        var hash   = window.location.hash;
+        var search = window.location.search;
+        var params = new URLSearchParams(search);
+        if (
+          hash.includes('type=recovery') ||
+          params.get('type') === 'recovery'
+        ) {
+          sessionStorage.setItem('sb_recovery', '1');
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
