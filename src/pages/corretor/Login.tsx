@@ -46,31 +46,51 @@ const CorretorLogin = () => {
     let unsubscribe: (() => void) | null = null;
 
     const detectarRecovery = async () => {
-      // O script inline do index.html gravou este flag ANTES do Supabase
-      // processar a URL — é o sinal confiável de que viemos de um link recovery
+      // ── Caso 1: token_hash na URL (?token_hash=xxx&type=recovery) ────────────
+      // Supabase NÃO processa isso automaticamente — precisamos chamar verifyOtp
+      const params    = new URLSearchParams(window.location.search);
+      const tokenHash = params.get("token_hash");
+      const urlType   = params.get("type");
+
+      if (tokenHash && urlType === "recovery") {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (!cancelled) {
+          if (!error) {
+            setModo("nova-senha");
+          } else {
+            // Token expirado — orienta o usuário a pedir novo link
+            setError("Link expirado. Use o botão abaixo para receber um novo.");
+          }
+        }
+        return;
+      }
+
+      // ── Caso 2: hash fragment (#access_token=xxx&type=recovery) ──────────────
+      // Supabase processa automaticamente e dispara PASSWORD_RECOVERY.
+      // O flag sb_recovery confirma que viemos de um link de recovery.
       const recoveryFlag = sessionStorage.getItem("sb_recovery");
       if (recoveryFlag) {
         sessionStorage.removeItem("sb_recovery");
-
-        // Supabase (detectSessionInUrl: true) já consumiu o token e criou a sessão
-        // NÃO chamamos verifyOtp — o token já foi usado, só checamos a sessão
+        // Supabase já estabeleceu a sessão — só confirmamos
         const { data: { session } } = await supabase.auth.getSession();
         if (!cancelled && session) {
           setModo("nova-senha");
           return;
         }
-
-        // Sessão ainda não chegou — aguarda o evento (timing edge case)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        // Sessão ainda chegando — aguarda evento
+        const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((event) => {
           if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && !cancelled) {
             setModo("nova-senha");
           }
         });
-        unsubscribe = () => subscription.unsubscribe();
+        unsubscribe = () => sub.unsubscribe();
         return;
       }
 
-      // Sem flag de recovery — escuta eventos normalmente
+      // ── Caso 3: sem indicadores — escuta evento (fluxo normal) ───────────────
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
         if (event === "PASSWORD_RECOVERY" && !cancelled) {
           setModo("nova-senha");

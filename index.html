@@ -19,17 +19,25 @@
 
   <body>
     <div id="root"></div>
-    <!-- Detecta recovery ANTES do Supabase apagar o hash/token da URL -->
+    <!-- Detecta recovery ANTES do Supabase apagar os tokens da URL -->
     <script>
       (function () {
         var hash   = window.location.hash;
         var search = window.location.search;
         var params = new URLSearchParams(search);
-        if (
+        var isRecovery =
           hash.includes('type=recovery') ||
-          params.get('type') === 'recovery'
-        ) {
+          params.get('type') === 'recovery';
+
+        if (isRecovery) {
           sessionStorage.setItem('sb_recovery', '1');
+          // Se o usuário não está na página de login, redireciona preservando os tokens
+          // (resolve o caso em que o Supabase manda para a homepage ao invés do login)
+          if (window.location.pathname !== '/corretor/login') {
+            window.location.replace(
+              '/corretor/login' + window.location.search + window.location.hash
+            );
+          }
         }
       })();
     </script>
