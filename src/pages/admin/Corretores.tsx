@@ -3,7 +3,7 @@ import usePageTitle from "@/hooks/usePageTitle";
 import {
   UserCheck, UserX, Loader2, Phone, Mail, Clock, CheckCircle,
   MessageCircle, TrendingUp, Trophy, Star, Award, MapPin,
-  ChevronDown, ChevronUp, Briefcase, Target, Lightbulb,
+  ChevronDown, ChevronUp, Briefcase, Target, Lightbulb, RefreshCw,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -161,12 +161,21 @@ const AdminCorretores = () => {
 
   return (
     <AdminLayout>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-foreground">Corretores</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {corretores.length} corretor{corretores.length !== 1 ? "es" : ""} cadastrado{corretores.length !== 1 ? "s" : ""}
-          {" · "}{pendentes.length} pendente{pendentes.length !== 1 ? "s" : ""} de aprovação
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground">Corretores</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {corretores.length} corretor{corretores.length !== 1 ? "es" : ""} cadastrado{corretores.length !== 1 ? "s" : ""}
+            {" · "}{pendentes.length} pendente{pendentes.length !== 1 ? "s" : ""} de aprovação
+          </p>
+        </div>
+        <button
+          onClick={() => { setLoading(true); fetchCorretores(); }}
+          className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Atualizar
+        </button>
+      </div>
       </div>
 
       {loading ? (

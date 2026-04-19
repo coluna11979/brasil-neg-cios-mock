@@ -720,7 +720,7 @@ const AIChatbot = () => {
             (finalVendedor.bairro ? `📍 Local: *${finalVendedor.bairro} — SP*\n` : "") +
             (precoNum ? `💰 Valor pedido: *R$ ${precoNum.toLocaleString("pt-BR")}*\n` : "") +
             (fatNum ? `📊 Faturamento: *R$ ${fatNum.toLocaleString("pt-BR")}/mês*\n` : "") +
-            `\n⚡ Revise e publique:\nbrasil-neg-cios-mock.vercel.app/admin`
+            `\n⚡ Revise e publique:\nnegociaaky.com.br/admin`
           ).catch(() => {});
         }
 
@@ -825,7 +825,7 @@ const AIChatbot = () => {
           `Recebi seu contato aqui na *NegociaAky*. ✅\n\n` +
           `Nosso consultor vai entrar em contato com você em breve pelo WhatsApp para te ajudar!\n\n` +
           `Enquanto isso, você pode ver nossas oportunidades em:\n` +
-          `🔗 brasil-neg-cios-mock.vercel.app`
+          `🔗 negociaaky.com.br`
         ).catch(() => {});
       }
 
@@ -842,7 +842,7 @@ const AIChatbot = () => {
           `🎯 Intenção: *${intencaoLabel}*\n` +
           (leadContext.categoria ? `📂 Setor: *${leadContext.categoria}*\n` : "") +
           (leadContext.mensagensLivres.length > 0 ? `💬 Disse: _"${leadContext.mensagensLivres[0]}"_\n` : "") +
-          `\n⚡ Acesse o painel agora:\nbrasil-neg-cios-mock.vercel.app/admin`
+          `\n⚡ Acesse o painel agora:\nnegociaaky.com.br/admin`
         ).catch(() => {});
       }
 

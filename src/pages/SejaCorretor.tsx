@@ -220,7 +220,7 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
         `💼 Atuação: *${form.atuacao || "não informado"}*\n` +
         `🪪 CRECI: *${form.creci.trim() || "não informado"}*\n\n` +
         `Acesse o painel admin para aprovar:\n` +
-        `https://brasil-neg-cios-mock.vercel.app/admin/corretores`
+        `https://negociaaky.com.br/admin/corretores`
       ).catch(() => {});
     }
 
@@ -233,7 +233,7 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
         `Recebemos sua candidatura na *NegociaAky* e já está em análise pela nossa equipe.\n\n` +
         `⏳ Em até 24h você será aprovado e receberá outro aviso aqui.\n\n` +
         `Após a aprovação, acesse seu painel em:\n` +
-        `🔗 brasil-neg-cios-mock.vercel.app/corretor/login\n` +
+        `🔗 negociaaky.com.br/corretor/login\n` +
         `📧 Login: *${form.email}*\n` +
         `🔑 Senha temporária: ${senhaTemp}\n\n` +
         `_Recomendamos trocar a senha no primeiro acesso._\n\n` +
