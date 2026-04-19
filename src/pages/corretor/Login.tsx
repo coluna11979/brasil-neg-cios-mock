@@ -1,44 +1,80 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import usePageTitle from "@/hooks/usePageTitle";
-import { UserCircle, LogIn, AlertCircle, Clock, Mail, CheckCircle2 } from "lucide-react";
+import {
+  UserCircle, LogIn, AlertCircle, Clock, Mail,
+  CheckCircle2, KeyRound, Eye, EyeOff,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/stores/authStore";
 import { supabase } from "@/lib/supabase";
 
+type Modo = "login" | "reset" | "nova-senha";
+
 const CorretorLogin = () => {
   usePageTitle("Área do Corretor");
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+
+  const [modo, setModo] = useState<Modo>("login");
+
+  // ── Login ──────────────────────────────────────────────────────────────────
+  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error,    setError]    = useState("");
+  const [loading,  setLoading]  = useState(false);
   const [pendente, setPendente] = useState(false);
 
-  // Esqueci senha
-  const [modo, setModo] = useState<"login" | "reset">("login");
-  const [resetEmail, setResetEmail] = useState("");
+  // ── Esqueci senha ──────────────────────────────────────────────────────────
+  const [resetEmail,   setResetEmail]   = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [resetEnviado, setResetEnviado] = useState(false);
-  const [resetError, setResetError] = useState("");
+  const [resetError,   setResetError]   = useState("");
 
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setResetError("");
-    setResetLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: "https://negociaaky.com.br/corretor/login",
-    });
-    if (error) {
-      setResetError("Erro ao enviar. Verifique o e-mail e tente novamente.");
-    } else {
-      setResetEnviado(true);
-    }
-    setResetLoading(false);
-  };
+  // ── Nova senha (recovery flow) ─────────────────────────────────────────────
+  const [novaSenha,     setNovaSenha]     = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [mostrarSenha,  setMostrarSenha]  = useState(false);
+  const [salvando,      setSalvando]      = useState(false);
+  const [erroSenha,     setErroSenha]     = useState("");
+  const [senhaSalva,    setSenhaSalva]    = useState(false);
 
+  // ── Detecta recovery session ao carregar a página ─────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const detectarRecovery = async () => {
+      // 1. PKCE flow → token_hash como query param
+      const params = new URLSearchParams(window.location.search);
+      const tokenHash = params.get("token_hash");
+      const urlType   = params.get("type");
+
+      if (tokenHash && urlType === "recovery") {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (!cancelled && !error) setModo("nova-senha");
+        return;
+      }
+
+      // 2. Implicit flow → Supabase processa o hash e dispara PASSWORD_RECOVERY
+      //    O evento chega via onAuthStateChange
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY" && !cancelled) {
+          setModo("nova-senha");
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    };
+
+    detectarRecovery();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -47,7 +83,6 @@ const CorretorLogin = () => {
     try {
       const success = await login(email, password);
       if (success) {
-        // Verifica se o corretor está aprovado
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: profile } = await supabase
@@ -55,9 +90,7 @@ const CorretorLogin = () => {
             .select("ativo, role")
             .eq("id", user.id)
             .single();
-
           if (profile?.role === "corretor" && !profile?.ativo) {
-            // Faz logout e bloqueia o acesso
             await supabase.auth.signOut();
             setPendente(true);
             return;
@@ -74,13 +107,55 @@ const CorretorLogin = () => {
     }
   };
 
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError("");
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: "https://negociaaky.com.br/corretor/login",
+    });
+    if (error) {
+      setResetError("Erro ao enviar. Verifique o e-mail e tente novamente.");
+    } else {
+      setResetEnviado(true);
+    }
+    setResetLoading(false);
+  };
+
+  const handleNovaSenha = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErroSenha("");
+    if (novaSenha.length < 6) {
+      setErroSenha("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    if (novaSenha !== confirmarSenha) {
+      setErroSenha("As senhas não coincidem. Tente novamente.");
+      return;
+    }
+    setSalvando(true);
+    const { error } = await supabase.auth.updateUser({ password: novaSenha });
+    if (error) {
+      setErroSenha("Erro ao salvar. Solicite um novo link de acesso.");
+    } else {
+      setSenhaSalva(true);
+      setTimeout(() => navigate("/corretor"), 2500);
+    }
+    setSalvando(false);
+  };
+
+  // ── Força da senha ─────────────────────────────────────────────────────────
+  const forca = novaSenha.length === 0 ? 0
+    : novaSenha.length < 6  ? 1
+    : novaSenha.length < 9  ? 2
+    : novaSenha.length < 12 ? 3 : 4;
+  const forcaCor   = ["", "bg-red-400", "bg-amber-400", "bg-blue-400", "bg-green-500"][forca];
+  const forcaLabel = ["", "Muito curta", "Fraca", "Boa", "Forte 💪"][forca];
+
+  // ── Layout base ─────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-secondary px-4">
-      {/* Back to site */}
-      <Link
-        to="/"
-        className="mb-8 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
+      <Link to="/" className="mb-8 text-sm text-muted-foreground hover:text-foreground transition-colors">
         ← Voltar para o site
       </Link>
 
@@ -88,11 +163,14 @@ const CorretorLogin = () => {
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg">
-            <UserCircle className="h-7 w-7 text-primary-foreground" />
+            {modo === "nova-senha"
+              ? <KeyRound className="h-7 w-7 text-primary-foreground" />
+              : <UserCircle className="h-7 w-7 text-primary-foreground" />
+            }
           </div>
           <div className="text-center">
             <h1 className="font-display text-2xl font-bold text-foreground">
-              Área do Corretor
+              {modo === "nova-senha" ? "Criar Nova Senha" : "Área do Corretor"}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               NegociaAky — Acesso exclusivo para corretores
@@ -103,8 +181,89 @@ const CorretorLogin = () => {
         {/* Card */}
         <div className="rounded-2xl border border-border bg-card p-8 shadow-lg">
 
-          {/* ── MODO RESET ── */}
-          {modo === "reset" ? (
+          {/* ══ NOVA SENHA (recovery) ══════════════════════════════════════════ */}
+          {modo === "nova-senha" && (
+            <>
+              {senhaSalva ? (
+                <div className="flex flex-col items-center gap-3 py-4 text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+                    <CheckCircle2 className="h-7 w-7 text-green-600" />
+                  </div>
+                  <p className="font-semibold text-foreground">Senha criada com sucesso!</p>
+                  <p className="text-sm text-muted-foreground">Entrando na sua área…</p>
+                </div>
+              ) : (
+                <form onSubmit={handleNovaSenha} className="space-y-5">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Escolha uma senha segura para acessar sua conta.
+                  </p>
+
+                  {erroSenha && (
+                    <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      {erroSenha}
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="nova-senha">Nova senha</Label>
+                    <div className="relative mt-1.5">
+                      <Input
+                        id="nova-senha"
+                        type={mostrarSenha ? "text" : "password"}
+                        placeholder="Mínimo 6 caracteres"
+                        value={novaSenha}
+                        onChange={(e) => setNovaSenha(e.target.value)}
+                        required
+                        autoFocus
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMostrarSenha(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        tabIndex={-1}
+                      >
+                        {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {novaSenha.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex gap-1">
+                        {[1,2,3,4].map(n => (
+                          <div key={n} className={`h-1.5 flex-1 rounded-full transition-all ${n <= forca ? forcaCor : "bg-muted"}`} />
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{forcaLabel}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="confirmar-senha">Confirmar senha</Label>
+                    <Input
+                      id="confirmar-senha"
+                      type={mostrarSenha ? "text" : "password"}
+                      placeholder="Repita a senha"
+                      value={confirmarSenha}
+                      onChange={(e) => setConfirmarSenha(e.target.value)}
+                      required
+                      className="mt-1.5"
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full gap-2 font-semibold" size="lg" disabled={salvando}>
+                    <KeyRound className="h-4 w-4" />
+                    {salvando ? "Salvando…" : "Salvar nova senha"}
+                  </Button>
+                </form>
+              )}
+            </>
+          )}
+
+          {/* ══ ESQUECI SENHA ═════════════════════════════════════════════════ */}
+          {modo === "reset" && (
             <>
               {resetEnviado ? (
                 <div className="flex flex-col items-center gap-3 py-4 text-center">
@@ -163,72 +322,75 @@ const CorretorLogin = () => {
                 </form>
               )}
             </>
-          ) : (
-          /* ── MODO LOGIN ── */
-          <>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {pendente && (
-                <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-                  <Clock className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
-                  <div>
-                    <p className="font-semibold">Cadastro em análise</p>
-                    <p className="mt-0.5 text-amber-700">Sua conta ainda não foi aprovada. Em até 24h você receberá um aviso pelo WhatsApp.</p>
-                  </div>
-                </div>
-              )}
-              {error && (
-                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  {error}
-                </div>
-              )}
-              <div>
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1.5"
-                  required
-                  autoFocus
-                />
-              </div>
-              <div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
-                  <button
-                    type="button"
-                    onClick={() => { setModo("reset"); setResetEmail(email); }}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Esqueci minha senha
-                  </button>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Sua senha"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1.5"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full gap-2 font-semibold" size="lg" disabled={loading}>
-                <LogIn className="h-4 w-4" />
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-            <p className="mt-6 text-center text-xs text-muted-foreground">
-              Não tem acesso?{" "}
-              <Link to="/seja-corretor" className="text-primary hover:underline font-medium">
-                Quero ser corretor
-              </Link>
-            </p>
-          </>
           )}
+
+          {/* ══ LOGIN ═════════════════════════════════════════════════════════ */}
+          {modo === "login" && (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {pendente && (
+                  <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                    <Clock className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
+                    <div>
+                      <p className="font-semibold">Cadastro em análise</p>
+                      <p className="mt-0.5 text-amber-700">Sua conta ainda não foi aprovada. Em até 24h você receberá um aviso pelo WhatsApp.</p>
+                    </div>
+                  </div>
+                )}
+                {error && (
+                  <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {error}
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="mt-1.5"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Senha</Label>
+                    <button
+                      type="button"
+                      onClick={() => { setModo("reset"); setResetEmail(email); }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1.5"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full gap-2 font-semibold" size="lg" disabled={loading}>
+                  <LogIn className="h-4 w-4" />
+                  {loading ? "Entrando..." : "Entrar"}
+                </Button>
+              </form>
+              <p className="mt-6 text-center text-xs text-muted-foreground">
+                Não tem acesso?{" "}
+                <Link to="/seja-corretor" className="text-primary hover:underline font-medium">
+                  Quero ser corretor
+                </Link>
+              </p>
+            </>
+          )}
+
         </div>
       </div>
     </div>

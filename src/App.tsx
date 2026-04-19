@@ -48,6 +48,7 @@ const CorretorRedesSociais = lazy(() => import("./pages/corretor/RedesSociais"))
 const CorretorCalculadoraROI = lazy(() => import("./pages/corretor/CalculadoraROI"));
 const CorretorDashboard = lazy(() => import("./pages/corretor/Dashboard"));
 const CorretorPerfil = lazy(() => import("./pages/corretor/Perfil"));
+const CorretorNovaSenha = lazy(() => import("./pages/corretor/NovaSenha"));
 const AdminMateriais = lazy(() => import("./pages/admin/Materiais"));
 const AdminConfiguracoes = lazy(() => import("./pages/admin/Configuracoes"));
 
@@ -101,6 +102,7 @@ const App = () => (
 
                   {/* Corretor */}
                   <Route path="/corretor/login" element={<CorretorLogin />} />
+                  <Route path="/corretor/nova-senha" element={<CorretorNovaSenha />} />
                   <Route path="/corretor" element={<Navigate to="/corretor/dashboard" replace />} />
                   <Route path="/corretor/dashboard" element={<CorretorDashboard />} />
                   <Route path="/corretor/mensagens" element={<CorretorMensagens />} />
