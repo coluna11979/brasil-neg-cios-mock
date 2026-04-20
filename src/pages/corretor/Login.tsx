@@ -41,13 +41,25 @@ const CorretorLogin = () => {
   const [senhaSalva,    setSenhaSalva]    = useState(false);
 
   // ── Detecta recovery session ao carregar a página ─────────────────────────
+  // Múltiplas camadas de detecção (defensiva contra race conditions):
+  //  A) token_hash na query string (PKCE flow) → verifyOtp
+  //  B) flag sb_recovery em sessionStorage (setado por pre-boot.ts OU pelo
+  //     listener global em src/lib/supabase.ts) → entra em modo nova-senha
+  //  C) evento PASSWORD_RECOVERY disparado depois do mount → entra em modo
+  //  D) polling curto (6s) como rede de segurança final
   useEffect(() => {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+    const ativarNovaSenha = () => {
+      if (cancelled) return;
+      sessionStorage.removeItem("sb_recovery");
+      setModo("nova-senha");
+    };
 
     const detectarRecovery = async () => {
-      // ── Caso 1: token_hash na URL (?token_hash=xxx&type=recovery) ────────────
-      // Supabase NÃO processa isso automaticamente — precisamos chamar verifyOtp
+      // ── A) PKCE: ?token_hash=xxx&type=recovery ──────────────────────────────
       const params    = new URLSearchParams(window.location.search);
       const tokenHash = params.get("token_hash");
       const urlType   = params.get("type");
@@ -58,51 +70,50 @@ const CorretorLogin = () => {
           type: "recovery",
         });
         if (!cancelled) {
-          if (!error) {
-            setModo("nova-senha");
-          } else {
-            // Token expirado — orienta o usuário a pedir novo link
-            setError("Link expirado. Use o botão abaixo para receber um novo.");
-          }
+          if (!error) ativarNovaSenha();
+          else setError("Link expirado. Use o botão abaixo para receber um novo.");
         }
         return;
       }
 
-      // ── Caso 2: hash fragment (#access_token=xxx&type=recovery) ──────────────
-      // Supabase processa automaticamente e dispara PASSWORD_RECOVERY.
-      // O flag sb_recovery confirma que viemos de um link de recovery.
-      const recoveryFlag = sessionStorage.getItem("sb_recovery");
-      if (recoveryFlag) {
-        sessionStorage.removeItem("sb_recovery");
-        // Supabase já estabeleceu a sessão — só confirmamos
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!cancelled && session) {
-          setModo("nova-senha");
-          return;
-        }
-        // Sessão ainda chegando — aguarda evento
-        const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((event) => {
-          if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && !cancelled) {
-            setModo("nova-senha");
-          }
-        });
-        unsubscribe = () => sub.unsubscribe();
+      // ── B) Flag já setado (pre-boot.ts ou listener global) ──────────────────
+      if (sessionStorage.getItem("sb_recovery")) {
+        ativarNovaSenha();
         return;
       }
 
-      // ── Caso 3: sem indicadores — escuta evento (fluxo normal) ───────────────
+      // ── C) Listener para eventos PASSWORD_RECOVERY que cheguem depois ───────
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
         if (event === "PASSWORD_RECOVERY" && !cancelled) {
-          setModo("nova-senha");
+          ativarNovaSenha();
         }
       });
       unsubscribe = () => subscription.unsubscribe();
+
+      // ── D) Polling curto — se o flag aparecer nos próximos 6s, ativamos.
+      // Cobre o caso onde o evento PASSWORD_RECOVERY foi disparado antes de
+      // registrarmos o listener acima (race condition no createClient).
+      let ticks = 0;
+      pollTimer = setInterval(() => {
+        if (cancelled) return;
+        if (sessionStorage.getItem("sb_recovery")) {
+          if (pollTimer) clearInterval(pollTimer);
+          ativarNovaSenha();
+          return;
+        }
+        ticks += 1;
+        if (ticks >= 12 && pollTimer) { // 12 * 500ms = 6s
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+      }, 500);
     };
 
     detectarRecovery();
     return () => {
       cancelled = true;
       unsubscribe?.();
+      if (pollTimer) clearInterval(pollTimer);
     };
   }, []);
 
@@ -144,7 +155,7 @@ const CorretorLogin = () => {
     setResetError("");
     setResetLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: "https://negociaaky.com.br/corretor/login",
+      redirectTo: "https://www.negociaaky.com.br/corretor/login",
     });
     if (error) {
       setResetError("Erro ao enviar. Verifique o e-mail e tente novamente.");

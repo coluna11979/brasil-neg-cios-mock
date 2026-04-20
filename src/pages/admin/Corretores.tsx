@@ -129,7 +129,7 @@ const AdminCorretores = () => {
       if (novoAtivo) {
         // Dispara email de redefinição de senha pelo Supabase
         await supabase.auth.resetPasswordForEmail(corretor.email, {
-          redirectTo: "https://negociaaky.com.br/corretor/login",
+          redirectTo: "https://www.negociaaky.com.br/corretor/login",
         });
 
         if (corretor.telefone) {
@@ -175,7 +175,6 @@ const AdminCorretores = () => {
         >
           <RefreshCw className="h-3.5 w-3.5" /> Atualizar
         </button>
-      </div>
       </div>
 
       {loading ? (
