@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import usePageTitle from "@/hooks/usePageTitle";
 import { supabase } from "@/lib/supabase";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
-import { login } from "@/stores/authStore";
-import { ArrowLeft, CheckCircle, UserCheck, TrendingUp, Handshake, Wallet, LogIn, AlertCircle, Clock, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, UserCheck, TrendingUp, Handshake, Wallet, Sparkles, Loader2, Clock, Inbox } from "lucide-react";
 import { callClaude } from "@/lib/anthropic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,51 +28,11 @@ const BENEFICIOS = [
 
 const SejaCorretor = () => {
   usePageTitle("Seja um Corretor – NegociaAky");
-  const navigate = useNavigate();
-
-  const [modo, setModo] = useState<"cadastro" | "login">("cadastro");
-  const [loginForm, setLoginForm] = useState({ email: "", senha: "" });
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState("");
-  const [loginPendente, setLoginPendente] = useState(false);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError("");
-    setLoginPendente(false);
-    setLoginLoading(true);
-    try {
-      const success = await login(loginForm.email, loginForm.senha);
-      if (success) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("ativo, role")
-            .eq("id", user.id)
-            .single();
-          if (profile?.role === "corretor" && !profile?.ativo) {
-            await supabase.auth.signOut();
-            setLoginPendente(true);
-            return;
-          }
-        }
-        navigate("/corretor/mensagens");
-      } else {
-        setLoginError("E-mail ou senha incorretos.");
-      }
-    } catch {
-      setLoginError("Erro ao conectar. Tente novamente.");
-    } finally {
-      setLoginLoading(false);
-    }
-  };
 
   const [enviado, setEnviado] = useState(false);
   const [form, setForm] = useState({
     nome: "", whatsapp: "", email: "", cidade: "São Paulo",
     creci: "", experiencia: "", atuacao: "", sobre: "",
-    dataNascimento: "", cidadeNascimento: "", estadoNascimento: "",
     motivacao: "", objetivo: "", comprometido: false,
     bairro: "", cep: "",
   });
@@ -81,11 +40,28 @@ const SejaCorretor = () => {
   const [iaLoading, setIaLoading] = useState(false);
   const [iaSugestoes, setIaSugestoes] = useState<string[]>([]);
 
+  // Máscara de WhatsApp BR — (11) 9 9999-9999
+  const formatWhatsApp = (val: string) => {
+    const d = val.replace(/\D/g, "").slice(0, 11);
+    if (d.length <= 2)  return d;
+    if (d.length <= 3)  return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 7)  return `(${d.slice(0, 2)}) ${d.slice(2, 3)} ${d.slice(3)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 3)} ${d.slice(3, 7)}-${d.slice(7)}`;
+  };
+
+  // Máscara CEP — 00000-000
+  const formatCep = (val: string) => {
+    const d = val.replace(/\D/g, "").slice(0, 8);
+    return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+  };
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.nome.trim()) e.nome = "Obrigatório";
-    if (!form.whatsapp.trim()) e.whatsapp = "Obrigatório";
-    if (!form.email.trim() || !form.email.includes("@")) e.email = "E-mail inválido";
+    const whatsDigits = form.whatsapp.replace(/\D/g, "");
+    if (!whatsDigits) e.whatsapp = "Obrigatório";
+    else if (whatsDigits.length < 10 || whatsDigits.length > 11) e.whatsapp = "Número incompleto";
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "E-mail inválido";
     if (!form.atuacao) e.atuacao = "Obrigatório";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -100,8 +76,7 @@ const SejaCorretor = () => {
 Dados do corretor:
 - Nome: ${form.nome || "não informado"}
 - Cidade de atuação: ${form.cidade}
-- Data de nascimento: ${form.dataNascimento || "não informada"}
-- Cidade/Estado de nascimento: ${form.cidadeNascimento ? `${form.cidadeNascimento}/${form.estadoNascimento}` : "não informado"}
+- Bairro/Região: ${form.bairro || "não informado"}
 - Área de atuação: ${form.atuacao || "não informada"}
 - Experiência: ${form.experiencia || "não informada"}
 - CRECI: ${form.creci || "não informado"}
@@ -132,11 +107,14 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
     e.preventDefault();
     if (!validate()) return;
 
-    // 1. Cria conta no Supabase Auth (senha temporária — corretor vai redefinir depois)
-    const senhaTemp = `NJ_${Math.random().toString(36).slice(2, 10)}`;
+    // 1. Cria conta no Supabase Auth com senha aleatória forte que o corretor
+    //    NÃO precisa conhecer — após aprovação ele cria a senha real via link.
+    //    Importante: a senha NUNCA é enviada por WhatsApp/email para evitar
+    //    exposição em históricos de mensagens.
+    const senhaInicial = crypto.randomUUID() + crypto.randomUUID();
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: form.email,
-      password: senhaTemp,
+      password: senhaInicial,
       options: {
         data: {
           nome: form.nome,
@@ -224,20 +202,22 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
       ).catch(() => {});
     }
 
-    // 4. WhatsApp para o CORRETOR com instruções de acesso
+    // 4. WhatsApp para o CORRETOR — apenas confirmação. O acesso só é
+    //    liberado após a aprovação do admin, e nesse momento ele recebe um
+    //    link único e seguro por e-mail para criar a própria senha.
+    //    Nada de senha em texto claro no histórico do WhatsApp!
     const telefoneCorretor = form.whatsapp.replace(/\D/g, "");
     if (telefoneCorretor.length >= 10) {
       await sendWhatsAppMessage(
         telefoneCorretor,
         `Olá, *${form.nome.split(" ")[0]}*! 👋\n\n` +
-        `Recebemos sua candidatura na *NegociaAky* e já está em análise pela nossa equipe.\n\n` +
-        `⏳ Em até 24h você será aprovado e receberá outro aviso aqui.\n\n` +
-        `Após a aprovação, acesse seu painel em:\n` +
-        `🔗 negociaaky.com.br/corretor/login\n` +
-        `📧 Login: *${form.email}*\n` +
-        `🔑 Senha temporária: ${senhaTemp}\n\n` +
-        `_Recomendamos trocar a senha no primeiro acesso._\n\n` +
-        `Qualquer dúvida, é só responder aqui! 😊`
+        `Recebemos sua candidatura na *NegociaAky* e ela já está em análise pela nossa equipe.\n\n` +
+        `⏳ *Próximos passos:*\n` +
+        `1️⃣ Em até 24h analisamos seu cadastro\n` +
+        `2️⃣ Quando aprovado, você recebe um *e-mail* com link seguro para criar sua senha\n` +
+        `3️⃣ Acessa seu painel em *negociaaky.com.br/corretor/login*\n\n` +
+        `📧 Fique de olho no e-mail *${form.email}* (cheque também o spam).\n\n` +
+        `Qualquer dúvida, é só responder por aqui! 😊`
       ).catch(() => {});
     }
 
@@ -252,20 +232,78 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
       <div className="flex min-h-screen flex-col">
         <Header />
         <main className="flex flex-1 items-center justify-center py-16 px-4">
-          <div className="mx-auto max-w-md text-center">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
-              <CheckCircle className="h-10 w-10 text-success" />
+          <div className="mx-auto max-w-lg w-full">
+            {/* Card de sucesso com timeline dos próximos passos */}
+            <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+              <div className="flex flex-col items-center text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+                  <CheckCircle className="h-10 w-10 text-green-600" />
+                </div>
+                <h1 className="mt-6 font-display text-2xl font-bold text-foreground">
+                  Candidatura recebida!
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                  Obrigado, <strong className="text-foreground">{form.nome.split(" ")[0]}</strong>!
+                  Seu cadastro está em análise.
+                </p>
+              </div>
+
+              {/* Timeline / próximos passos */}
+              <div className="mt-8 border-t border-border pt-6 space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Próximos passos
+                </p>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                    <Clock className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div className="pt-0.5">
+                    <p className="text-sm font-semibold text-foreground">Análise em até 24h</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Nossa equipe vai revisar seu cadastro e te avisar pelo WhatsApp.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
+                    <Inbox className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="pt-0.5">
+                    <p className="text-sm font-semibold text-foreground">
+                      Verifique seu e-mail
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Quando aprovado, enviamos um link seguro para <strong className="text-foreground">{form.email}</strong> para você criar sua senha.
+                      <br />
+                      <span className="text-amber-700">Cheque também o spam.</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <UserCheck className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="pt-0.5">
+                    <p className="text-sm font-semibold text-foreground">Acesse o painel</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Após criar sua senha, você cai direto no seu painel de corretor.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                <Button asChild variant="outline" className="flex-1">
+                  <Link to="/">Voltar para Home</Link>
+                </Button>
+                <Button asChild className="flex-1">
+                  <Link to="/corretor/login">Ir para o Login</Link>
+                </Button>
+              </div>
             </div>
-            <h1 className="mt-6 font-display text-2xl font-bold text-foreground">
-              Candidatura Recebida!
-            </h1>
-            <p className="mt-3 text-muted-foreground">
-              Obrigado, <strong className="text-foreground">{form.nome}</strong>! Recebemos seu cadastro.
-              Nossa equipe vai analisar e entrar em contato pelo WhatsApp em breve.
-            </p>
-            <Button asChild className="mt-8">
-              <Link to="/">Voltar para Home</Link>
-            </Button>
           </div>
         </main>
         <Footer />
@@ -320,88 +358,19 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
 
             {/* Formulário */}
             <div className="mx-auto max-w-xl">
-              {/* Toggle cadastro / login */}
-              <div className="flex rounded-xl border border-border bg-muted/40 p-1 mb-6">
-                <button
-                  type="button"
-                  onClick={() => setModo("cadastro")}
-                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${modo === "cadastro" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              {/* Banner para quem já é corretor */}
+              <div className="mb-6 flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
+                <p className="text-sm text-muted-foreground">
+                  Já é corretor cadastrado?
+                </p>
+                <Link
+                  to="/corretor/login"
+                  className="text-sm font-semibold text-primary hover:underline"
                 >
-                  Quero me cadastrar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModo("login")}
-                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${modo === "login" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Já sou cadastrado
-                </button>
+                  Entrar no painel →
+                </Link>
               </div>
 
-              {/* Login form */}
-              {modo === "login" && (
-                <div className="rounded-xl border border-border bg-card p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <LogIn className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="font-display text-xl font-bold text-foreground">Entrar no painel</h2>
-                      <p className="text-xs text-muted-foreground">Acesse seu CRM de corretor</p>
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    {loginPendente && (
-                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-                        <Clock className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
-                        <div>
-                          <p className="font-semibold">Cadastro em análise</p>
-                          <p className="mt-0.5 text-amber-700">Sua conta ainda não foi aprovada. Em até 24h você receberá um aviso pelo WhatsApp.</p>
-                        </div>
-                      </div>
-                    )}
-                    {loginError && (
-                      <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                        <AlertCircle className="h-4 w-4 shrink-0" />
-                        {loginError}
-                      </div>
-                    )}
-                    <div>
-                      <Label htmlFor="login-email">E-mail</Label>
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={loginForm.email}
-                        onChange={(e) => setLoginForm((p) => ({ ...p, email: e.target.value }))}
-                        className="mt-1.5"
-                        required
-                        autoFocus
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="login-senha">Senha</Label>
-                      <Input
-                        id="login-senha"
-                        type="password"
-                        placeholder="Sua senha"
-                        value={loginForm.senha}
-                        onChange={(e) => setLoginForm((p) => ({ ...p, senha: e.target.value }))}
-                        className="mt-1.5"
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full gap-2 font-semibold" size="lg" disabled={loginLoading}>
-                      <LogIn className="h-4 w-4" />
-                      {loginLoading ? "Entrando..." : "Entrar no meu painel"}
-                    </Button>
-                  </form>
-                </div>
-              )}
-
-              {/* Cadastro form */}
-              {modo === "cadastro" && (
               <div className="rounded-xl border border-border bg-card p-8">
                 <h2 className="font-display text-xl font-bold text-foreground mb-6">
                   Cadastre-se como corretor
@@ -419,9 +388,15 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="whatsapp">WhatsApp *</Label>
-                      <Input id="whatsapp" className={`mt-2 ${errors.whatsapp ? "border-destructive" : ""}`}
-                        placeholder="(11) 9 0000-0000" value={form.whatsapp}
-                        onChange={(e) => setForm((p) => ({ ...p, whatsapp: e.target.value }))} />
+                      <Input
+                        id="whatsapp"
+                        type="tel"
+                        inputMode="numeric"
+                        className={`mt-2 ${errors.whatsapp ? "border-destructive" : ""}`}
+                        placeholder="(11) 9 9999-9999"
+                        value={form.whatsapp}
+                        onChange={(e) => setForm((p) => ({ ...p, whatsapp: formatWhatsApp(e.target.value) }))}
+                      />
                       {err("whatsapp")}
                     </div>
                     <div>
@@ -445,10 +420,14 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="cep">CEP de atuação</Label>
-                      <Input id="cep" className="mt-2" placeholder="00000-000"
-                        maxLength={9}
+                      <Input
+                        id="cep"
+                        inputMode="numeric"
+                        className="mt-2"
+                        placeholder="00000-000"
                         value={form.cep}
-                        onChange={(e) => setForm((p) => ({ ...p, cep: e.target.value }))} />
+                        onChange={(e) => setForm((p) => ({ ...p, cep: formatCep(e.target.value) }))}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="bairro">Bairro / Região principal</Label>
@@ -488,29 +467,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                           <SelectItem value="5+">Mais de 5 anos</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                  </div>
-
-                  {/* Data e local de nascimento */}
-                  <div className="grid gap-5 sm:grid-cols-3">
-                    <div>
-                      <Label htmlFor="dataNascimento">Data de nascimento</Label>
-                      <Input id="dataNascimento" type="date" className="mt-2"
-                        value={form.dataNascimento}
-                        onChange={(e) => setForm((p) => ({ ...p, dataNascimento: e.target.value }))} />
-                    </div>
-                    <div>
-                      <Label htmlFor="cidadeNascimento">Cidade natal</Label>
-                      <Input id="cidadeNascimento" className="mt-2" placeholder="Ex: Recife"
-                        value={form.cidadeNascimento}
-                        onChange={(e) => setForm((p) => ({ ...p, cidadeNascimento: e.target.value }))} />
-                    </div>
-                    <div>
-                      <Label htmlFor="estadoNascimento">Estado natal</Label>
-                      <Input id="estadoNascimento" className="mt-2" placeholder="Ex: PE"
-                        maxLength={2}
-                        value={form.estadoNascimento}
-                        onChange={(e) => setForm((p) => ({ ...p, estadoNascimento: e.target.value.toUpperCase() }))} />
                     </div>
                   </div>
 
@@ -618,7 +574,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                   </Button>
                 </form>
               </div>
-              )}
             </div>
           </div>
         </div>

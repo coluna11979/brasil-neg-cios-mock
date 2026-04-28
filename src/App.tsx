@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/admin/ProtectedRoute";
+import CorretorProtectedRoute from "@/components/corretor/CorretorProtectedRoute";
 import GlobalCaptureWidgets from "@/components/GlobalCaptureWidgets";
 import { BuyerProvider } from "@/contexts/BuyerContext";
 import BuyerAuthModal from "@/components/BuyerAuthModal";
@@ -100,19 +101,21 @@ const App = () => (
                   <Route path="/admin/configuracoes" element={<ProtectedRoute><AdminConfiguracoes /></ProtectedRoute>} />
                   <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
 
-                  {/* Corretor */}
+                  {/* Corretor — públicas */}
                   <Route path="/corretor/login" element={<CorretorLogin />} />
                   <Route path="/corretor/nova-senha" element={<CorretorNovaSenha />} />
                   <Route path="/corretor" element={<Navigate to="/corretor/dashboard" replace />} />
-                  <Route path="/corretor/dashboard" element={<CorretorDashboard />} />
-                  <Route path="/corretor/mensagens" element={<CorretorMensagens />} />
-                  <Route path="/corretor/leads" element={<CorretorLeads />} />
-                  <Route path="/corretor/pipeline" element={<CorretorPipeline />} />
-                  <Route path="/corretor/desempenho" element={<CorretorDesempenho />} />
-                  <Route path="/corretor/redes-sociais" element={<CorretorRedesSociais />} />
-                  <Route path="/corretor/materiais" element={<CorretorMateriais />} />
-                  <Route path="/corretor/calculadora-roi" element={<CorretorCalculadoraROI />} />
-                  <Route path="/corretor/perfil" element={<CorretorPerfil />} />
+
+                  {/* Corretor — protegidas */}
+                  <Route path="/corretor/dashboard"      element={<CorretorProtectedRoute><CorretorDashboard /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/mensagens"      element={<CorretorProtectedRoute><CorretorMensagens /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/leads"          element={<CorretorProtectedRoute><CorretorLeads /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/pipeline"       element={<CorretorProtectedRoute><CorretorPipeline /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/desempenho"     element={<CorretorProtectedRoute><CorretorDesempenho /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/redes-sociais"  element={<CorretorProtectedRoute><CorretorRedesSociais /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/materiais"      element={<CorretorProtectedRoute><CorretorMateriais /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/calculadora-roi" element={<CorretorProtectedRoute><CorretorCalculadoraROI /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/perfil"         element={<CorretorProtectedRoute><CorretorPerfil /></CorretorProtectedRoute>} />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
