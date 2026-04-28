@@ -6,10 +6,14 @@ import { Loader2 } from "lucide-react";
 /**
  * Protege rotas /corretor/*.
  * Regras:
- *  - Sem sessão                         → redireciona para /corretor/login
- *  - Sessão de role !== "corretor"      → redireciona para /corretor/login
- *  - Corretor com ativo === false       → redireciona para /corretor/login
- *    (mostra mensagem "cadastro em análise" lá — fluxo já existente)
+ *  - Sem sessão                         → /corretor/login
+ *  - role === "admin"                   → ACESSO LIBERADO (admin é "super")
+ *  - role === "corretor" && ativo       → ACESSO LIBERADO
+ *  - role === "corretor" && !ativo      → /corretor/login (cadastro em análise)
+ *  - qualquer outra role / sem profile  → /corretor/login
+ *
+ * Nota: o admin tem acesso à área do corretor por design da plataforma —
+ * pode operar como corretor sem precisar de uma conta separada.
  */
 const CorretorProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
@@ -31,13 +35,16 @@ const CorretorProtectedRoute = ({ children }: { children: React.ReactNode }) => 
         .eq("id", session.user.id)
         .single();
 
-      const ok = profile?.role === "corretor" && profile?.ativo === true;
-      if (!ok) {
-        // Garante limpeza da sessão para evitar loop
-        await supabase.auth.signOut();
-      }
+      const isAdmin           = profile?.role === "admin";
+      const isCorretorAtivo   = profile?.role === "corretor" && profile?.ativo === true;
+      const ok = isAdmin || isCorretorAtivo;
+
+      // Só desloga se for um corretor INATIVO ou role inválido — evita o
+      // caso "admin sem ativo" desconectar quem tem permissão real.
+      if (!ok) await supabase.auth.signOut();
+
       if (!cancelled) {
-        setAllowed(!!ok);
+        setAllowed(ok);
         setLoading(false);
       }
     };
