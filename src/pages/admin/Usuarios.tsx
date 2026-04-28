@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import usePageTitle from "@/hooks/usePageTitle";
 import {
   Users, Phone, Mail, ShieldCheck, UserCheck, Search,
-  ToggleLeft, ToggleRight, Loader2, Crown, RefreshCw,
+  ToggleLeft, ToggleRight, Loader2, Crown, RefreshCw, ShieldAlert,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/lib/supabase";
@@ -58,16 +58,22 @@ const AdminUsuarios = () => {
 
   useEffect(() => { fetchProfiles(); }, []);
 
-  const toggleRole = async (profile: Profile) => {
-    const newRole = profile.role === "admin" ? "corretor" : "admin";
+  /**
+   * Apenas REBAIXA admin → corretor. Promover corretor → admin é proibido
+   * por design (regra de negócio + trigger no banco). Para criar um novo
+   * admin, é preciso fazer via SQL direto no Supabase Dashboard.
+   */
+  const rebaixarAdmin = async (profile: Profile) => {
+    if (profile.role !== "admin") return;
+    if (!confirm(`Rebaixar ${profile.nome} de Admin para Corretor?`)) return;
     setUpdating(profile.id);
     const { error } = await supabase
       .from("profiles")
-      .update({ role: newRole })
+      .update({ role: "corretor" })
       .eq("id", profile.id);
     if (!error) {
       setProfiles((prev) =>
-        prev.map((p) => p.id === profile.id ? { ...p, role: newRole } : p)
+        prev.map((p) => p.id === profile.id ? { ...p, role: "corretor" } : p)
       );
     }
     setUpdating(null);
@@ -129,6 +135,19 @@ const AdminUsuarios = () => {
           >
             <RefreshCw className="h-4 w-4" />
           </button>
+        </div>
+      </div>
+
+      {/* Aviso de segurança sobre roles */}
+      <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+        <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
+        <div>
+          <p className="font-semibold">Política de privilégios</p>
+          <p className="mt-0.5 text-amber-700">
+            Corretores <strong>não podem</strong> ser promovidos a admin pela interface — esta regra é
+            reforçada por trigger no banco. Para criar um novo administrador, edite diretamente
+            via SQL no Supabase Dashboard.
+          </p>
         </div>
       </div>
 
@@ -219,17 +238,17 @@ const AdminUsuarios = () => {
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         ) : (
                           <>
-                            <button
-                              onClick={() => toggleRole(profile)}
-                              title={profile.role === "admin" ? "Rebaixar para Corretor" : "Promover a Admin"}
-                              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium border border-border bg-card hover:bg-muted transition-colors"
-                            >
-                              {profile.role === "admin" ? (
-                                <><UserCheck className="h-3.5 w-3.5" /> → Corretor</>
-                              ) : (
-                                <><Crown className="h-3.5 w-3.5" /> → Admin</>
-                              )}
-                            </button>
+                            {/* Apenas REBAIXAR admin → corretor é permitido pela UI.
+                                Promover corretor → admin é proibido (regra de negócio). */}
+                            {profile.role === "admin" ? (
+                              <button
+                                onClick={() => rebaixarAdmin(profile)}
+                                title="Rebaixar para Corretor"
+                                className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium border border-border bg-card hover:bg-muted transition-colors"
+                              >
+                                <UserCheck className="h-3.5 w-3.5" /> → Corretor
+                              </button>
+                            ) : null}
                             <button
                               onClick={() => toggleAtivo(profile)}
                               title={profile.ativo ? "Desativar" : "Ativar"}
@@ -285,9 +304,11 @@ const AdminUsuarios = () => {
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   ) : (
                     <div className="flex gap-2">
-                      <button onClick={() => toggleRole(profile)} className="rounded-lg border border-border bg-card px-2 py-1 text-xs hover:bg-muted transition-colors">
-                        {profile.role === "admin" ? "→ Corretor" : "→ Admin"}
-                      </button>
+                      {profile.role === "admin" && (
+                        <button onClick={() => rebaixarAdmin(profile)} className="rounded-lg border border-border bg-card px-2 py-1 text-xs hover:bg-muted transition-colors">
+                          → Corretor
+                        </button>
+                      )}
                       <button onClick={() => toggleAtivo(profile)} className="rounded-lg border border-border bg-card px-2 py-1 text-xs hover:bg-muted transition-colors">
                         {profile.ativo ? "Desativar" : "Ativar"}
                       </button>
