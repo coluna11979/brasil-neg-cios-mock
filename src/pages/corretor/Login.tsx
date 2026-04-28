@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/stores/authStore";
 import { supabase } from "@/lib/supabase";
+import FaithQuote from "@/components/FaithQuote";
 
 type Modo = "login" | "reset" | "nova-senha";
 
@@ -446,6 +447,11 @@ const CorretorLogin = () => {
             </>
           )}
 
+        </div>
+
+        {/* Frase do ecossistema */}
+        <div className="mt-8">
+          <FaithQuote variant="muted" />
         </div>
       </div>
     </div>

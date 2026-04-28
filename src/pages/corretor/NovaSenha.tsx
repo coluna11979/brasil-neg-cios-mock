@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, CheckCircle2, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
+import FaithQuote from "@/components/FaithQuote";
 
 const CorretorNovaSenha = () => {
   usePageTitle("Criar Nova Senha | NegociaAky");
@@ -252,6 +253,11 @@ const CorretorNovaSenha = () => {
               {salvando ? "Salvando…" : "Salvar nova senha"}
             </Button>
           </form>
+        </div>
+
+        {/* Frase do ecossistema */}
+        <div className="mt-8">
+          <FaithQuote variant="muted" />
         </div>
       </div>
     </div>

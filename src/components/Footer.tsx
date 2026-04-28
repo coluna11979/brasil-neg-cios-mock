@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Building2, Mail, Instagram, Linkedin, Youtube, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { addLead } from "@/stores/leadStore";
+import FaithQuote from "@/components/FaithQuote";
 
 const Footer = () => {
   const [email, setEmail] = useState("");
@@ -53,6 +54,9 @@ const Footer = () => {
         <p className="mt-5 text-xs text-white/30">
           © {new Date().getFullYear()} NegociaAky · São Paulo, SP
         </p>
+        <div className="mt-4 border-t border-white/5 pt-4">
+          <FaithQuote variant="dark" />
+        </div>
       </div>
 
       {/* ── Desktop footer (full) ── */}
@@ -125,11 +129,14 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-14 border-t border-white/10 pt-6 flex items-center justify-between gap-4">
-          <p className="text-xs text-white/40">© {new Date().getFullYear()} NegociaAky. Todos os direitos reservados.</p>
-          <div className="flex items-center gap-6 text-xs text-white/40">
-            <span className="hover:text-white/60 cursor-pointer transition-colors">Termos de Uso</span>
-            <span className="hover:text-white/60 cursor-pointer transition-colors">Política de Privacidade</span>
+        <div className="mt-14 border-t border-white/10 pt-6 space-y-4">
+          <FaithQuote variant="dark" />
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs text-white/40">© {new Date().getFullYear()} NegociaAky. Todos os direitos reservados.</p>
+            <div className="flex items-center gap-6 text-xs text-white/40">
+              <span className="hover:text-white/60 cursor-pointer transition-colors">Termos de Uso</span>
+              <span className="hover:text-white/60 cursor-pointer transition-colors">Política de Privacidade</span>
+            </div>
           </div>
         </div>
       </div>

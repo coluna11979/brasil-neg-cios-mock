@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import FaithQuote from "@/components/FaithQuote";
 
 const BENEFICIOS = [
   { icon: Wallet, titulo: "Comissão atrativa", desc: "Ganhe por cada negócio fechado na sua carteira." },
@@ -217,7 +218,8 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
         `2️⃣ Quando aprovado, você recebe um *e-mail* com link seguro para criar sua senha\n` +
         `3️⃣ Acessa seu painel em *negociaaky.com.br/corretor/login*\n\n` +
         `📧 Fique de olho no e-mail *${form.email}* (cheque também o spam).\n\n` +
-        `Qualquer dúvida, é só responder por aqui! 😊`
+        `Qualquer dúvida, é só responder por aqui! 😊\n\n` +
+        `_✨ Tudo é possível àquele que crê. — Marcos 9:23_`
       ).catch(() => {});
     }
 
@@ -302,6 +304,11 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                 <Button asChild className="flex-1">
                   <Link to="/corretor/login">Ir para o Login</Link>
                 </Button>
+              </div>
+
+              {/* Frase do ecossistema */}
+              <div className="mt-6 pt-6 border-t border-border">
+                <FaithQuote variant="muted" />
               </div>
             </div>
           </div>

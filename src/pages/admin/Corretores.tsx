@@ -142,7 +142,8 @@ const AdminCorretores = () => {
             `2️⃣ Clique no link de acesso que enviamos agora\n` +
             `3️⃣ Defina sua senha e entre no painel\n\n` +
             `🔗 Login: *negociaaky.com.br/corretor/login*\n\n` +
-            `Boas vendas! 🚀`
+            `Boas vendas! 🚀\n\n` +
+            `_✨ Tudo é possível àquele que crê. — Marcos 9:23_`
           ).catch(() => {});
         }
       }

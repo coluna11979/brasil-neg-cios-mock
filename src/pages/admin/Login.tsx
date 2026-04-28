@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/stores/authStore";
+import FaithQuote from "@/components/FaithQuote";
 
 const AdminLogin = () => {
   usePageTitle("Admin - Login");
@@ -99,6 +100,11 @@ const AdminLogin = () => {
               Acesso exclusivo para administradores e corretores cadastrados.
             </p>
           </div>
+        </div>
+
+        {/* Frase do ecossistema */}
+        <div className="mt-8">
+          <FaithQuote variant="muted" />
         </div>
       </div>
     </div>
