@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import {
   Search, Send, Phone, Mail, ArrowLeft, MessageCircle, Building2,
-  CheckCheck, Loader2, Smile, AlertCircle, Wifi, WifiOff, RefreshCw,
+  CheckCheck, Loader2, AlertCircle, Wifi, WifiOff,
   Sparkles, ChevronDown, ChevronUp, TrendingUp, Target, DollarSign,
-  BarChart3, Brain, PanelRightOpen, PanelRightClose, Flame,
+  BarChart3, Brain, Flame,
   ThumbsUp, Snowflake, CheckCircle, Circle, Paperclip, ImageIcon,
-  UserCircle, MapPin, Calendar, MessageSquare, UserPlus, X,
+  UserCircle, MapPin, Calendar, MessageSquare, UserPlus, X, RefreshCw,
 } from "lucide-react";
 import { checkInstanceStatus } from "@/lib/uazapi";
 import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, markAiSugestaoUsada, type Lead } from "@/stores/leadStore";
@@ -467,24 +467,24 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
   ];
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] rounded-xl border border-border overflow-hidden bg-card shadow-sm">
+    <div className="flex h-[100dvh] md:h-[calc(100vh-3rem)] md:rounded-xl md:border md:border-border overflow-hidden bg-card md:shadow-sm">
 
-      {/* Modal Novo Contato */}
+      {/* Modal Novo Contato — fullscreen no mobile, modal centralizado no desktop */}
       {showNewContact && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-card border border-border shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="fixed inset-0 z-50 flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm md:p-4 bg-card">
+          <div className="w-full md:max-w-md md:rounded-2xl bg-card md:border md:border-border md:shadow-2xl flex flex-col h-full md:h-auto">
+            <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                   <UserPlus className="h-4 w-4 text-primary" />
                 </div>
                 <p className="font-display font-bold text-foreground">Novo Contato</p>
               </div>
-              <button onClick={() => setShowNewContact(false)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors">
-                <X className="h-4 w-4" />
+              <button onClick={() => setShowNewContact(false)} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleCreateContact} className="p-6 space-y-4">
+            <form onSubmit={handleCreateContact} className="p-4 md:p-6 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1.5">Nome <span className="text-red-500">*</span></label>
                 <input
@@ -493,7 +493,7 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
                   onChange={(e) => setNewContact((p) => ({ ...p, nome: e.target.value }))}
                   placeholder="Nome completo"
                   required
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
               <div>
@@ -504,7 +504,7 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
                   onChange={(e) => setNewContact((p) => ({ ...p, telefone: e.target.value }))}
                   placeholder="(11) 99999-9999"
                   required
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
               <div>
@@ -514,7 +514,7 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
                   value={newContact.email}
                   onChange={(e) => setNewContact((p) => ({ ...p, email: e.target.value }))}
                   placeholder="email@exemplo.com"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
               <div>
@@ -541,90 +541,110 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
         </div>
       )}
 
-      {/* Sidebar */}
-      <div className={`w-full md:w-[280px] flex-shrink-0 border-r border-border flex flex-col ${selectedLead ? "hidden md:flex" : "flex"}`}>
-        <div className="px-4 py-3 border-b border-border bg-muted/30">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <p className="font-display font-semibold text-foreground text-sm">Conversas</p>
-              <button
-                onClick={() => setShowNewContact(true)}
-                title="Novo contato"
-                className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-              </button>
-            </div>
+      {/* Sidebar de conversas */}
+      <div className={`w-full md:w-[320px] flex-shrink-0 border-r border-border flex flex-col bg-card ${selectedLead ? "hidden md:flex" : "flex"}`}>
+        {/* Header sticky com safe-area no top */}
+        <div className="sticky top-0 z-10 bg-card border-b border-border" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-2">
+            <h1 className="font-display font-bold text-foreground text-lg md:text-base">Conversas</h1>
             <button
               onClick={recheckInstance}
-              className="flex items-center gap-1.5 text-[10px] font-medium rounded-full px-2 py-0.5 border transition-colors hover:opacity-80"
+              className="flex items-center gap-1.5 text-[11px] font-semibold rounded-full px-2.5 py-1 border transition-colors active:scale-95"
               style={{
                 color: instanceStatus === "connected" ? "#15803d" : instanceStatus === "disconnected" ? "#b91c1c" : "#92400e",
                 backgroundColor: instanceStatus === "connected" ? "#f0fdf4" : instanceStatus === "disconnected" ? "#fef2f2" : "#fffbeb",
                 borderColor: instanceStatus === "connected" ? "#bbf7d0" : instanceStatus === "disconnected" ? "#fecaca" : "#fde68a",
               }}
             >
-              {instanceStatus === "checking" ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : instanceStatus === "connected" ? <Wifi className="h-2.5 w-2.5" /> : <WifiOff className="h-2.5 w-2.5" />}
-              {instanceStatus === "checking" ? "Verificando..." : instanceStatus === "connected" ? "WhatsApp OK" : "WhatsApp OFF"}
-              <RefreshCw className="h-2 w-2 opacity-50" />
+              {instanceStatus === "checking" ? <Loader2 className="h-3 w-3 animate-spin" /> : instanceStatus === "connected" ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+              {instanceStatus === "checking" ? "..." : instanceStatus === "connected" ? "Online" : "Offline"}
             </button>
           </div>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="px-4 pb-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
-                type="text"
+                type="search"
+                inputMode="search"
                 placeholder="Buscar lead..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-full border border-border bg-muted/50 py-2.5 pl-10 pr-4 text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:bg-card focus:border-primary"
               />
             </div>
-            <button
-              onClick={() => setShowNewContact(true)}
-              title="Novo contato"
-              className="flex items-center justify-center rounded-lg bg-primary px-3 text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
-            >
-              <UserPlus className="h-4 w-4" />
-            </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-border/50">
+        <div className="flex-1 overflow-y-auto divide-y divide-border/40 overscroll-contain">
           {filteredLeads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4 text-center">
-              <MessageCircle className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-sm">Nenhum lead encontrado</p>
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
+              <MessageCircle className="h-12 w-12 mb-3 opacity-30" />
+              <p className="text-sm font-medium">Nenhum lead encontrado</p>
+              <p className="text-xs mt-1">Use o botão + abaixo para adicionar</p>
             </div>
           ) : filteredLeads.map((lead) => (
             <button
               key={lead.id}
               onClick={() => setSelectedLead(lead)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors ${selectedLead?.id === lead.id ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+              className={`w-full flex items-start gap-3 px-4 py-3 text-left active:bg-muted hover:bg-muted/50 transition-colors ${selectedLead?.id === lead.id ? "bg-primary/5 md:border-l-2 md:border-l-primary" : ""}`}
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary">
-                {getInitials(lead.nome)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-sm text-foreground truncate">{lead.nome}</p>
-                  <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{timeAgo(lead.criado_em)}</span>
+              <div className="relative shrink-0">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 font-display text-base font-bold text-primary">
+                  {getInitials(lead.nome)}
                 </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {lead.telefone ? formatPhoneDisplay(lead.telefone) : lead.email || "Sem contato"}
-                </p>
-                {lead.telefone ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-green-600 mt-0.5">
-                    <Wifi className="h-2.5 w-2.5" />WhatsApp disponível
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                    <WifiOff className="h-2.5 w-2.5" />Sem telefone
+                {lead.telefone && (
+                  <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-green-500 ring-2 ring-card">
+                    <Wifi className="h-2 w-2 text-white" />
                   </span>
                 )}
               </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-base md:text-sm text-foreground truncate">{lead.nome}</p>
+                  <span className="text-[11px] text-muted-foreground shrink-0">{timeAgo(lead.criado_em)}</span>
+                </div>
+                <p className="text-sm md:text-xs text-muted-foreground truncate mt-0.5">
+                  {lead.mensagem
+                    ? lead.mensagem
+                    : lead.telefone ? formatPhoneDisplay(lead.telefone) : lead.email || "Sem contato"}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  {lead.negocio_titulo && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <Building2 className="h-2.5 w-2.5" />
+                      <span className="truncate max-w-[140px]">{lead.negocio_titulo}</span>
+                    </span>
+                  )}
+                  {!lead.telefone && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-amber-600">
+                      <WifiOff className="h-2.5 w-2.5" />Sem telefone
+                    </span>
+                  )}
+                </div>
+              </div>
             </button>
           ))}
+        </div>
+
+        {/* FAB Novo Contato — só no mobile, flutuante */}
+        <button
+          onClick={() => setShowNewContact(true)}
+          aria-label="Novo contato"
+          className="md:hidden fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+          style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <UserPlus className="h-6 w-6" />
+        </button>
+
+        {/* Botão Novo Contato — desktop, no rodapé da sidebar */}
+        <div className="hidden md:block px-4 py-3 border-t border-border bg-muted/20">
+          <button
+            onClick={() => setShowNewContact(true)}
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <UserPlus className="h-4 w-4" />
+            Novo contato
+          </button>
         </div>
       </div>
 
@@ -640,45 +660,56 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
           </div>
         ) : (
           <>
-            {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-muted/30">
-              <button onClick={() => setSelectedLead(null)} className="md:hidden p-1 rounded hover:bg-muted">
+            {/* Header do chat — compacto no mobile, com avatar clicável que abre intel */}
+            <div
+              className="sticky top-0 z-20 flex items-center gap-2.5 px-3 py-2.5 border-b border-border bg-card"
+              style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.625rem)" }}
+            >
+              <button
+                onClick={() => setSelectedLead(null)}
+                aria-label="Voltar para lista"
+                className="md:hidden flex h-9 w-9 -ml-1 items-center justify-center rounded-full text-muted-foreground active:bg-muted hover:bg-muted transition-colors"
+              >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary">
-                {getInitials(selectedLead.nome)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground">{selectedLead.nome}</p>
-                {selectedLead.telefone ? (
-                  <span className="flex items-center gap-1 text-xs text-green-600">
-                    <Wifi className="h-3 w-3" />{formatPhoneDisplay(selectedLead.telefone)} · WhatsApp
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <WifiOff className="h-3 w-3" />Sem telefone
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowIntel(true)}
+                className="flex flex-1 items-center gap-3 min-w-0 text-left active:opacity-70"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary">
+                  {getInitials(selectedLead.nome)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground truncate text-base md:text-sm">{selectedLead.nome}</p>
+                  {selectedLead.telefone ? (
+                    <span className="flex items-center gap-1 text-xs text-green-600">
+                      <Wifi className="h-3 w-3" />
+                      <span className="truncate">{formatPhoneDisplay(selectedLead.telefone)}</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <WifiOff className="h-3 w-3" />Sem telefone
+                    </span>
+                  )}
+                </div>
+              </button>
+              <div className="flex items-center gap-0.5 shrink-0">
                 {selectedLead.telefone && (
-                  <a href={`https://wa.me/55${selectedLead.telefone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-green-50 hover:text-green-600 transition-colors">
-                    <Phone className="h-4 w-4" />
-                  </a>
-                )}
-                {selectedLead.email && (
-                  <a href={`mailto:${selectedLead.email}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-                    <Mail className="h-4 w-4" />
+                  <a
+                    href={`https://wa.me/55${selectedLead.telefone.replace(/\D/g,"")}`}
+                    target="_blank" rel="noopener noreferrer"
+                    aria-label="Abrir no WhatsApp"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-green-600 active:bg-green-50 hover:bg-green-50 transition-colors"
+                  >
+                    <Phone className="h-5 w-5 md:h-4 md:w-4" />
                   </a>
                 )}
                 <button
                   onClick={() => setShowIntel(!showIntel)}
-                  title={showIntel ? "Fechar intel" : "Abrir intel do lead"}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${showIntel ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+                  aria-label={showIntel ? "Fechar painel" : "Abrir painel do lead"}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${showIntel ? "bg-primary/10 text-primary" : "text-muted-foreground active:bg-muted hover:bg-muted"}`}
                 >
-                  {showIntel ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                  <Brain className="h-5 w-5 md:h-4 md:w-4" />
                 </button>
               </div>
             </div>
@@ -838,34 +869,49 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
               </div>
             )}
 
-            {/* Input */}
-            <form onSubmit={handleSend} className="flex items-center gap-2 px-4 py-3 border-t border-border bg-muted/30">
+            {/* Input — textarea auto-grow, safe-area no bottom */}
+            <form
+              onSubmit={handleSend}
+              className="flex items-end gap-2 px-3 py-2 border-t border-border bg-card"
+              style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
+            >
               <input type="file" ref={fileInputRef} accept="image/*,audio/*,video/*,.pdf" className="hidden" onChange={handleFileSelect} />
-              <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted shrink-0">
-                <Smile className="h-5 w-5" />
-              </button>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingFile}
-                title="Enviar imagem"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors shrink-0 disabled:opacity-50"
+                aria-label="Anexar arquivo"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground active:bg-muted hover:bg-muted transition-colors shrink-0 disabled:opacity-50"
               >
-                {uploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+                {uploadingFile ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
               </button>
-              <input
-                type="text"
-                placeholder={selectedLead.telefone ? `Mensagem para ${selectedLead.nome} via WhatsApp...` : "Mensagem interna..."}
+              <textarea
+                rows={1}
+                placeholder={selectedLead.telefone ? `Mensagem via WhatsApp...` : "Mensagem interna..."}
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1 rounded-lg border border-border bg-card px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                onChange={(e) => {
+                  setNewMessage(e.target.value);
+                  // Auto-grow: ajusta altura conforme conteúdo (1-5 linhas)
+                  const el = e.target;
+                  el.style.height = "auto";
+                  el.style.height = Math.min(el.scrollHeight, 140) + "px";
+                }}
+                onKeyDown={(e) => {
+                  // Enter envia, Shift+Enter quebra linha — só no desktop
+                  if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(min-width: 768px)").matches) {
+                    e.preventDefault();
+                    handleSend(e as unknown as React.FormEvent);
+                  }
+                }}
+                className="flex-1 max-h-[140px] resize-none rounded-2xl border border-border bg-muted/40 px-4 py-2.5 text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:bg-card focus:border-primary leading-relaxed"
               />
               <button
                 type="submit"
                 disabled={!newMessage.trim() || sending}
-                className={`flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors disabled:opacity-50 shrink-0 ${selectedLead.telefone ? "bg-green-600 hover:bg-green-700" : "bg-primary hover:bg-primary/90"}`}
+                aria-label="Enviar mensagem"
+                className={`flex h-11 w-11 items-center justify-center rounded-full text-white transition-all active:scale-95 disabled:opacity-40 disabled:scale-100 shrink-0 ${selectedLead.telefone ? "bg-green-600 hover:bg-green-700" : "bg-primary hover:bg-primary/90"}`}
               >
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
               </button>
             </form>
           </>
@@ -873,27 +919,39 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
       </div>
 
       {/* ──────────────────────────────────────────
-          PAINEL DE INTELIGÊNCIA DO LEAD (direita)
+          PAINEL DE INTELIGÊNCIA DO LEAD
+          - Mobile: drawer fullscreen overlay (z-40)
+          - Desktop: sidebar lateral fixa
           ────────────────────────────────────────── */}
       {selectedLead && showIntel && (
-        <div className="flex w-[280px] shrink-0 flex-col border-l border-border bg-card overflow-y-auto">
+        <>
+          {/* Backdrop só no mobile */}
+          <div
+            onClick={() => setShowIntel(false)}
+            className="md:hidden fixed inset-0 z-30 bg-black/40 animate-in fade-in"
+          />
+          <div className="fixed inset-0 z-40 md:relative md:inset-auto md:z-auto flex w-full md:w-[320px] shrink-0 flex-col border-l border-border bg-card overflow-y-auto md:animate-none animate-in slide-in-from-right">
 
           {/* Header do painel */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-primary/5 to-transparent shrink-0">
+          <div
+            className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0"
+            style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
+          >
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
-                <Brain className="h-4 w-4 text-primary" />
+              <div className="flex h-9 w-9 md:h-7 md:w-7 items-center justify-center rounded-lg bg-primary/10">
+                <Brain className="h-5 w-5 md:h-4 md:w-4 text-primary" />
               </div>
               <div>
-                <p className="font-display font-bold text-xs text-foreground">Intel do Lead</p>
-                <p className="text-[10px] text-muted-foreground">Dados + perfil IA</p>
+                <p className="font-display font-bold text-base md:text-xs text-foreground">Intel do Lead</p>
+                <p className="text-xs md:text-[10px] text-muted-foreground">Dados + perfil IA</p>
               </div>
             </div>
             <button
               onClick={() => setShowIntel(false)}
-              className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted transition-colors"
+              aria-label="Fechar painel"
+              className="flex h-10 w-10 md:h-7 md:w-7 items-center justify-center rounded-full md:rounded text-muted-foreground active:bg-muted hover:bg-muted transition-colors"
             >
-              <PanelRightClose className="h-3.5 w-3.5" />
+              <X className="h-5 w-5 md:h-3.5 md:w-3.5" />
             </button>
           </div>
 
@@ -1137,7 +1195,8 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
             </div>
 
           </div>
-        </div>
+          </div>
+        </>
       )}
 
     </div>

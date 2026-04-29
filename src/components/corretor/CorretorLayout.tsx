@@ -19,6 +19,10 @@ const NAV = [
 const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Rota da tela de Mensagens = modo "imersivo" no mobile (sem header,
+  // sem padding do main, ocupa 100dvh). Padrão WhatsApp/Telegram.
+  const imersivo = location.pathname.startsWith("/corretor/mensagens");
   const [nomeCorretor, setNomeCorretor] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [ativo, setAtivo] = useState<boolean | null>(null);
@@ -300,24 +304,26 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </aside>
 
-      {/* Mobile header */}
+      {/* Mobile header — escondido no modo imersivo (mensagens) */}
       <div className="flex flex-col flex-1 min-w-0">
-        <header className="md:hidden flex items-center justify-between border-b border-border bg-card px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <UserCircle className="h-4 w-4 text-primary-foreground" />
+        {!imersivo && (
+          <header className="md:hidden flex items-center justify-between border-b border-border bg-card px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <UserCircle className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-display font-bold text-sm">Área do Corretor</span>
             </div>
-            <span className="font-display font-bold text-sm">Área do Corretor</span>
-          </div>
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </header>
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </header>
+        )}
 
-        {mobileOpen && (
+        {!imersivo && mobileOpen && (
           <div className="md:hidden border-b border-border bg-card px-3 py-2 space-y-1">
             {NAV.map(({ to, label, icon: Icon }) => (
               <Link
@@ -344,7 +350,7 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
         )}
 
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
+        <main className={imersivo ? "flex-1 overflow-hidden" : "flex-1 p-4 md:p-6 overflow-auto"}>
           {children}
         </main>
       </div>
