@@ -194,6 +194,22 @@ const WhatsAppCRM = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   // Corretores map: id → nome (para o header e intel)
   const [corretoresMap, setCorretoresMap] = useState<Record<string, string>>({});
+  // Última atividade por lead (lead_id → ISO timestamp) para ordenar a lista
+  const [lastMsgMap, setLastMsgMap] = useState<Record<string, string>>({});
+
+  const loadLastMsgMap = async () => {
+    const { data } = await supabase
+      .from("lead_messages")
+      .select("lead_id, created_at")
+      .order("created_at", { ascending: false })
+      .limit(3000);
+    if (!data) return;
+    const map: Record<string, string> = {};
+    for (const m of data as { lead_id: string; created_at: string }[]) {
+      if (!map[m.lead_id]) map[m.lead_id] = m.created_at; // primeira ocorrência = mais recente
+    }
+    setLastMsgMap(map);
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -210,6 +226,7 @@ const WhatsAppCRM = () => {
       setLeads(data);
       setLoading(false);
     });
+    loadLastMsgMap();
     // Checa status da instância Uazapi ao abrir
     checkInstanceStatus().then(({ connected, status }) => {
       setInstanceStatus(connected ? "connected" : "disconnected");
@@ -432,8 +449,14 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
 
     const refresh = async () => {
       const msgs = await getMessagesByLead(leadId);
-      setMessages((prev) => (prev.length === msgs.length ? prev : msgs));
+      setMessages((prev) => {
+        // Preserva bolhas otimistas (pending) que ainda não estão no banco
+        const pending = prev.filter((m) => (m as { pending?: boolean }).pending);
+        const merged = [...msgs, ...pending];
+        return prev.length === merged.length ? prev : merged;
+      });
       markMessagesAsRead(leadId);
+      loadLastMsgMap();
     };
 
     const channel = supabase
@@ -463,28 +486,50 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
     e.preventDefault();
     if (!newMessage.trim() || !selectedLead || sending) return;
 
-    setSending(true);
+    const text = newMessage.trim();
+    const leadId = selectedLead.id;
+    const nowIso = new Date().toISOString();
+    const tempId = `temp-${Date.now()}`;
+
+    // ── Envio otimista: bolha aparece na hora (padrão WhatsApp) ──
+    const optimistic: LeadMessage & { pending?: boolean } = {
+      id: tempId,
+      lead_id: leadId,
+      sender_type: "corretor",
+      sender_id: currentUserId,
+      message: text,
+      is_read: false,
+      created_at: nowIso,
+      pending: true,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    setNewMessage("");
     setSendStatus("idle");
+    setSending(true);
+    // Sobe a conversa pro topo imediatamente
+    setLastMsgMap((prev) => ({ ...prev, [leadId]: nowIso }));
 
     const result = await sendMessage(
-      selectedLead.id,
-      newMessage.trim(),
+      leadId,
+      text,
       "corretor",
       selectedLead.telefone || undefined
     );
 
     if (result.saved) {
-      setNewMessage("");
-      const msgs = await getMessagesByLead(selectedLead.id);
+      // Reconcilia com o banco (troca o temp pelo registro real)
+      const msgs = await getMessagesByLead(leadId);
       setMessages(msgs);
       const status = result.whatsapp === "sent" ? "sent" : result.whatsapp === "no_phone" ? "no_phone" : "error";
       setSendStatus(status);
       if (status === "error") {
         setSendError(result.error || "Falha na API Uazapi — veja o console (F12) para detalhes");
       }
-      // Limpa status depois de 6s
       setTimeout(() => { setSendStatus("idle"); setSendError(""); }, 6000);
     } else {
+      // Falhou: remove a bolha otimista e restaura o texto
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setNewMessage(text);
       setSendStatus("error");
       setSendError(result.error || "Erro ao salvar mensagem");
     }
@@ -562,15 +607,23 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
     }
   };
 
-  const filteredLeads = leads.filter((lead) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      lead.nome.toLowerCase().includes(q) ||
-      (lead.email || "").toLowerCase().includes(q) ||
-      (lead.telefone || "").includes(q)
-    );
-  });
+  const filteredLeads = leads
+    .filter((lead) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        lead.nome.toLowerCase().includes(q) ||
+        (lead.email || "").toLowerCase().includes(q) ||
+        (lead.telefone || "").includes(q)
+      );
+    })
+    .sort((a, b) => {
+      // Conversa mais recente no topo (padrão WhatsApp).
+      // Usa última mensagem; cai para created_at do lead se ainda não houver mensagens.
+      const ta = new Date(lastMsgMap[a.id] || a.created_at || 0).getTime();
+      const tb = new Date(lastMsgMap[b.id] || b.created_at || 0).getTime();
+      return tb - ta;
+    });
 
   const getInitials = (name: string) =>
     name.split(" ").map((n) => n[0]).slice(0, 2).join("");
