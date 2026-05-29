@@ -1,46 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
 @layer base {
   :root {
     /* Background & Foreground */
     --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    --foreground: 216 28% 12%;
 
     /* Cards & Surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 216 28% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 216 28% 12%;
 
-    /* Primary - Deep Teal/Petrol Blue */
-    --primary: 195 70% 28%;
+    /* Primary - NegociaAky Blue (#007BFF) */
+    --primary: 211 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Light Teal */
-    --secondary: 195 40% 94%;
-    --secondary-foreground: 195 70% 28%;
+    /* Secondary - Light Blue tint */
+    --secondary: 211 100% 96%;
+    --secondary-foreground: 211 100% 40%;
 
     /* Muted */
-    --muted: 210 15% 94%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 216 16% 94%;
+    --muted-foreground: 222 8% 46%;
 
-    /* Accent - Warm Orange */
-    --accent: 25 95% 53%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - NegociaAky Cyan (#00E6FF) */
+    --accent: 186 100% 50%;
+    --accent-foreground: 216 28% 10%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 195 70% 28%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 211 100% 50%;
 
     --radius: 0.75rem;
 
@@ -60,45 +60,46 @@
   }
 
   .dark {
-    --background: 215 25% 10%;
+    /* NegociaAky dark base (#0D1117) */
+    --background: 216 28% 7%;
     --foreground: 210 20% 98%;
 
-    --card: 215 25% 13%;
+    --card: 216 24% 11%;
     --card-foreground: 210 20% 98%;
 
-    --popover: 215 25% 13%;
+    --popover: 216 24% 11%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 195 60% 50%;
-    --primary-foreground: 215 25% 10%;
+    --primary: 211 100% 56%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 195 30% 20%;
-    --secondary-foreground: 195 60% 70%;
+    --secondary: 211 40% 18%;
+    --secondary-foreground: 211 100% 80%;
 
-    --muted: 215 20% 20%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 216 18% 17%;
+    --muted-foreground: 222 8% 67%;
 
-    --accent: 25 95% 55%;
-    --accent-foreground: 215 25% 10%;
+    --accent: 186 100% 50%;
+    --accent-foreground: 216 28% 10%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 22%;
-    --input: 215 20% 22%;
-    --ring: 195 60% 50%;
+    --border: 216 18% 20%;
+    --input: 216 18% 20%;
+    --ring: 211 100% 56%;
 
     --success: 142 60% 50%;
     --success-foreground: 0 0% 100%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 216 28% 9%;
+    --sidebar-foreground: 210 20% 96%;
+    --sidebar-primary: 211 100% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 216 20% 15%;
+    --sidebar-accent-foreground: 210 20% 96%;
+    --sidebar-border: 216 18% 18%;
+    --sidebar-ring: 211 100% 56%;
   }
 }
 
@@ -126,16 +127,16 @@
   }
 
   .gradient-hero {
-    background: linear-gradient(135deg, hsl(195 70% 28%) 0%, hsl(195 60% 35%) 50%, hsl(195 50% 42%) 100%);
+    background: linear-gradient(135deg, hsl(216 28% 9%) 0%, hsl(211 100% 30%) 60%, hsl(186 100% 45%) 100%);
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(30 95% 58%) 100%);
+    background: linear-gradient(135deg, hsl(211 100% 50%) 0%, hsl(186 100% 50%) 100%);
   }
 
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(195 70% 28%) 0%, hsl(195 60% 45%) 100%);
+    background-image: linear-gradient(135deg, hsl(211 100% 50%) 0%, hsl(186 100% 50%) 100%);
   }
 }
 

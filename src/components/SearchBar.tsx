@@ -147,7 +147,7 @@ const SearchBar = ({ initialValue = "", onSearch }: SearchBarProps) => {
           />
           <button
             type="submit"
-            className="flex items-center justify-center rounded-xl bg-[#5a7a3a] text-white hover:bg-[#4a6830] transition-colors shrink-0 h-9 w-9"
+            className="flex items-center justify-center rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 h-9 w-9"
             aria-label="Buscar"
           >
             <Search className="h-4 w-4" />
@@ -204,7 +204,7 @@ const SearchBar = ({ initialValue = "", onSearch }: SearchBarProps) => {
           <div className="flex items-center p-2">
             <button
               type="submit"
-              className="flex items-center justify-center rounded-xl bg-[#5a7a3a] text-white hover:bg-[#4a6830] transition-colors shrink-0 h-11 w-11"
+              className="flex items-center justify-center rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 h-11 w-11"
               aria-label="Buscar"
             >
               <Search className="h-5 w-5" />

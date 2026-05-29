@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
-  Building2,
   LogOut,
   ChevronRight,
   Kanban,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout, getAdminEmail } from "@/stores/authStore";
+import Logo, { LogoMark } from "@/components/Logo";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -49,10 +49,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
       <aside className="hidden md:flex w-64 flex-col border-r border-border bg-card">
         {/* Logo */}
         <div className="flex h-16 items-center gap-2 border-b border-border px-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Building2 className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="font-display text-lg font-bold text-foreground">NegociaAky</span>
+          <Logo iconClassName="h-8 w-8" />
           <span className="ml-auto rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
             ADMIN
           </span>
@@ -108,9 +105,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
         {/* Mobile Header */}
         <header className="flex md:hidden h-14 items-center justify-between border-b border-border bg-card px-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-              <Building2 className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
+            <LogoMark className="h-7 w-7" />
             <span className="font-display text-sm font-bold">Admin</span>
           </div>
           <div className="flex items-center gap-2">

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import usePageTitle from "@/hooks/usePageTitle";
-import { Building2, LogIn, AlertCircle } from "lucide-react";
+import { LogIn, AlertCircle } from "lucide-react";
+import { LogoMark } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,9 +41,7 @@ const AdminLogin = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg">
-            <Building2 className="h-7 w-7 text-primary-foreground" />
-          </div>
+          <LogoMark className="h-14 w-14" />
           <div className="text-center">
             <h1 className="font-display text-2xl font-bold text-foreground">
               NegociaAky Admin

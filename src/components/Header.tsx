@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Building2, Menu, X, Heart, LogOut, ChevronDown } from "lucide-react";
+import { Menu, X, Heart, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Logo from "@/components/Logo";
 import { useState, useRef, useEffect } from "react";
 import { useBuyer } from "@/contexts/BuyerContext";
 
@@ -28,13 +29,8 @@ const Header = () => {
       <div className="container-app">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <Building2 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">
-              NegociaAky
-            </span>
+          <Link to="/" className="flex items-center">
+            <Logo />
           </Link>
 
           {/* Desktop Navigation */}

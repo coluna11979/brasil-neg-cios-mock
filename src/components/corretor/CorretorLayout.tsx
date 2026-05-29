@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MessageCircle, Users, LogOut, UserCircle, Menu, X, Clock, Phone, Loader2, AlertTriangle, TrendingUp, BarChart3, Camera, Package, UserCog, Megaphone, Calculator, Home } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { logout } from "@/stores/authStore";
+import { LogoMark } from "@/components/Logo";
 
 const NAV = [
   { to: "/corretor/dashboard", label: "Início", icon: Home },
@@ -260,9 +261,7 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-card">
         <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-            <UserCircle className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <LogoMark className="h-9 w-9" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Área do</p>
             <p className="font-display font-bold text-foreground text-sm truncate">Corretor</p>

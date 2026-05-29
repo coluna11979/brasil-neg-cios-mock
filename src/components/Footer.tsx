@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { Building2, Mail, Instagram, Linkedin, Youtube, ArrowRight } from "lucide-react";
+import { Mail, Instagram, Linkedin, Youtube, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { addLead } from "@/stores/leadStore";
 import FaithQuote from "@/components/FaithQuote";
+import Logo from "@/components/Logo";
 
 const Footer = () => {
   const [email, setEmail] = useState("");
@@ -30,11 +31,8 @@ const Footer = () => {
       {/* ── Mobile footer (compact) ── */}
       <div className="md:hidden container-app py-8">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Building2 className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-display text-lg font-bold text-white">NegociaAky</span>
+          <Link to="/" className="flex items-center">
+            <Logo variant="light" iconClassName="h-8 w-8" />
           </Link>
           <div className="flex items-center gap-2">
             <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-white/40 hover:bg-primary hover:text-white transition-all" aria-label="Instagram">
@@ -64,11 +62,8 @@ const Footer = () => {
         <div className="grid gap-12 lg:grid-cols-12">
           {/* Brand + Newsletter */}
           <div className="lg:col-span-5">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
-                <Building2 className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="font-display text-2xl font-bold text-white">NegociaAky</span>
+            <Link to="/" className="flex items-center">
+              <Logo variant="light" showTagline iconClassName="h-11 w-11" />
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/60">
               A plataforma #1 de compra, venda e locação de negócios do Brasil.
