@@ -10,6 +10,7 @@ import {
   getWhatsAppStatus, connectWhatsApp, disconnectWhatsApp,
   type IntegrationSettings, type WhatsAppStatus,
 } from "@/lib/integrations";
+import { invalidateGoogleApiKeyCache } from "@/lib/anthropic";
 
 const Integracoes = () => {
   usePageTitle("Integrações | Admin");
@@ -55,7 +56,11 @@ const Integracoes = () => {
     setSaving(true);
     const ok = await saveIntegrationSettings(cfg);
     setSaving(false);
-    if (ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    if (ok) {
+      invalidateGoogleApiKeyCache(); // próxima chamada à IA usa a chave nova
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    }
   };
 
   const handleConnect = async () => {
