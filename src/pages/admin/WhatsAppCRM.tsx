@@ -428,26 +428,35 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
   // Realtime subscription — atualiza instantaneamente quando chega mensagem nova
   useEffect(() => {
     if (!selectedLead) return;
+    const leadId = selectedLead.id;
+
+    const refresh = async () => {
+      const msgs = await getMessagesByLead(leadId);
+      setMessages((prev) => (prev.length === msgs.length ? prev : msgs));
+      markMessagesAsRead(leadId);
+    };
 
     const channel = supabase
-      .channel(`admin_lead_messages:${selectedLead.id}`)
+      .channel(`admin_lead_messages:${leadId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "lead_messages",
-          filter: `lead_id=eq.${selectedLead.id}`,
+          filter: `lead_id=eq.${leadId}`,
         },
-        async () => {
-          const msgs = await getMessagesByLead(selectedLead.id);
-          setMessages(msgs);
-          markMessagesAsRead(selectedLead.id);
-        }
+        refresh
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Fallback por polling: garante atualização mesmo se o Realtime cair (ws 401)
+    const poll = setInterval(refresh, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
   }, [selectedLead]);
 
   const handleSend = async (e: React.FormEvent) => {
