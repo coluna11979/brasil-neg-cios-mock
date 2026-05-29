@@ -13,6 +13,7 @@ import {
   Package,
   Settings,
   Plug,
+  UserCheck as UserCheckIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout, getAdminEmail } from "@/stores/authStore";
@@ -91,9 +92,18 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
             </div>
           </div>
           <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 w-full justify-start gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+            onClick={() => navigate("/corretor/dashboard")}
+          >
+            <UserCheckIcon className="h-4 w-4" />
+            Entrar como Corretor
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
-            className="mt-3 w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
+            className="mt-1 w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4" />

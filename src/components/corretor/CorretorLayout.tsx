@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { MessageCircle, Users, LogOut, UserCircle, Menu, X, Clock, Phone, Loader2, AlertTriangle, TrendingUp, BarChart3, Camera, Package, UserCog, Megaphone, Calculator, Home } from "lucide-react";
+import { MessageCircle, Users, LogOut, UserCircle, Menu, X, Clock, Phone, Loader2, AlertTriangle, TrendingUp, BarChart3, Camera, Package, UserCog, Megaphone, Calculator, Home, Shield } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { logout } from "@/stores/authStore";
 import { LogoMark } from "@/components/Logo";
@@ -27,6 +27,7 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
   const [nomeCorretor, setNomeCorretor] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [ativo, setAtivo] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [semTelefone, setSemTelefone] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -50,16 +51,18 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("ativo, telefone, foto_url, nome, email, creci, bairro, regiao")
+        .select("ativo, telefone, foto_url, nome, email, creci, bairro, regiao, role")
         .eq("id", data.session.user.id)
         .single();
 
       setAtivo(profile?.ativo ?? true);
+      setIsAdmin((profile as { role?: string } | null)?.role === "admin");
       if (profile?.foto_url) setFotoUrl(profile.foto_url);
       if (profile?.nome) setNomeCorretor(profile.nome);
 
-      // Bloqueia se não tiver telefone
-      if (!profile?.telefone || profile.telefone.trim() === "") {
+      // Bloqueia se não tiver telefone — exceto para admin (admin pode operar como corretor sem cadastro completo)
+      const isAdminUser = (profile as { role?: string } | null)?.role === "admin";
+      if (!isAdminUser && (!profile?.telefone || profile.telefone.trim() === "")) {
         setSemTelefone(true);
       }
 
@@ -293,6 +296,15 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
             <AvatarWidget size="sm" />
             <p className="text-sm font-medium text-foreground truncate">{nomeCorretor}</p>
           </div>
+          {isAdmin && (
+            <button
+              onClick={() => navigate("/admin")}
+              className="mb-1 flex w-full items-center gap-2 rounded-lg border border-primary/30 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Shield className="h-4 w-4" />
+              Voltar ao Admin
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -339,6 +351,15 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
                 {label}
               </Link>
             ))}
+            {isAdmin && (
+              <button
+                onClick={() => { setMobileOpen(false); navigate("/admin"); }}
+                className="flex w-full items-center gap-3 rounded-lg border border-primary/30 px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary/10"
+              >
+                <Shield className="h-4 w-4" />
+                Voltar ao Admin
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted"
