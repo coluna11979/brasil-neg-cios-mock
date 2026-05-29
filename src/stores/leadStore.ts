@@ -84,6 +84,43 @@ export async function addLead(lead: {
     corretor_id = galeria?.corretor_id ?? null;
   }
 
+  // Se já existe lead com mesmo telefone, reaproveita em vez de duplicar
+  if (lead.telefone) {
+    const digits = lead.telefone.replace(/\D/g, "");
+    const phoneKey = digits.length >= 12 && digits.startsWith("55") ? digits.slice(2) : digits;
+    if (phoneKey.length >= 10) {
+      const variations = [
+        phoneKey,
+        `55${phoneKey}`,
+        `+55${phoneKey}`,
+        `0${phoneKey}`,
+      ];
+      const { data: existing } = await supabase
+        .from("leads")
+        .select("id, nome, telefone")
+        .or(variations.map((v) => `telefone.eq.${v}`).join(","))
+        .limit(1);
+      if (existing && existing.length > 0) {
+        // Atualiza campos vazios e a última atualização — não cria duplicado
+        await supabase
+          .from("leads")
+          .update({
+            atualizado_em: new Date().toISOString(),
+            mensagem: lead.mensagem || null,
+            negocio_id: lead.negocio_id || null,
+            negocio_titulo: lead.negocio_titulo || null,
+            galeria_id: lead.galeria_id || null,
+            galeria_nome: lead.galeria_nome || null,
+            espaco_id: lead.espaco_id || null,
+            espaco_numero: lead.espaco_numero || null,
+          })
+          .eq("id", existing[0].id);
+        console.info(`[addLead] Lead com telefone ${lead.telefone} já existia (${existing[0].nome}). Atualizado em vez de duplicar.`);
+        return true;
+      }
+    }
+  }
+
   const { error } = await supabase
     .from("leads")
     .insert({
@@ -103,6 +140,11 @@ export async function addLead(lead: {
     });
 
   if (error) {
+    // 23505 = unique_violation — outro request concorrente criou o lead nesse meio tempo
+    if ((error as { code?: string }).code === "23505") {
+      console.info("[addLead] Telefone já existente (concorrência). Ignorando duplicação.");
+      return true;
+    }
     console.error("Erro ao salvar lead:", error);
     return false;
   }
