@@ -273,6 +273,11 @@ Responda APENAS com o texto da mensagem, sem aspas, sem explicação.`;
 
   if (corretor?.telefone) {
     const primeiroNome = corretor.nome?.split(" ")[0] || "Corretor";
+    // URL do CRM: usa origem atual se for domínio próprio; senão, cai pro domínio oficial.
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const isProdDomain = origin && !origin.includes("vercel.app") && !origin.includes("localhost");
+    const baseUrl = isProdDomain ? origin : "https://negociaaky.com.br";
+    const crmLink = `${baseUrl}/corretor/mensagens`;
     await sendWhatsAppMessage(
       corretor.telefone,
       `🆕 *Novo lead atribuído a você, ${primeiroNome}!*\n\n` +
@@ -281,7 +286,7 @@ Responda APENAS com o texto da mensagem, sem aspas, sem explicação.`;
       `💼 Interesse: ${lead.negocio_titulo || lead.galeria_nome || "Contato geral"}\n` +
       (lead.mensagem ? `💬 "${lead.mensagem.slice(0, 100)}"\n` : "") +
       `\n✨ Uma sugestão de mensagem já está preparada no seu CRM!\n` +
-      `🔗 brasil-neg-cios-mock.vercel.app/corretor/mensagens`
+      `🔗 ${crmLink}`
     ).catch(() => {});
   }
 
