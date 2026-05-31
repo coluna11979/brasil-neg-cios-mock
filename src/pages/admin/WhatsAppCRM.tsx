@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { callClaude } from "@/lib/anthropic";
 import { checkInstanceStatus } from "@/lib/uazapi";
-import { getLeadIntent, describeIntent } from "@/lib/leadIntent";
+import { getLeadIntent, describeIntent, intentItemLabel } from "@/lib/leadIntent";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, type Lead } from "@/stores/leadStore";
 
@@ -354,15 +354,16 @@ Retorne APENAS este JSON (sem markdown, sem explicação):
 
       const intent = getLeadIntent(selectedLead);
       const contextoIntent = describeIntent(intent, selectedLead);
+      const itemLabel = intentItemLabel(intent);
       const prompt = `Você é consultor especializado em negociação de compra e venda de negócios (M&A de PMEs, imóveis comerciais, galerias e franquias) no Brasil.
 
 # Contexto do lead
 - Nome: ${selectedLead.nome}
-- Interesse: ${selectedLead.negocio_titulo || selectedLead.galeria_nome || "não especificado"}
+- Origem do cadastro: ${selectedLead.origem}
+- ${itemLabel}: ${selectedLead.negocio_titulo || selectedLead.galeria_nome || "não especificado"}
 - Mensagem inicial: ${selectedLead.mensagem || "não informada"}
-- Origem: ${selectedLead.origem}
 
-# IMPORTANTE — Postura correta
+# IMPORTANTE — Postura correta (LEIA COM ATENÇÃO)
 ${contextoIntent}
 
 # Histórico (últimas mensagens)
@@ -430,15 +431,16 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
     const intent = getLeadIntent(selectedLead);
     const contexto = describeIntent(intent, selectedLead);
 
+    const itemLabel = intentItemLabel(intent);
     const cabecalho = `Você é consultor especialista da plataforma NegociaAky (compra e venda de negócios, imóveis comerciais, galerias e franquias).
 
 # Lead
 - Nome: ${nome}
-- Origem: ${selectedLead.origem || "não informada"}
-- Item relacionado: ${interesse}
+- Origem do cadastro: ${selectedLead.origem || "não informada"}
+- ${itemLabel}: ${interesse}
 - Mensagem original do lead: "${msgInicial}"
 
-# IMPORTANTE — Postura correta
+# IMPORTANTE — Postura correta (LEIA COM ATENÇÃO)
 ${contexto}
 `;
 

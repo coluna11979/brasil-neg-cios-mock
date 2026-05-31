@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { callClaude } from "@/lib/anthropic";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
-import { getLeadIntent, describeIntent } from "@/lib/leadIntent";
+import { getLeadIntent, describeIntent, intentItemLabel } from "@/lib/leadIntent";
 
 export interface Lead {
   id: string;
@@ -244,9 +244,9 @@ export async function assignLead(
 - Nome: ${lead.nome}
 - Origem do cadastro: ${lead.origem || "não informada"}
 - Mensagem original: "${lead.mensagem || "nenhuma"}"
-- Item relacionado: ${negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado"}
+- ${intentItemLabel(intent)}: ${negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado"}
 
-# IMPORTANTE — Postura correta
+# IMPORTANTE — Postura correta (LEIA COM ATENÇÃO)
 ${contextoIntent}
 
 # Tarefa
