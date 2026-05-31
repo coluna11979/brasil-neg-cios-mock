@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { callClaude } from "@/lib/anthropic";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
+import { getLeadIntent, describeIntent } from "@/lib/leadIntent";
 
 export interface Lead {
   id: string;
@@ -232,28 +233,40 @@ export async function assignLead(
     if (neg) negocioDesc = `${neg.titulo} (${neg.categoria} — ${neg.cidade}): ${neg.descricao?.slice(0, 200)}`;
   }
 
-  // 2. Gera sugestão de primeira mensagem com IA
+  // 2. Gera sugestão de primeira mensagem com IA — adaptada ao TIPO de lead
+  const intent = getLeadIntent(lead);
+  const contextoIntent = describeIntent(intent, lead);
   let sugestao = "";
   try {
-    const prompt = `Você é um assistente de vendas especializado em negócios e imóveis comerciais em São Paulo.
+    const prompt = `Você é consultor especialista da plataforma NegociaAky (compra e venda de negócios, imóveis comerciais, galerias e franquias no Brasil).
 
-Um lead entrou em contato com interesse em um negócio à venda.
-Nome do lead: ${lead.nome}
-Mensagem do lead: "${lead.mensagem || "Nenhuma"}"
-Negócio de interesse: ${negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado"}
+# Lead
+- Nome: ${lead.nome}
+- Origem do cadastro: ${lead.origem || "não informada"}
+- Mensagem original: "${lead.mensagem || "nenhuma"}"
+- Item relacionado: ${negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado"}
 
-Escreva UMA mensagem de WhatsApp de primeiro contato para o corretor enviar ao lead.
-- Curta (máximo 3 linhas)
-- Calorosa e profissional
-- Mencione o nome do lead
-- Mencione o negócio de interesse
-- Termine com UMA pergunta aberta para engajar
+# IMPORTANTE — Postura correta
+${contextoIntent}
 
-Responda APENAS com o texto da mensagem, sem aspas, sem explicação.`;
+# Tarefa
+Escreva UMA mensagem de WhatsApp de primeiro contato do corretor para esse lead.
+- Curta (máximo 3-4 linhas)
+- Calorosa e profissional, em português brasileiro
+- Use o primeiro nome do lead
+- Reflita CORRETAMENTE se ele é vendedor ou comprador (não inverta)
+- Termine com UMA pergunta aberta que faça sentido para o tipo dele
+
+Responda APENAS com o texto da mensagem, sem aspas, sem explicações, sem prefixos.`;
 
     sugestao = (await callClaude(prompt)).trim();
   } catch {
-    sugestao = `Olá ${lead.nome}! Tudo bem? Vi que você tem interesse em ${lead.negocio_titulo || "nosso negócio"}. Posso te contar mais detalhes — quando seria um bom momento para conversarmos?`;
+    // Fallback adaptado ao tipo
+    if (intent === "vendedor") {
+      sugestao = `Olá ${lead.nome}! Vi seu interesse em anunciar ${lead.galeria_nome || lead.negocio_titulo || "seu negócio"} na NegociaAky — show de bola. Pra eu te ajudar a montar o melhor anúncio, me conta rapidinho: qual é o seu principal objetivo com essa venda?`;
+    } else {
+      sugestao = `Olá ${lead.nome}! Tudo bem? Vi que você tem interesse em ${lead.negocio_titulo || lead.galeria_nome || "nosso anúncio"}. Posso te passar mais detalhes — qual é o melhor horário para conversarmos?`;
+    }
   }
 
   // 3. Atualiza lead com corretor_id e sugestão da IA

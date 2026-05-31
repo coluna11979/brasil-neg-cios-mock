@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { callClaude } from "@/lib/anthropic";
 import { checkInstanceStatus } from "@/lib/uazapi";
+import { getLeadIntent, describeIntent } from "@/lib/leadIntent";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, type Lead } from "@/stores/leadStore";
 
@@ -351,20 +352,29 @@ Retorne APENAS este JSON (sem markdown, sem explicação):
         .map((m) => `${m.sender_type === "corretor" ? "Corretor" : "Lead"}: ${m.message}`)
         .join("\n");
 
-      const prompt = `Você é um assistente especializado em negociação de compra e venda de negócios (M&A de PMEs brasileiras).
+      const intent = getLeadIntent(selectedLead);
+      const contextoIntent = describeIntent(intent, selectedLead);
+      const prompt = `Você é consultor especializado em negociação de compra e venda de negócios (M&A de PMEs, imóveis comerciais, galerias e franquias) no Brasil.
 
-Contexto do lead:
+# Contexto do lead
 - Nome: ${selectedLead.nome}
 - Interesse: ${selectedLead.negocio_titulo || selectedLead.galeria_nome || "não especificado"}
 - Mensagem inicial: ${selectedLead.mensagem || "não informada"}
 - Origem: ${selectedLead.origem}
 
-Histórico da conversa (últimas mensagens):
+# IMPORTANTE — Postura correta
+${contextoIntent}
+
+# Histórico (últimas mensagens)
 ${historico || "(sem mensagens ainda)"}
 
+# Tarefa
 Gere EXATAMENTE 3 sugestões de resposta para o corretor enviar agora via WhatsApp.
-Cada sugestão deve ser direta, profissional e em português brasileiro informal.
-Varie o tom: 1 para avançar na negociação, 1 para qualificar o lead, 1 para agendar reunião/visita.
+Cada sugestão deve refletir CORRETAMENTE se o lead é vendedor ou comprador (não inverta).
+Tom: direto, profissional, português brasileiro informal.
+Varie o ângulo:
+- Se vendedor: 1 para avançar no anúncio, 1 para qualificar o que ele tem, 1 para marcar conversa com consultor
+- Se comprador: 1 para avançar na negociação, 1 para qualificar perfil, 1 para agendar reunião/visita
 
 Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo, sem explicação.`;
 
@@ -413,14 +423,64 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
   };
 
   const getCadenciaPrompt = (estagio: string): string => {
-    const nome = selectedLead?.nome || "Lead";
-    const interesse = selectedLead?.negocio_titulo || selectedLead?.galeria_nome || "negócio à venda";
-    const msgInicial = selectedLead?.mensagem || "nenhuma";
-    if (estagio === "boas-vindas") return `Você é especialista em vendas de negócios e franquias no Brasil.\nLead: ${nome}, interesse em: ${interesse}.\nMensagem inicial do lead: "${msgInicial}".\nEscreva UMA mensagem de WhatsApp de boas-vindas calorosa e profissional.\n- Apresente a plataforma NegociaAky brevemente\n- Confirme o interesse dele\n- Mostre entusiasmo e disponibilidade\n- Termine com UMA pergunta aberta\nMáximo 4 linhas. Apenas o texto, sem aspas.`;
-    if (estagio === "followup") return `Lead ${nome} não respondeu à primeira mensagem sobre ${interesse}.\nEscreva um follow-up leve para WhatsApp:\n- Reconheça que pode ter ficado ocupado\n- Destaque 1 ponto de valor do negócio\n- Ofereça ajuda para tirar dúvidas\nMáximo 3 linhas. Apenas o texto, sem aspas.`;
-    if (estagio === "reengajamento") return `Lead ${nome} não respondeu há 3+ dias (interesse em ${interesse}).\nEscreva uma mensagem de reengajamento para WhatsApp:\n- Use um gatilho de escassez ou novidade\n- Mencione algo novo (outro interessado, prazo)\n- Crie senso de urgência leve\nMáximo 3 linhas. Apenas o texto, sem aspas.`;
-    if (estagio === "urgencia") return `Lead ${nome} não respondeu há 7+ dias. Última tentativa antes de arquivar.\nEscreva uma mensagem final para WhatsApp:\n- Tom direto mas respeitoso\n- Mencione que vai fechar o contato se não houver resposta\n- Deixe a porta aberta\nMáximo 2 linhas. Apenas o texto, sem aspas.`;
-    if (estagio === "qualificacao") return `Lead ${nome} está em conversa ativa sobre ${interesse}.\nEscreva uma pergunta de qualificação para WhatsApp:\n- Descubra budget, prazo ou experiência anterior\n- Tom conversacional e natural\n- UMA pergunta objetiva\nMáximo 2 linhas. Apenas o texto, sem aspas.`;
+    if (!selectedLead) return "";
+    const nome = selectedLead.nome;
+    const interesse = selectedLead.negocio_titulo || selectedLead.galeria_nome || "negócio à venda";
+    const msgInicial = selectedLead.mensagem || "nenhuma";
+    const intent = getLeadIntent(selectedLead);
+    const contexto = describeIntent(intent, selectedLead);
+
+    const cabecalho = `Você é consultor especialista da plataforma NegociaAky (compra e venda de negócios, imóveis comerciais, galerias e franquias).
+
+# Lead
+- Nome: ${nome}
+- Origem: ${selectedLead.origem || "não informada"}
+- Item relacionado: ${interesse}
+- Mensagem original do lead: "${msgInicial}"
+
+# IMPORTANTE — Postura correta
+${contexto}
+`;
+
+    if (estagio === "boas-vindas") return `${cabecalho}
+# Tarefa: Mensagem de BOAS-VINDAS via WhatsApp
+- Apresente a NegociaAky brevemente
+- Confirme o objetivo CORRETO do lead (vendedor x comprador — não inverta!)
+- Mostre disponibilidade
+- Termine com UMA pergunta aberta adequada ao tipo dele
+Máximo 4 linhas. Apenas o texto, sem aspas.`;
+
+    if (estagio === "followup") return `${cabecalho}
+# Tarefa: FOLLOW-UP (Dia 1) via WhatsApp
+O lead não respondeu à primeira mensagem.
+- Reconheça que pode estar ocupado, sem chatear
+- Reforce 1 valor relevante para o TIPO de lead (se vendedor: alcance/venda rápida; se comprador: oportunidades selecionadas)
+- Ofereça ajuda objetiva
+Máximo 3 linhas. Apenas o texto, sem aspas.`;
+
+    if (estagio === "reengajamento") return `${cabecalho}
+# Tarefa: REENGAJAMENTO (Dia 3) via WhatsApp
+Sem resposta há 3+ dias.
+- Use uma novidade pertinente ao TIPO de lead (vendedor: outros anúncios fechando, novos compradores chegando; comprador: novas oportunidades alinhadas)
+- Crie urgência leve, sem pressão
+Máximo 3 linhas. Apenas o texto, sem aspas.`;
+
+    if (estagio === "urgencia") return `${cabecalho}
+# Tarefa: ÚLTIMA TENTATIVA (Dia 7) via WhatsApp
+Sem resposta há 7+ dias — antes de arquivar.
+- Tom direto mas respeitoso
+- Avise que vai pausar o contato se não houver retorno
+- Deixe a porta aberta
+Máximo 2 linhas. Apenas o texto, sem aspas.`;
+
+    if (estagio === "qualificacao") return `${cabecalho}
+# Tarefa: PERGUNTA DE QUALIFICAÇÃO via WhatsApp
+Conversa ativa.
+- Se vendedor: descubra prazo desejado, motivo da venda, expectativa de valor
+- Se comprador: descubra orçamento, prazo, experiência anterior
+- UMA pergunta objetiva, tom natural
+Máximo 2 linhas. Apenas o texto, sem aspas.`;
+
     return "";
   };
 
