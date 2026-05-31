@@ -25,6 +25,11 @@ import {
   Sparkles,
   Camera,
   ImageIcon,
+  Store,
+  Home,
+  Award,
+  LayoutGrid,
+  Trash2,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { callClaude } from "@/lib/anthropic";
@@ -114,13 +119,43 @@ const EMPTY_FORM = {
   status: "ativo" as Negocio["status"],
 };
 
+// ── Tipos de anúncio (mesmos do site público /anunciar) ──────────────────────
+type TipoAnuncio = "negocio" | "imovel" | "galeria" | "franquia";
+
+const TIPO_META: Record<TipoAnuncio, { label: string; descricao: string; icon: typeof Building2 }> = {
+  negocio:  { label: "Negócio",         descricao: "Empresa em funcionamento à venda", icon: Store },
+  imovel:   { label: "Imóvel Comercial", descricao: "Venda ou locação de imóvel",        icon: Home },
+  galeria:  { label: "Galeria",          descricao: "Galeria com espaços para locação",  icon: LayoutGrid },
+  franquia: { label: "Franquia",         descricao: "Marca para franquear",              icon: Award },
+};
+
+interface EspacoForm {
+  numero: string;
+  tipo: string;
+  area_m2: string;
+  valor_aluguel: string;
+  andar: string;
+  disponivel: boolean;
+}
+
+const EMPTY_ESPACO: EspacoForm = {
+  numero: "", tipo: "Loja", area_m2: "", valor_aluguel: "", andar: "", disponivel: true,
+};
+
 interface NovoNegocioModalProps {
   onClose: () => void;
   onSaved: (negocio: Negocio) => void;
 }
 
 const NovoNegocioModal = ({ onClose, onSaved }: NovoNegocioModalProps) => {
+  const [tipoAnuncio, setTipoAnuncio] = useState<TipoAnuncio>("negocio");
   const [form, setForm] = useState(EMPTY_FORM);
+  // Campos específicos por tipo
+  const [imovelExtra, setImovelExtra] = useState({ operacao: "venda" as "venda" | "locacao", tipo_imovel: "" });
+  const [galeriaModalidade, setGaleriaModalidade] = useState<"locacao" | "venda">("locacao");
+  const [espacos, setEspacos] = useState<EspacoForm[]>([{ ...EMPTY_ESPACO }]);
+  const [franquiaExtra, setFranquiaExtra] = useState({ investimento: "", taxa_franquia: "", royalties: "" });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -167,7 +202,8 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.titulo.trim()) e.titulo = "Título é obrigatório";
-    if (!form.categoria) e.categoria = "Selecione uma categoria";
+    // Categoria não é obrigatória para galeria (galerias não usam categoria de produto)
+    if (tipoAnuncio !== "galeria" && !form.categoria) e.categoria = "Selecione uma categoria";
     if (!form.cidade.trim()) e.cidade = "Cidade é obrigatória";
     if (!form.estado) e.estado = "Selecione o estado";
     if (!form.proprietario_nome.trim()) e.proprietario_nome = "Nome é obrigatório";
@@ -177,6 +213,17 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
       e.proprietario_email = "E-mail inválido";
     }
     if (!form.descricao.trim()) e.descricao = "Descrição é obrigatória";
+
+    if (tipoAnuncio === "imovel" && !imovelExtra.tipo_imovel.trim()) {
+      e.tipo_imovel = "Informe o tipo do imóvel (ex: Loja, Sala, Galpão)";
+    }
+    if (tipoAnuncio === "galeria") {
+      const algumValido = espacos.some((sp) => sp.numero.trim());
+      if (!algumValido) e.espacos = "Adicione ao menos 1 espaço com número";
+    }
+    if (tipoAnuncio === "franquia" && !franquiaExtra.investimento.trim()) {
+      e.investimento = "Informe o investimento inicial";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -186,18 +233,90 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
     if (!validate()) return;
     setSaving(true);
 
+    // ── GALERIA: vai pra tabela própria (galerias) + espacos_galeria ─────────
+    if (tipoAnuncio === "galeria") {
+      const { data: galeriaData, error: galeriaError } = await supabase
+        .from("galerias")
+        .insert({
+          nome: form.titulo,
+          endereco: form.bairro || form.cidade,
+          cidade: form.cidade,
+          estado: form.estado,
+          descricao: form.descricao,
+        })
+        .select()
+        .single();
+
+      if (galeriaError || !galeriaData) {
+        setSaving(false);
+        setErrors({ submit: "Erro ao salvar galeria. Tente novamente." });
+        return;
+      }
+
+      // Foto
+      let imagemUrl: string | null = null;
+      if (pendingPhoto) {
+        const path = `galerias/${galeriaData.id}.jpg`;
+        await supabase.storage.from("lead-images").upload(path, pendingPhoto, { upsert: true, contentType: pendingPhoto.type });
+        const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
+        imagemUrl = urlData.publicUrl;
+        await supabase.from("galerias").update({ imagem: imagemUrl }).eq("id", galeriaData.id);
+      }
+
+      // Espaços
+      const espacosValidos = espacos.filter((sp) => sp.numero.trim());
+      if (espacosValidos.length > 0) {
+        const rows = espacosValidos.map((sp) => ({
+          galeria_id: galeriaData.id,
+          numero: sp.numero,
+          tipo: sp.tipo || "Loja",
+          area_m2: sp.area_m2 ? Number(sp.area_m2) : null,
+          valor_aluguel: sp.valor_aluguel ? Number(sp.valor_aluguel) : null,
+          andar: sp.andar || null,
+          disponivel: sp.disponivel,
+        }));
+        await supabase.from("espacos_galeria").insert(rows);
+      }
+
+      setSaving(false);
+      // Mapeia para shape de Negocio só pra fechar o modal e atualizar lista
+      onSaved({
+        ...(galeriaData as unknown as Negocio),
+        titulo: galeriaData.nome,
+        tipo: "galeria",
+        categoria: `Galeria · ${espacosValidos.length} espaço(s)`,
+      } as Negocio);
+      return;
+    }
+
+    // ── NEGÓCIO / IMÓVEL / FRANQUIA: tudo em `negocios` com `tipo` diferente ──
+    const extraDesc: string[] = [];
+    if (tipoAnuncio === "imovel") {
+      extraDesc.push(`Tipo de imóvel: ${imovelExtra.tipo_imovel}`);
+      extraDesc.push(`Operação: ${imovelExtra.operacao === "locacao" ? "Locação" : "Venda"}`);
+    }
+    if (tipoAnuncio === "franquia") {
+      if (franquiaExtra.investimento) extraDesc.push(`Investimento inicial: R$ ${franquiaExtra.investimento}`);
+      if (franquiaExtra.taxa_franquia) extraDesc.push(`Taxa de franquia: R$ ${franquiaExtra.taxa_franquia}`);
+      if (franquiaExtra.royalties) extraDesc.push(`Royalties: ${franquiaExtra.royalties}`);
+    }
+    const descricaoFinal = extraDesc.length
+      ? `${form.descricao}\n\n— Detalhes —\n${extraDesc.join("\n")}`
+      : form.descricao;
+
     const { data, error } = await supabase
       .from("negocios")
       .insert({
         titulo: form.titulo,
-        categoria: form.categoria,
+        tipo: tipoAnuncio, // negocio | imovel | franquia
+        categoria: form.categoria || (tipoAnuncio === "imovel" ? imovelExtra.tipo_imovel : ""),
         cidade: form.cidade,
         estado: form.estado,
         bairro: form.bairro || null,
-        preco: form.preco ? Number(form.preco) : null,
+        preco: form.preco ? Number(form.preco) : (tipoAnuncio === "franquia" && franquiaExtra.investimento ? Number(franquiaExtra.investimento) : null),
         faturamento_mensal: form.faturamento_mensal ? Number(form.faturamento_mensal) : null,
         area_m2: form.area_m2 ? Number(form.area_m2) : null,
-        descricao: form.descricao,
+        descricao: descricaoFinal,
         proprietario_nome: form.proprietario_nome,
         proprietario_telefone: form.proprietario_telefone || null,
         proprietario_email: form.proprietario_email,
@@ -215,7 +334,6 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
 
     let savedNegocio = data as Negocio;
 
-    // Upload foto se selecionada
     if (pendingPhoto && savedNegocio.id) {
       const path = `negocios/${savedNegocio.id}.jpg`;
       await supabase.storage.from("lead-images").upload(path, pendingPhoto, { upsert: true, contentType: pendingPhoto.type });
@@ -246,7 +364,9 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
               <Plus className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-display text-lg font-bold text-foreground">Novo Negócio</h2>
+              <h2 className="font-display text-lg font-bold text-foreground">
+                Novo {TIPO_META[tipoAnuncio].label}
+              </h2>
               <p className="text-xs text-muted-foreground">Cadastro direto pelo admin</p>
             </div>
           </div>
@@ -265,6 +385,32 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
               {errors.submit}
             </div>
           )}
+
+          {/* Tipo de anúncio */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">Tipo de anúncio</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {(Object.keys(TIPO_META) as TipoAnuncio[]).map((t) => {
+                const meta = TIPO_META[t];
+                const Icon = meta.icon;
+                const active = tipoAnuncio === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTipoAnuncio(t)}
+                    className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-center transition-colors ${
+                      active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <Icon className={`h-5 w-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="text-xs font-semibold text-foreground">{meta.label}</div>
+                    <div className="text-[10px] text-muted-foreground leading-tight">{meta.descricao}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Status (admin pode definir direto) */}
           <div className="rounded-lg bg-muted/40 border border-border p-4 flex items-center gap-4">
@@ -343,24 +489,26 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label>Categoria *</Label>
-                <Select
-                  value={form.categoria}
-                  onValueChange={(v) => {
-                    setForm((p) => ({ ...p, categoria: v }));
-                    if (errors.categoria) setErrors((p) => ({ ...p, categoria: "" }));
-                  }}
-                >
-                  <SelectTrigger className={`mt-1.5 ${errors.categoria ? "border-destructive" : ""}`}>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIAS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {errors.categoria && <p className="mt-1 text-xs text-destructive">{errors.categoria}</p>}
-              </div>
+              {tipoAnuncio !== "galeria" && (
+                <div>
+                  <Label>Categoria *</Label>
+                  <Select
+                    value={form.categoria}
+                    onValueChange={(v) => {
+                      setForm((p) => ({ ...p, categoria: v }));
+                      if (errors.categoria) setErrors((p) => ({ ...p, categoria: "" }));
+                    }}
+                  >
+                    <SelectTrigger className={`mt-1.5 ${errors.categoria ? "border-destructive" : ""}`}>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIAS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {errors.categoria && <p className="mt-1 text-xs text-destructive">{errors.categoria}</p>}
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="m-area">Área (m²)</Label>
@@ -378,6 +526,192 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
                 </div>
               </div>
             </div>
+
+            {/* IMÓVEL — tipo de imóvel + operação venda/locação */}
+            {tipoAnuncio === "imovel" && (
+              <div className="grid gap-4 sm:grid-cols-2 rounded-lg border border-blue-200 bg-blue-50/40 p-4">
+                <div>
+                  <Label>Tipo de imóvel *</Label>
+                  <Input
+                    value={imovelExtra.tipo_imovel}
+                    onChange={(e) => {
+                      setImovelExtra((p) => ({ ...p, tipo_imovel: e.target.value }));
+                      if (errors.tipo_imovel) setErrors((p) => ({ ...p, tipo_imovel: "" }));
+                    }}
+                    placeholder="Loja, Sala, Galpão, Prédio..."
+                    className={`mt-1.5 ${errors.tipo_imovel ? "border-destructive" : ""}`}
+                  />
+                  {errors.tipo_imovel && <p className="mt-1 text-xs text-destructive">{errors.tipo_imovel}</p>}
+                </div>
+                <div>
+                  <Label>Operação</Label>
+                  <Select
+                    value={imovelExtra.operacao}
+                    onValueChange={(v) => setImovelExtra((p) => ({ ...p, operacao: v as "venda" | "locacao" }))}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="venda">Venda</SelectItem>
+                      <SelectItem value="locacao">Locação</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {/* GALERIA — modalidade + lista de espaços */}
+            {tipoAnuncio === "galeria" && (
+              <div className="space-y-4 rounded-lg border border-violet-200 bg-violet-50/40 p-4">
+                <div>
+                  <Label>Modalidade do anúncio</Label>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button type="button"
+                      onClick={() => setGaleriaModalidade("locacao")}
+                      className={`rounded-xl border-2 p-2 text-left text-xs transition-colors ${
+                        galeriaModalidade === "locacao" ? "border-primary bg-primary/5" : "border-border"
+                      }`}>
+                      <div className="font-semibold">Locação de espaços</div>
+                      <div className="text-muted-foreground mt-0.5">Atrair lojistas/locatários</div>
+                    </button>
+                    <button type="button"
+                      onClick={() => setGaleriaModalidade("venda")}
+                      className={`rounded-xl border-2 p-2 text-left text-xs transition-colors ${
+                        galeriaModalidade === "venda" ? "border-primary bg-primary/5" : "border-border"
+                      }`}>
+                      <div className="font-semibold">Venda da galeria</div>
+                      <div className="text-muted-foreground mt-0.5">Vender o imóvel inteiro</div>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Espaços da galeria *</Label>
+                    <button
+                      type="button"
+                      onClick={() => setEspacos((prev) => [...prev, { ...EMPTY_ESPACO }])}
+                      className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    >
+                      <Plus className="h-3 w-3" /> Adicionar espaço
+                    </button>
+                  </div>
+                  {errors.espacos && <p className="mb-2 text-xs text-destructive">{errors.espacos}</p>}
+                  <div className="space-y-3">
+                    {espacos.map((esp, idx) => (
+                      <div key={idx} className="rounded-lg border border-border bg-card p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-foreground">Espaço {idx + 1}</span>
+                          {espacos.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setEspacos((prev) => prev.filter((_, i) => i !== idx))}
+                              className="text-muted-foreground hover:text-destructive"
+                              title="Remover"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          <Input
+                            placeholder="Número (ex: 12)"
+                            value={esp.numero}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setEspacos((prev) => prev.map((s, i) => i === idx ? { ...s, numero: v } : s));
+                            }}
+                          />
+                          <Input
+                            placeholder="Tipo (Loja, Sala)"
+                            value={esp.tipo}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setEspacos((prev) => prev.map((s, i) => i === idx ? { ...s, tipo: v } : s));
+                            }}
+                          />
+                          <Input
+                            placeholder="Andar (Térreo, 1)"
+                            value={esp.andar}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setEspacos((prev) => prev.map((s, i) => i === idx ? { ...s, andar: v } : s));
+                            }}
+                          />
+                          <Input
+                            type="number" placeholder="Área m²"
+                            value={esp.area_m2}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setEspacos((prev) => prev.map((s, i) => i === idx ? { ...s, area_m2: v } : s));
+                            }}
+                          />
+                          <Input
+                            type="number" placeholder="R$ aluguel"
+                            value={esp.valor_aluguel}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setEspacos((prev) => prev.map((s, i) => i === idx ? { ...s, valor_aluguel: v } : s));
+                            }}
+                          />
+                          <label className="flex items-center gap-2 text-xs text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={esp.disponivel}
+                              onChange={(e) => {
+                                const v = e.target.checked;
+                                setEspacos((prev) => prev.map((s, i) => i === idx ? { ...s, disponivel: v } : s));
+                              }}
+                            />
+                            Disponível
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* FRANQUIA — investimento, taxa, royalties */}
+            {tipoAnuncio === "franquia" && (
+              <div className="grid gap-4 sm:grid-cols-3 rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+                <div>
+                  <Label>Investimento inicial (R$) *</Label>
+                  <Input
+                    type="number"
+                    value={franquiaExtra.investimento}
+                    onChange={(e) => {
+                      setFranquiaExtra((p) => ({ ...p, investimento: e.target.value }));
+                      if (errors.investimento) setErrors((p) => ({ ...p, investimento: "" }));
+                    }}
+                    placeholder="150000"
+                    className={`mt-1.5 ${errors.investimento ? "border-destructive" : ""}`}
+                  />
+                  {errors.investimento && <p className="mt-1 text-xs text-destructive">{errors.investimento}</p>}
+                </div>
+                <div>
+                  <Label>Taxa de franquia (R$)</Label>
+                  <Input
+                    type="number"
+                    value={franquiaExtra.taxa_franquia}
+                    onChange={(e) => setFranquiaExtra((p) => ({ ...p, taxa_franquia: e.target.value }))}
+                    placeholder="40000"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label>Royalties (% / fixo)</Label>
+                  <Input
+                    value={franquiaExtra.royalties}
+                    onChange={(e) => setFranquiaExtra((p) => ({ ...p, royalties: e.target.value }))}
+                    placeholder="5% ou R$ 2.500/mês"
+                    className="mt-1.5"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -567,7 +901,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
               {saving ? (
                 <><Loader2 className="h-4 w-4 animate-spin" />Salvando...</>
               ) : (
-                <><Save className="h-4 w-4" />Salvar Negócio</>
+                <><Save className="h-4 w-4" />Salvar {TIPO_META[tipoAnuncio].label}</>
               )}
             </Button>
           </div>
