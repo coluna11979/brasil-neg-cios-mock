@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { callClaude } from "@/lib/anthropic";
+import { addLead } from "@/stores/leadStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -177,9 +178,64 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
     if (step === 2 && validateStep2()) { setStep(3); setErrors({}); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateContato()) setSubmitted(true);
+    if (!validateContato()) return;
+
+    // Monta mensagem rica conforme o tipo de anúncio
+    const partes: string[] = [];
+    let resumo = "";
+    if (tipo === "negocio") {
+      resumo = `Quer anunciar negócio: ${negocio.nome || negocio.categoria || "sem nome"}`;
+      if (negocio.categoria) partes.push(`Categoria: ${negocio.categoria}`);
+      if (negocio.anosOperacao) partes.push(`Anos de operação: ${negocio.anosOperacao}`);
+      if (negocio.faturamento) partes.push(`Faturamento mensal: R$ ${negocio.faturamento}`);
+      if (negocio.valorPedido) partes.push(`Valor pedido: R$ ${negocio.valorPedido}`);
+      if (negocio.bairro) partes.push(`Bairro: ${negocio.bairro}`);
+      if (negocio.descricao) partes.push(`Descrição: ${negocio.descricao}`);
+    } else if (tipo === "imovel") {
+      resumo = `Quer anunciar imóvel comercial (${imovel.operacao}): ${imovel.tipoImovel || "tipo não informado"}`;
+      if (imovel.area) partes.push(`Área: ${imovel.area} m²`);
+      if (imovel.valor) partes.push(`Valor: R$ ${imovel.valor}`);
+      if (imovel.endereco) partes.push(`Endereço: ${imovel.endereco}`);
+      if (imovel.descricao) partes.push(`Descrição: ${imovel.descricao}`);
+    } else if (tipo === "galeria") {
+      resumo = `Quer anunciar galeria: ${galeria.nome}`;
+      if (galeria.endereco) partes.push(`Endereço: ${galeria.endereco}`);
+      if (galeria.totalEspacos) partes.push(`Total de espaços: ${galeria.totalEspacos}`);
+      if (galeria.valorMedio) partes.push(`Valor médio: R$ ${galeria.valorMedio}`);
+      if (galeria.descricao) partes.push(`Descrição: ${galeria.descricao}`);
+    } else if (tipo === "franquia") {
+      resumo = `Quer anunciar franquia: ${franquia.marca} (${franquia.segmento})`;
+      if (franquia.investimento) partes.push(`Investimento: R$ ${franquia.investimento}`);
+      if (franquia.taxaFranquia) partes.push(`Taxa de franquia: R$ ${franquia.taxaFranquia}`);
+      if (franquia.royalties) partes.push(`Royalties: ${franquia.royalties}`);
+      if (franquia.bairro) partes.push(`Bairro: ${franquia.bairro}`);
+      if (franquia.descricao) partes.push(`Descrição: ${franquia.descricao}`);
+    }
+
+    const mensagem = [resumo, ...partes].join(" · ");
+    const negocioTitulo =
+      tipo === "negocio" ? negocio.nome :
+      tipo === "imovel" ? `${imovel.tipoImovel} ${imovel.area ? `(${imovel.area} m²)` : ""}`.trim() :
+      tipo === "galeria" ? galeria.nome :
+      tipo === "franquia" ? `${franquia.marca} (${franquia.segmento})` :
+      "";
+
+    const ok = await addLead({
+      nome: contato.nome.trim(),
+      email: contato.email.trim(),
+      telefone: contato.whatsapp.replace(/\D/g, "") || undefined,
+      mensagem,
+      origem: `anunciar-${tipo}`,
+      negocio_titulo: negocioTitulo || undefined,
+    });
+
+    if (!ok) {
+      setErrors({ contato: "Não foi possível enviar agora. Verifique seus dados e tente novamente." });
+      return;
+    }
+    setSubmitted(true);
   };
 
   const err = (field: string) =>
