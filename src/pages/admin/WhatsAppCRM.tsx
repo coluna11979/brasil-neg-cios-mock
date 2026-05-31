@@ -354,7 +354,7 @@ Retorne APENAS este JSON (sem markdown, sem explicação):
 
       const intent = getLeadIntent(selectedLead);
       const contextoIntent = describeIntent(intent, selectedLead);
-      const itemLabel = intentItemLabel(intent);
+      const itemLabel = intentItemLabel(intent, selectedLead);
       const prompt = `Você é consultor especializado em negociação de compra e venda de negócios (M&A de PMEs, imóveis comerciais, galerias e franquias) no Brasil.
 
 # Contexto do lead
@@ -431,7 +431,7 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
     const intent = getLeadIntent(selectedLead);
     const contexto = describeIntent(intent, selectedLead);
 
-    const itemLabel = intentItemLabel(intent);
+    const itemLabel = intentItemLabel(intent, selectedLead);
     const cabecalho = `Você é consultor especialista da plataforma NegociaAky (compra e venda de negócios, imóveis comerciais, galerias e franquias).
 
 # Lead

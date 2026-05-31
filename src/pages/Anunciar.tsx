@@ -126,6 +126,7 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
     operacao: "venda", tipoImovel: "", area: "", valor: "", endereco: "", descricao: "",
   });
   const [galeria, setGaleria] = useState({
+    modalidade: "locacao" as "locacao" | "venda", // padrão: locação de espaços
     nome: "", endereco: "", totalEspacos: "", valorMedio: "", descricao: "",
   });
   const [franquia, setFranquia] = useState({
@@ -200,10 +201,17 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
       if (imovel.endereco) partes.push(`Endereço: ${imovel.endereco}`);
       if (imovel.descricao) partes.push(`Descrição: ${imovel.descricao}`);
     } else if (tipo === "galeria") {
-      resumo = `Quer anunciar galeria: ${galeria.nome}`;
+      const mod = galeria.modalidade === "venda"
+        ? "VENDER A GALERIA INTEIRA (negócio + imóvel)"
+        : "LOCAR/ALUGAR ESPAÇOS aos lojistas";
+      resumo = `Dono da galeria "${galeria.nome}" quer ${mod}`;
       if (galeria.endereco) partes.push(`Endereço: ${galeria.endereco}`);
       if (galeria.totalEspacos) partes.push(`Total de espaços: ${galeria.totalEspacos}`);
-      if (galeria.valorMedio) partes.push(`Valor médio: R$ ${galeria.valorMedio}`);
+      if (galeria.valorMedio) {
+        partes.push(galeria.modalidade === "venda"
+          ? `Valor pedido pela galeria: R$ ${galeria.valorMedio}`
+          : `Aluguel médio por espaço: R$ ${galeria.valorMedio}`);
+      }
       if (galeria.descricao) partes.push(`Descrição: ${galeria.descricao}`);
     } else if (tipo === "franquia") {
       resumo = `Quer anunciar franquia: ${franquia.marca} (${franquia.segmento})`;
@@ -222,12 +230,15 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
       tipo === "franquia" ? `${franquia.marca} (${franquia.segmento})` :
       "";
 
+    // Sufixo de modalidade para galeria (locação x venda) — IA usa pra escolher tom
+    const origemSuffix = tipo === "galeria" ? `-${galeria.modalidade}` : "";
+
     const ok = await addLead({
       nome: contato.nome.trim(),
       email: contato.email.trim(),
       telefone: contato.whatsapp.replace(/\D/g, "") || undefined,
       mensagem,
-      origem: `anunciar-${tipo}`,
+      origem: `anunciar-${tipo}${origemSuffix}`,
       negocio_titulo: negocioTitulo || undefined,
     });
 
@@ -532,6 +543,35 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
                   {tipo === "galeria" && (
                     <>
                       <div>
+                        <Label>Quero anunciar para... *</Label>
+                        <div className="mt-2 grid grid-cols-2 gap-3">
+                          <button type="button"
+                            onClick={() => setGaleria((p) => ({ ...p, modalidade: "locacao" }))}
+                            className={`rounded-xl border-2 p-3 text-left transition-colors ${
+                              galeria.modalidade === "locacao"
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/40"
+                            }`}>
+                            <div className="font-semibold text-sm">Locação de espaços</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Quero atrair lojistas/locatários para os espaços da minha galeria
+                            </div>
+                          </button>
+                          <button type="button"
+                            onClick={() => setGaleria((p) => ({ ...p, modalidade: "venda" }))}
+                            className={`rounded-xl border-2 p-3 text-left transition-colors ${
+                              galeria.modalidade === "venda"
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/40"
+                            }`}>
+                            <div className="font-semibold text-sm">Venda da galeria</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Quero vender a galeria inteira (negócio + imóvel)
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                      <div>
                         <Label>Nome da galeria *</Label>
                         <Input className={`mt-2 ${errors.nome ? "border-destructive" : ""}`} placeholder="Ex: Galeria Centro Empresarial"
                           value={galeria.nome} onChange={(e) => setGaleria((p) => ({ ...p, nome: e.target.value }))} />
@@ -551,8 +591,13 @@ Responda em no máximo 3 linhas com: faixa de preço sugerida para este tipo de 
                           {err("totalEspacos")}
                         </div>
                         <div>
-                          <Label>Aluguel médio por espaço (R$)</Label>
-                          <Input className="mt-2" type="number" placeholder="Ex: 3500"
+                          <Label>
+                            {galeria.modalidade === "venda"
+                              ? "Valor pedido pela galeria (R$)"
+                              : "Aluguel médio por espaço (R$)"}
+                          </Label>
+                          <Input className="mt-2" type="number"
+                            placeholder={galeria.modalidade === "venda" ? "Ex: 2500000" : "Ex: 3500"}
                             value={galeria.valorMedio} onChange={(e) => setGaleria((p) => ({ ...p, valorMedio: e.target.value }))} />
                         </div>
                       </div>

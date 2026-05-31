@@ -244,7 +244,7 @@ export async function assignLead(
 - Nome: ${lead.nome}
 - Origem do cadastro: ${lead.origem || "não informada"}
 - Mensagem original: "${lead.mensagem || "nenhuma"}"
-- ${intentItemLabel(intent)}: ${negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado"}
+- ${intentItemLabel(intent, lead)}: ${negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado"}
 
 # IMPORTANTE — Postura correta (LEIA COM ATENÇÃO)
 ${contextoIntent}
@@ -263,7 +263,13 @@ Responda APENAS com o texto da mensagem, sem aspas, sem explicações, sem prefi
   } catch {
     // Fallback adaptado ao tipo
     if (intent === "vendedor") {
-      sugestao = `Olá ${lead.nome}! Vi seu interesse em anunciar ${lead.galeria_nome || lead.negocio_titulo || "seu negócio"} na NegociaAky — show de bola. Pra eu te ajudar a montar o melhor anúncio, me conta rapidinho: qual é o seu principal objetivo com essa venda?`;
+      const item = lead.galeria_nome || lead.negocio_titulo || "seu negócio";
+      const isLocacao = (lead.origem || "").endsWith("-locacao") || /locar|alugar/i.test(lead.mensagem || "");
+      if (isLocacao) {
+        sugestao = `Olá ${lead.nome}! Que bom anunciar a ${item} na NegociaAky pra atrair lojistas — vamos te ajudar a encher esses espaços. Me conta rapidinho: qual o perfil de comércio que você imagina pros espaços e em quanto tempo gostaria de ter tudo locado?`;
+      } else {
+        sugestao = `Olá ${lead.nome}! Show de bola anunciar ${item} na NegociaAky. Pra montar o melhor anúncio pro comprador certo, qual é o seu principal objetivo com essa venda — prazo, valor desejado?`;
+      }
     } else {
       sugestao = `Olá ${lead.nome}! Tudo bem? Vi que você tem interesse em ${lead.negocio_titulo || lead.galeria_nome || "nosso anúncio"}. Posso te passar mais detalhes — qual é o melhor horário para conversarmos?`;
     }
