@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { callClaude } from "@/lib/anthropic";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
 import { getLeadIntent, describeIntent, intentItemLabel } from "@/lib/leadIntent";
+import { getAiPrompt } from "@/lib/aiPrompts";
 
 export interface Lead {
   id: string;
@@ -233,32 +234,19 @@ export async function assignLead(
     if (neg) negocioDesc = `${neg.titulo} (${neg.categoria} — ${neg.cidade}): ${neg.descricao?.slice(0, 200)}`;
   }
 
-  // 2. Gera sugestão de primeira mensagem com IA — adaptada ao TIPO de lead
+  // 2. Gera sugestão de primeira mensagem com IA — template vem do banco (ai_prompts)
   const intent = getLeadIntent(lead);
   const contextoIntent = describeIntent(intent, lead);
   let sugestao = "";
   try {
-    const prompt = `Você é consultor especialista da plataforma NegociaAky (compra e venda de negócios, imóveis comerciais, galerias e franquias no Brasil).
-
-# Lead
-- Nome: ${lead.nome}
-- Origem do cadastro: ${lead.origem || "não informada"}
-- Mensagem original: "${lead.mensagem || "nenhuma"}"
-- ${intentItemLabel(intent, lead)}: ${negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado"}
-
-# IMPORTANTE — Postura correta (LEIA COM ATENÇÃO)
-${contextoIntent}
-
-# Tarefa
-Escreva UMA mensagem de WhatsApp de primeiro contato do corretor para esse lead.
-- Curta (máximo 3-4 linhas)
-- Calorosa e profissional, em português brasileiro
-- Use o primeiro nome do lead
-- Reflita CORRETAMENTE se ele é vendedor ou comprador (não inverta)
-- Termine com UMA pergunta aberta que faça sentido para o tipo dele
-
-Responda APENAS com o texto da mensagem, sem aspas, sem explicações, sem prefixos.`;
-
+    const prompt = await getAiPrompt("primeira_mensagem", {
+      nome: lead.nome,
+      origem: lead.origem || "não informada",
+      mensagem: lead.mensagem || "nenhuma",
+      item_label: intentItemLabel(intent, lead),
+      item: negocioDesc || lead.negocio_titulo || lead.galeria_nome || "não identificado",
+      postura: contextoIntent,
+    });
     sugestao = (await callClaude(prompt)).trim();
   } catch {
     // Fallback adaptado ao tipo

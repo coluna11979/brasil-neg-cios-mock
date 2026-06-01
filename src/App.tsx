@@ -55,6 +55,7 @@ const CorretorNovaSenha = lazy(() => import("./pages/corretor/NovaSenha"));
 const AdminMateriais = lazy(() => import("./pages/admin/Materiais"));
 const AdminConfiguracoes = lazy(() => import("./pages/admin/Configuracoes"));
 const AdminIntegracoes = lazy(() => import("./pages/admin/Integracoes"));
+const AdminAgentesIA = lazy(() => import("./pages/admin/AgentesIA"));
 const AdminSocialSelling = lazy(() => import("./pages/admin/SocialSelling"));
 
 const queryClient = new QueryClient();
@@ -105,6 +106,7 @@ const App = () => (
                   <Route path="/admin/materiais" element={<ProtectedRoute><AdminMateriais /></ProtectedRoute>} />
                   <Route path="/admin/configuracoes" element={<ProtectedRoute><AdminConfiguracoes /></ProtectedRoute>} />
                   <Route path="/admin/integracoes" element={<ProtectedRoute><AdminIntegracoes /></ProtectedRoute>} />
+                  <Route path="/admin/agentes-ia" element={<ProtectedRoute><AdminAgentesIA /></ProtectedRoute>} />
                   <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
                   <Route path="/admin/social-selling" element={<ProtectedRoute><AdminSocialSelling /></ProtectedRoute>} />
 

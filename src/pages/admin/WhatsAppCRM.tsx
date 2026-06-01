@@ -11,6 +11,7 @@ import {
 import { callClaude } from "@/lib/anthropic";
 import { checkInstanceStatus } from "@/lib/uazapi";
 import { getLeadIntent, describeIntent, intentItemLabel } from "@/lib/leadIntent";
+import { getAiPrompt } from "@/lib/aiPrompts";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, type Lead } from "@/stores/leadStore";
 
@@ -353,31 +354,16 @@ Retorne APENAS este JSON (sem markdown, sem explicação):
         .join("\n");
 
       const intent = getLeadIntent(selectedLead);
-      const contextoIntent = describeIntent(intent, selectedLead);
-      const itemLabel = intentItemLabel(intent, selectedLead);
-      const prompt = `Você é consultor especializado em negociação de compra e venda de negócios (M&A de PMEs, imóveis comerciais, galerias e franquias) no Brasil.
-
-# Contexto do lead
-- Nome: ${selectedLead.nome}
-- Origem do cadastro: ${selectedLead.origem}
-- ${itemLabel}: ${selectedLead.negocio_titulo || selectedLead.galeria_nome || "não especificado"}
-- Mensagem inicial: ${selectedLead.mensagem || "não informada"}
-
-# IMPORTANTE — Postura correta (LEIA COM ATENÇÃO)
-${contextoIntent}
-
-# Histórico (últimas mensagens)
-${historico || "(sem mensagens ainda)"}
-
-# Tarefa
-Gere EXATAMENTE 3 sugestões de resposta para o corretor enviar agora via WhatsApp.
-Cada sugestão deve refletir CORRETAMENTE se o lead é vendedor ou comprador (não inverta).
-Tom: direto, profissional, português brasileiro informal.
-Varie o ângulo:
-- Se vendedor: 1 para avançar no anúncio, 1 para qualificar o que ele tem, 1 para marcar conversa com consultor
-- Se comprador: 1 para avançar na negociação, 1 para qualificar perfil, 1 para agendar reunião/visita
-
-Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo, sem explicação.`;
+      const promptBase = await getAiPrompt("sugestoes_chat", {
+        nome: selectedLead.nome,
+        origem: selectedLead.origem,
+        item_label: intentItemLabel(intent, selectedLead),
+        item: selectedLead.negocio_titulo || selectedLead.galeria_nome || "não especificado",
+        mensagem: selectedLead.mensagem || "não informada",
+        postura: describeIntent(intent, selectedLead),
+        historico: historico || "(sem mensagens ainda)",
+      });
+      const prompt = `${promptBase}\n\nResponda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo, sem explicação.`;
 
       const result = await callClaude(prompt);
       const sugestoes = result
@@ -423,67 +409,33 @@ Responda APENAS com as 3 sugestões, uma por linha, sem numeração, sem prefixo
     "qualificacao": { label: "Qualificação", emoji: "🎯", color: "bg-violet-50 border-violet-200" },
   };
 
-  const getCadenciaPrompt = (estagio: string): string => {
+  /** Monta o cabeçalho comum + busca template do banco (ai_prompts). */
+  const getCadenciaPrompt = async (estagio: string): Promise<string> => {
     if (!selectedLead) return "";
-    const nome = selectedLead.nome;
-    const interesse = selectedLead.negocio_titulo || selectedLead.galeria_nome || "negócio à venda";
-    const msgInicial = selectedLead.mensagem || "nenhuma";
     const intent = getLeadIntent(selectedLead);
-    const contexto = describeIntent(intent, selectedLead);
-
     const itemLabel = intentItemLabel(intent, selectedLead);
+    const interesse = selectedLead.negocio_titulo || selectedLead.galeria_nome || "negócio à venda";
     const cabecalho = `Você é consultor especialista da plataforma NegociaAky (compra e venda de negócios, imóveis comerciais, galerias e franquias).
 
 # Lead
-- Nome: ${nome}
+- Nome: ${selectedLead.nome}
 - Origem do cadastro: ${selectedLead.origem || "não informada"}
 - ${itemLabel}: ${interesse}
-- Mensagem original do lead: "${msgInicial}"
+- Mensagem original do lead: "${selectedLead.mensagem || "nenhuma"}"
 
 # IMPORTANTE — Postura correta (LEIA COM ATENÇÃO)
-${contexto}
+${describeIntent(intent, selectedLead)}
 `;
 
-    if (estagio === "boas-vindas") return `${cabecalho}
-# Tarefa: Mensagem de BOAS-VINDAS via WhatsApp
-- Apresente a NegociaAky brevemente
-- Confirme o objetivo CORRETO do lead (vendedor x comprador — não inverta!)
-- Mostre disponibilidade
-- Termine com UMA pergunta aberta adequada ao tipo dele
-Máximo 4 linhas. Apenas o texto, sem aspas.`;
-
-    if (estagio === "followup") return `${cabecalho}
-# Tarefa: FOLLOW-UP (Dia 1) via WhatsApp
-O lead não respondeu à primeira mensagem.
-- Reconheça que pode estar ocupado, sem chatear
-- Reforce 1 valor relevante para o TIPO de lead (se vendedor: alcance/venda rápida; se comprador: oportunidades selecionadas)
-- Ofereça ajuda objetiva
-Máximo 3 linhas. Apenas o texto, sem aspas.`;
-
-    if (estagio === "reengajamento") return `${cabecalho}
-# Tarefa: REENGAJAMENTO (Dia 3) via WhatsApp
-Sem resposta há 3+ dias.
-- Use uma novidade pertinente ao TIPO de lead (vendedor: outros anúncios fechando, novos compradores chegando; comprador: novas oportunidades alinhadas)
-- Crie urgência leve, sem pressão
-Máximo 3 linhas. Apenas o texto, sem aspas.`;
-
-    if (estagio === "urgencia") return `${cabecalho}
-# Tarefa: ÚLTIMA TENTATIVA (Dia 7) via WhatsApp
-Sem resposta há 7+ dias — antes de arquivar.
-- Tom direto mas respeitoso
-- Avise que vai pausar o contato se não houver retorno
-- Deixe a porta aberta
-Máximo 2 linhas. Apenas o texto, sem aspas.`;
-
-    if (estagio === "qualificacao") return `${cabecalho}
-# Tarefa: PERGUNTA DE QUALIFICAÇÃO via WhatsApp
-Conversa ativa.
-- Se vendedor: descubra prazo desejado, motivo da venda, expectativa de valor
-- Se comprador: descubra orçamento, prazo, experiência anterior
-- UMA pergunta objetiva, tom natural
-Máximo 2 linhas. Apenas o texto, sem aspas.`;
-
-    return "";
+    const key =
+      estagio === "boas-vindas"    ? "cadencia_boas_vindas" :
+      estagio === "followup"       ? "cadencia_followup" :
+      estagio === "reengajamento"  ? "cadencia_reengajamento" :
+      estagio === "urgencia"       ? "cadencia_urgencia" :
+      estagio === "qualificacao"   ? "cadencia_qualificacao" :
+      "";
+    if (!key) return "";
+    return await getAiPrompt(key, { cabecalho });
   };
 
   const gerarMensagemCadencia = async () => {
@@ -491,7 +443,7 @@ Máximo 2 linhas. Apenas o texto, sem aspas.`;
     setCadenciaLoading(true);
     setCadenciaMsg("");
     try {
-      const prompt = getCadenciaPrompt(cadenciaEstagio);
+      const prompt = await getCadenciaPrompt(cadenciaEstagio);
       const msg = await callClaude(prompt);
       setCadenciaMsg(msg.trim());
     } catch {
