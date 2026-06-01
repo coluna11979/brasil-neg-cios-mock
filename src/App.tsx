@@ -43,6 +43,7 @@ const CorretorLogin = lazy(() => import("./pages/corretor/Login"));
 const CorretorMensagens = lazy(() => import("./pages/corretor/Mensagens"));
 const CorretorLeads = lazy(() => import("./pages/corretor/Leads"));
 const CorretorPipeline = lazy(() => import("./pages/corretor/Pipeline"));
+const CorretorMeusNegocios = lazy(() => import("./pages/corretor/MeusNegocios"));
 const CorretorDesempenho = lazy(() => import("./pages/corretor/Desempenho"));
 const CorretorMateriais = lazy(() => import("./pages/corretor/Materiais"));
 const CorretorRedesSociais = lazy(() => import("./pages/corretor/RedesSociais"));
@@ -115,6 +116,7 @@ const App = () => (
                   <Route path="/corretor/mensagens"      element={<CorretorProtectedRoute><CorretorMensagens /></CorretorProtectedRoute>} />
                   <Route path="/corretor/leads"          element={<CorretorProtectedRoute><CorretorLeads /></CorretorProtectedRoute>} />
                   <Route path="/corretor/pipeline"       element={<CorretorProtectedRoute><CorretorPipeline /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/negocios"       element={<CorretorProtectedRoute><CorretorMeusNegocios /></CorretorProtectedRoute>} />
                   <Route path="/corretor/desempenho"     element={<CorretorProtectedRoute><CorretorDesempenho /></CorretorProtectedRoute>} />
                   <Route path="/corretor/redes-sociais"  element={<CorretorProtectedRoute><CorretorRedesSociais /></CorretorProtectedRoute>} />
                   <Route path="/corretor/materiais"      element={<CorretorProtectedRoute><CorretorMateriais /></CorretorProtectedRoute>} />

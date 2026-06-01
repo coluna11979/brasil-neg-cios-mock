@@ -146,11 +146,19 @@ const EMPTY_ESPACO: EspacoForm = {
 interface NovoNegocioModalProps {
   onClose: () => void;
   onSaved: (negocio: Negocio) => void;
+  /** ID do corretor responsável (se omitido, fica null — uso admin). */
+  corretorId?: string;
+  /** Status inicial (default "ativo" para admin; passe "pendente" para corretor). */
+  defaultStatus?: Negocio["status"];
+  /** Se true, esconde o seletor de status (corretor não escolhe — vai como pendente). */
+  hideStatusSelector?: boolean;
 }
 
-const NovoNegocioModal = ({ onClose, onSaved }: NovoNegocioModalProps) => {
+export const NovoNegocioModal = ({
+  onClose, onSaved, corretorId, defaultStatus, hideStatusSelector,
+}: NovoNegocioModalProps) => {
   const [tipoAnuncio, setTipoAnuncio] = useState<TipoAnuncio>("negocio");
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState({ ...EMPTY_FORM, status: defaultStatus ?? EMPTY_FORM.status });
   // Campos específicos por tipo
   const [imovelExtra, setImovelExtra] = useState({ operacao: "venda" as "venda" | "locacao" | "ambos", tipo_imovel: "" });
   const [galeriaModalidade, setGaleriaModalidade] = useState<"locacao" | "venda">("locacao");
@@ -244,6 +252,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
           cidade: form.cidade,
           estado: form.estado,
           descricao: form.descricao,
+          corretor_id: corretorId || null,
         })
         .select()
         .single();
@@ -326,6 +335,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
         proprietario_telefone: form.proprietario_telefone || null,
         proprietario_email: form.proprietario_email,
         status: form.status,
+        corretor_id: corretorId || null,
       })
       .select()
       .single();
@@ -417,7 +427,8 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
             </div>
           </div>
 
-          {/* Status (admin pode definir direto) */}
+          {/* Status (admin pode definir direto; corretor não vê — vai como pendente) */}
+          {!hideStatusSelector && (
           <div className="rounded-lg bg-muted/40 border border-border p-4 flex items-center gap-4">
             <div className="flex-1">
               <Label className="text-sm font-semibold">Status inicial</Label>
@@ -440,6 +451,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
               </SelectContent>
             </Select>
           </div>
+          )}
 
           {/* Foto do Negócio */}
           <div className="space-y-3">
