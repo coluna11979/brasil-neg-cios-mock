@@ -647,6 +647,16 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
                             </button>
                           )}
                         </div>
+                        <Textarea
+                          placeholder="Descrição do espaço (ex: Loja de esquina com vitrine dupla, alto fluxo no corredor principal...)"
+                          rows={2}
+                          value={esp.descricao}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setEspacos((prev) => prev.map((s, i) => i === idx ? { ...s, descricao: v } : s));
+                          }}
+                          className="mb-2 text-sm"
+                        />
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           <Input
                             placeholder="Número (ex: 12)"
