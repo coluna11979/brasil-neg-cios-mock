@@ -150,10 +150,11 @@ interface EspacoForm {
   valor_aluguel: string;
   andar: string;
   disponivel: boolean;
+  descricao: string;
 }
 
 const EMPTY_ESPACO: EspacoForm = {
-  numero: "", tipo: "Loja", area_m2: "", valor_aluguel: "", andar: "", disponivel: true,
+  numero: "", tipo: "Loja", area_m2: "", valor_aluguel: "", andar: "", disponivel: true, descricao: "",
 };
 
 interface NovoNegocioModalProps {
@@ -297,6 +298,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
           valor_aluguel: sp.valor_aluguel ? Number(sp.valor_aluguel) : null,
           andar: sp.andar || null,
           disponivel: sp.disponivel,
+          descricao: sp.descricao || null,
         }));
         await supabase.from("espacos_galeria").insert(rows);
       }

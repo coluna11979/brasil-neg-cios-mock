@@ -36,10 +36,11 @@ interface Espaco {
   valor_aluguel: string;
   andar: string;
   disponivel: boolean;
+  descricao: string;
 }
 
 const EMPTY_ESPACO: Espaco = {
-  numero: "", tipo: "Loja", area_m2: "", valor_aluguel: "", andar: "", disponivel: true,
+  numero: "", tipo: "Loja", area_m2: "", valor_aluguel: "", andar: "", disponivel: true, descricao: "",
 };
 
 interface Props {
@@ -81,7 +82,7 @@ const EditGaleriaModal = ({ galeriaId, onClose, onSaved }: Props) => {
         setDescricao(gal.descricao || "");
         setImagemUrl(gal.imagem || null);
       }
-      type EspacoRow = { id: string; numero: string; tipo: string; area_m2: number | null; valor_aluguel: number | null; andar: string | null; disponivel: boolean | null };
+      type EspacoRow = { id: string; numero: string; tipo: string; area_m2: number | null; valor_aluguel: number | null; andar: string | null; disponivel: boolean | null; descricao: string | null };
       setEspacos(((esps as EspacoRow[]) || []).map((e) => ({
         id: e.id,
         numero: e.numero || "",
@@ -90,6 +91,7 @@ const EditGaleriaModal = ({ galeriaId, onClose, onSaved }: Props) => {
         valor_aluguel: e.valor_aluguel != null ? String(e.valor_aluguel) : "",
         andar: e.andar || "",
         disponivel: e.disponivel ?? true,
+        descricao: e.descricao || "",
       })));
       setLoading(false);
     })();
@@ -168,6 +170,7 @@ const EditGaleriaModal = ({ galeriaId, onClose, onSaved }: Props) => {
           valor_aluguel: e.valor_aluguel ? Number(e.valor_aluguel) : null,
           andar: e.andar || null,
           disponivel: e.disponivel,
+          descricao: e.descricao || null,
         }).eq("id", e.id!)
       ));
     }
@@ -181,6 +184,7 @@ const EditGaleriaModal = ({ galeriaId, onClose, onSaved }: Props) => {
         valor_aluguel: e.valor_aluguel ? Number(e.valor_aluguel) : null,
         andar: e.andar || null,
         disponivel: e.disponivel,
+        descricao: e.descricao || null,
       })));
     }
 
@@ -341,6 +345,18 @@ const EditGaleriaModal = ({ galeriaId, onClose, onSaved }: Props) => {
                         <button type="button" onClick={() => removeEspaco(idx)} className="text-muted-foreground hover:text-destructive" title="Remover espaço">
                           <Trash2 className="h-4 w-4" />
                         </button>
+                      </div>
+
+                      {/* Descrição do espaço (linha inteira) */}
+                      <div className="mb-3">
+                        <Label className="text-[10px] uppercase tracking-wide">Descrição do espaço</Label>
+                        <Textarea
+                          value={esp.descricao}
+                          onChange={(e) => updateEspaco(idx, { descricao: e.target.value })}
+                          placeholder="Ex: Loja de esquina com vitrine dupla, alto fluxo de clientes no corredor principal..."
+                          rows={2}
+                          className="mt-1 text-sm"
+                        />
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
