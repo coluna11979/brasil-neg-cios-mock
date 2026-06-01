@@ -375,7 +375,7 @@ const Dashboard = () => {
                     return (
                       <Link
                         key={r.id}
-                        to="/admin/corretores"
+                        to={`/admin/corretores/${r.id}`}
                         className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 hover:bg-muted transition-colors"
                       >
                         <div className="flex h-8 w-8 items-center justify-center text-lg">

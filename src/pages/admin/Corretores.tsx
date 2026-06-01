@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { BarChart3 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
 
@@ -406,7 +408,16 @@ const CorretorCard = ({ corretor, stats, updating, onToggle, expanded, onExpand 
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Botão expandir para ver detalhes */}
+          {corretor.ativo && (
+            <Link
+              to={`/admin/corretores/${corretor.id}`}
+              className="flex items-center gap-1 rounded-lg bg-primary/10 border border-primary/30 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors"
+              title="Ver KPIs e desempenho do corretor"
+            >
+              <BarChart3 className="h-3.5 w-3.5" /> KPIs
+            </Link>
+          )}
+          {/* Botão expandir para ver detalhes do cadastro */}
           <button
             onClick={onExpand}
             className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors"

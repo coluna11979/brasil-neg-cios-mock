@@ -29,6 +29,7 @@ const AdminPipeline = lazy(() => import("./pages/admin/Pipeline"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/WhatsAppCRM"));
 const AdminNegocios = lazy(() => import("./pages/admin/Negocios"));
 const AdminCorretores = lazy(() => import("./pages/admin/Corretores"));
+const AdminCorretorDetail = lazy(() => import("./pages/admin/CorretorDetail"));
 const AdminUsuarios = lazy(() => import("./pages/admin/Usuarios"));
 const Obrigado = lazy(() => import("./pages/Obrigado"));
 const VenderNegocio = lazy(() => import("./pages/VenderNegocio"));
@@ -100,6 +101,7 @@ const App = () => (
                   <Route path="/admin/leads" element={<ProtectedRoute><AdminLeads /></ProtectedRoute>} />
                   <Route path="/admin/negocios" element={<ProtectedRoute><AdminNegocios /></ProtectedRoute>} />
                   <Route path="/admin/corretores" element={<ProtectedRoute><AdminCorretores /></ProtectedRoute>} />
+                  <Route path="/admin/corretores/:id" element={<ProtectedRoute><AdminCorretorDetail /></ProtectedRoute>} />
                   <Route path="/admin/materiais" element={<ProtectedRoute><AdminMateriais /></ProtectedRoute>} />
                   <Route path="/admin/configuracoes" element={<ProtectedRoute><AdminConfiguracoes /></ProtectedRoute>} />
                   <Route path="/admin/integracoes" element={<ProtectedRoute><AdminIntegracoes /></ProtectedRoute>} />
