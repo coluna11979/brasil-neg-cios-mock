@@ -70,6 +70,7 @@ interface RankRow {
   id: string;
   nome: string;
   foto_url: string | null;
+  vgv_atribuido: number;   // soma TOTAL de preco de tudo sob o corretor (qualquer status, exceto rejeitado)
   vgv_venda: number;
   aluguel_mensal: number;
   realizado: number;
@@ -158,11 +159,16 @@ const Dashboard = () => {
           const aluguel = ativosC.filter((n) => isLocacao(n) || /Venda e Loca[cç][aã]o/i.test(n.descricao || "")).reduce((s, n) => s + (n.preco || 0), 0) +
             galDoC.reduce((s, g) => s + (g.espacos_galeria || []).reduce((s2, e) => s2 + (e.valor_aluguel || 0), 0), 0);
           const realizado = vendidosC.reduce((s, n) => s + (n.preco || 0), 0);
+          // VGV atribuído total = soma de tudo sob o corretor (qualquer status, exceto rejeitado)
+          const vgvAtribuido = negDoC
+            .filter((n) => n.status !== "rejeitado")
+            .reduce((s, n) => s + (n.preco || 0), 0);
           const leadsCount = leadsAtribuidosRows.filter((l) => l.corretor_id === c.id).length;
           return {
             id: c.id,
             nome: c.nome,
             foto_url: c.foto_url,
+            vgv_atribuido: vgvAtribuido,
             vgv_venda: vgvV,
             aluguel_mensal: aluguel,
             realizado,
@@ -170,7 +176,7 @@ const Dashboard = () => {
             leads_atribuidos: leadsCount,
           };
         })
-        .sort((a, b) => (b.realizado + b.vgv_venda) - (a.realizado + a.vgv_venda))
+        .sort((a, b) => b.vgv_atribuido - a.vgv_atribuido)
         .slice(0, 5);
 
       setPlatStats({
@@ -356,7 +362,7 @@ const Dashboard = () => {
             <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <Trophy className="h-5 w-5 text-amber-500" />
-                <h3 className="font-display font-semibold text-foreground">Top 5 corretores por VGV</h3>
+                <h3 className="font-display font-semibold text-foreground">Top 5 corretores por VGV atribuído</h3>
               </div>
               {platStats.ranking.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic py-4 text-center">
@@ -389,10 +395,14 @@ const Dashboard = () => {
                           </p>
                         </div>
                         <div className="text-right hidden sm:block">
+                          <p className="text-[10px] uppercase text-muted-foreground">VGV atribuído</p>
+                          <p className="text-sm font-bold text-amber-700">{formatMoneyShort(r.vgv_atribuido)}</p>
+                        </div>
+                        <div className="text-right hidden md:block">
                           <p className="text-[10px] uppercase text-muted-foreground">VGV venda</p>
                           <p className="text-sm font-bold text-green-700">{formatMoneyShort(r.vgv_venda)}</p>
                         </div>
-                        <div className="text-right hidden md:block">
+                        <div className="text-right hidden lg:block">
                           <p className="text-[10px] uppercase text-muted-foreground">Aluguel/mês</p>
                           <p className="text-sm font-bold text-blue-700">{formatMoneyShort(r.aluguel_mensal)}</p>
                         </div>
