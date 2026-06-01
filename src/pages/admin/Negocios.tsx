@@ -151,7 +151,7 @@ const NovoNegocioModal = ({ onClose, onSaved }: NovoNegocioModalProps) => {
   const [tipoAnuncio, setTipoAnuncio] = useState<TipoAnuncio>("negocio");
   const [form, setForm] = useState(EMPTY_FORM);
   // Campos específicos por tipo
-  const [imovelExtra, setImovelExtra] = useState({ operacao: "venda" as "venda" | "locacao", tipo_imovel: "" });
+  const [imovelExtra, setImovelExtra] = useState({ operacao: "venda" as "venda" | "locacao" | "ambos", tipo_imovel: "" });
   const [galeriaModalidade, setGaleriaModalidade] = useState<"locacao" | "venda">("locacao");
   const [espacos, setEspacos] = useState<EspacoForm[]>([{ ...EMPTY_ESPACO }]);
   const [franquiaExtra, setFranquiaExtra] = useState({ investimento: "", taxa_franquia: "", royalties: "" });
@@ -293,7 +293,11 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
     const extraDesc: string[] = [];
     if (tipoAnuncio === "imovel") {
       extraDesc.push(`Tipo de imóvel: ${imovelExtra.tipo_imovel}`);
-      extraDesc.push(`Operação: ${imovelExtra.operacao === "locacao" ? "Locação" : "Venda"}`);
+      const opLabel =
+        imovelExtra.operacao === "locacao" ? "Locação" :
+        imovelExtra.operacao === "ambos"   ? "Venda e Locação (aberto às duas modalidades)" :
+        "Venda";
+      extraDesc.push(`Operação: ${opLabel}`);
     }
     if (tipoAnuncio === "franquia") {
       if (franquiaExtra.investimento) extraDesc.push(`Investimento inicial: R$ ${franquiaExtra.investimento}`);
@@ -547,7 +551,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
                   <Label>Operação</Label>
                   <Select
                     value={imovelExtra.operacao}
-                    onValueChange={(v) => setImovelExtra((p) => ({ ...p, operacao: v as "venda" | "locacao" }))}
+                    onValueChange={(v) => setImovelExtra((p) => ({ ...p, operacao: v as "venda" | "locacao" | "ambos" }))}
                   >
                     <SelectTrigger className="mt-1.5">
                       <SelectValue />
@@ -555,6 +559,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
                     <SelectContent>
                       <SelectItem value="venda">Venda</SelectItem>
                       <SelectItem value="locacao">Locação</SelectItem>
+                      <SelectItem value="ambos">Venda e Locação</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1247,10 +1252,52 @@ const AdminNegocios = () => {
   const [editingNegocio, setEditingNegocio] = useState<Negocio | null>(null);
 
   useEffect(() => {
-    getAllNegocios().then((data) => {
-      setNegocios(data);
+    const load = async () => {
+      const negociosData = await getAllNegocios();
+
+      // Busca galerias e mescla na mesma lista (mapeadas para shape de Negocio)
+      const { data: galeriasData } = await supabase
+        .from("galerias")
+        .select("id, nome, cidade, estado, endereco, descricao, imagem, criado_em, espacos_galeria(count)")
+        .order("criado_em", { ascending: false });
+
+      const galeriasMapped: Negocio[] = (galeriasData || []).map((g: {
+        id: string; nome: string; cidade: string; estado: string;
+        endereco: string; descricao: string | null; imagem: string | null;
+        criado_em: string;
+        espacos_galeria?: { count: number }[];
+      }) => {
+        const qtdEspacos = g.espacos_galeria?.[0]?.count ?? 0;
+        return {
+          id: g.id,
+          titulo: g.nome,
+          tipo: "galeria",
+          categoria: `Galeria · ${qtdEspacos} espaço(s)`,
+          cidade: g.cidade,
+          estado: g.estado,
+          bairro: g.endereco || null,
+          preco: null,
+          faturamento_mensal: null,
+          area_m2: null,
+          descricao: g.descricao || "",
+          status: "ativo" as Negocio["status"],
+          proprietario_nome: "",
+          proprietario_telefone: null,
+          proprietario_email: "",
+          foto_url: g.imagem || null,
+          criado_em: g.criado_em,
+        } as unknown as Negocio;
+      });
+
+      // Mescla e ordena por data desc
+      const merged = [...negociosData, ...galeriasMapped].sort(
+        (a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()
+      );
+
+      setNegocios(merged);
       setLoading(false);
-    });
+    };
+    load();
   }, []);
 
   const handleStatusChange = async (id: string, newStatus: Negocio["status"]) => {
