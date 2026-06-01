@@ -2,6 +2,21 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Listing } from "@/data/mockListings";
 
+// Mapeia o nome amigável da categoria para todos os valores aceitos no banco
+// (cobre slugs antigos + nomes com acento atuais).
+const CATEGORIA_ALIASES: Record<string, string[]> = {
+  "Alimentação":         ["Alimentação", "alimentacao", "alimentação"],
+  "Saúde e Estética":    ["Saúde e Estética", "saude-beleza", "saude-estetica", "saude-e-estetica"],
+  "Serviços":            ["Serviços", "servicos", "serviços"],
+  "Varejo":              ["Varejo", "varejo"],
+  "Tecnologia":          ["Tecnologia", "tecnologia"],
+  "Educação":            ["Educação", "educacao", "educação"],
+  "Automotivo":          ["Automotivo", "automotivo"],
+  "Indústria":           ["Indústria", "industria", "indústria"],
+  "Imóveis Comerciais":  ["Imóveis Comerciais", "imoveis-comerciais", "imóveis-comerciais"],
+  "Outro":               ["Outro", "outro", "outros"],
+};
+
 export function adaptNegocio(n: NegocioSupabase): Listing {
   return {
     id: n.id,
@@ -25,7 +40,7 @@ export interface NegocioSupabase {
   id: string;
   titulo: string;
   categoria: string;
-  tipo: "venda" | "venda-imovel" | "aluguel-imovel" | "franquia" | "galeria";
+  tipo: "venda" | "venda-imovel" | "aluguel-imovel" | "franquia" | "galeria" | "negocio" | "imovel";
   cidade: string;
   estado: string;
   bairro: string | null;
@@ -92,10 +107,17 @@ export function useNegocios(filters?: {
         .order("destaque", { ascending: false })
         .order("criado_em", { ascending: false });
 
-      if (filters?.categoria) query = query.eq("categoria", filters.categoria);
+      if (filters?.categoria) {
+        // Categoria pode vir como nome amigável ("Alimentação") ou slug ("alimentacao").
+        // O banco tem dados em ambos os formatos, então aceitamos os 2.
+        const aliases = CATEGORIA_ALIASES[filters.categoria] || [filters.categoria];
+        query = query.in("categoria", aliases);
+      }
       if (filters?.tipo) {
-        if (filters.tipo === "negocio") query = query.eq("tipo", "venda");
-        else if (filters.tipo === "imovel") query = query.in("tipo", ["venda-imovel", "aluguel-imovel"]);
+        // Aceita tanto os tipos NOVOS (negocio, imovel, franquia, galeria) quanto os antigos
+        // (venda, venda-imovel, aluguel-imovel, franquia, galeria) — coexistem no banco.
+        if (filters.tipo === "negocio") query = query.in("tipo", ["negocio", "venda"]);
+        else if (filters.tipo === "imovel") query = query.in("tipo", ["imovel", "venda-imovel", "aluguel-imovel"]);
         else if (filters.tipo === "salao") query = query.eq("tipo", "aluguel-imovel");
         else if (filters.tipo === "galeria") query = query.eq("tipo", "galeria");
         else if (filters.tipo === "franquia") query = query.eq("tipo", "franquia");
