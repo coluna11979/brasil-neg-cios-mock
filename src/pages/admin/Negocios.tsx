@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
+import EditGaleriaModal from "@/components/admin/EditGaleriaModal";
 
 // Sugere faixa de preço a partir de um valor numérico
 function suggestPriceRange(preco: number | null | undefined): string {
@@ -1275,6 +1276,7 @@ const AdminNegocios = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingNegocio, setEditingNegocio] = useState<Negocio | null>(null);
+  const [editingGaleriaId, setEditingGaleriaId] = useState<string | null>(null);
   const [shareItem, setShareItem] = useState<Negocio | null>(null);
 
   useEffect(() => {
@@ -1387,12 +1389,53 @@ const AdminNegocios = () => {
         />
       )}
 
-      {/* Edit Modal */}
+      {/* Edit Modal — negocio/imovel/franquia */}
       {editingNegocio && (
         <EditNegocioModal
           negocio={editingNegocio}
           onClose={() => setEditingNegocio(null)}
           onSaved={handleEdited}
+        />
+      )}
+
+      {/* Edit Modal — galeria (com espacos) */}
+      {editingGaleriaId && (
+        <EditGaleriaModal
+          galeriaId={editingGaleriaId}
+          onClose={() => setEditingGaleriaId(null)}
+          onSaved={() => {
+            setEditingGaleriaId(null);
+            // Recarrega a lista completa pra refletir alterações na galeria/espaços
+            setLoading(true);
+            (async () => {
+              const data = await getAllNegocios();
+              const { data: gals } = await supabase
+                .from("galerias")
+                .select("id, nome, cidade, estado, endereco, descricao, imagem, criado_em, espacos_galeria(count)")
+                .order("criado_em", { ascending: false });
+              const galeriasMapped: Negocio[] = (gals || []).map((g: {
+                id: string; nome: string; cidade: string; estado: string;
+                endereco: string; descricao: string | null; imagem: string | null;
+                criado_em: string; espacos_galeria?: { count: number }[];
+              }) => {
+                const qtd = g.espacos_galeria?.[0]?.count ?? 0;
+                return {
+                  id: g.id, titulo: g.nome, tipo: "galeria",
+                  categoria: `Galeria · ${qtd} espaço(s)`,
+                  cidade: g.cidade, estado: g.estado, bairro: g.endereco || null,
+                  preco: null, faturamento_mensal: null, area_m2: null,
+                  descricao: g.descricao || "", status: "ativo",
+                  proprietario_nome: "", proprietario_telefone: null, proprietario_email: "",
+                  foto_url: g.imagem || null, criado_em: g.criado_em,
+                } as unknown as Negocio;
+              });
+              const merged = [...data, ...galeriasMapped].sort(
+                (a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()
+              );
+              setNegocios(merged);
+              setLoading(false);
+            })();
+          }}
         />
       )}
 
@@ -1630,7 +1673,13 @@ const AdminNegocios = () => {
                           Compartilhar
                         </button>
                         <button
-                          onClick={() => setEditingNegocio(negocio)}
+                          onClick={() => {
+                            if ((negocio as { tipo?: string }).tipo === "galeria") {
+                              setEditingGaleriaId(negocio.id);
+                            } else {
+                              setEditingNegocio(negocio);
+                            }
+                          }}
                           className="flex items-center gap-1.5 rounded-lg bg-muted border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors"
                         >
                           <Pencil className="h-3.5 w-3.5" />
