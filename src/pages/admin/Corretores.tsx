@@ -35,6 +35,26 @@ interface CorretorStats {
   leads_contactados: number;
   leads_convertidos: number;
   leads_em_andamento: number;
+  // Comercial — portfólio atribuído/cadastrado
+  leads_atribuidos: number;
+  negocios_total: number;
+  negocios_negocio: number;
+  negocios_imovel: number;
+  negocios_franquia: number;
+  galerias_count: number;
+  espacos_count: number;
+  // VGV (Valor Geral de Vendas)
+  vgv_venda: number;           // soma de preço dos itens à venda ativos
+  vgv_locacao_mensal: number;  // soma de aluguel mensal dos itens p/ locação
+  vgv_realizado: number;       // soma de preço dos itens já vendidos
+  negocios_vendidos: number;   // contagem de status=vendido
+}
+
+function formatMoneyShort(v: number): string {
+  if (!v || v <= 0) return "R$ 0";
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
+  return `R$ ${v.toLocaleString("pt-BR")}`;
 }
 
 function timeAgo(dateStr: string): string {
@@ -83,27 +103,73 @@ const AdminCorretores = () => {
     const corretoresList = (profilesData as Corretor[]) || [];
     setCorretores(corretoresList);
 
-    const { data: msgs } = await supabase
-      .from("lead_messages")
-      .select("sender_id, lead_id")
-      .eq("sender_type", "corretor");
+    const [
+      { data: msgs },
+      { data: leads },
+      { data: negocios },
+      { data: galerias },
+    ] = await Promise.all([
+      supabase.from("lead_messages").select("sender_id, lead_id").eq("sender_type", "corretor"),
+      supabase.from("leads").select("id, status, corretor_id"),
+      supabase.from("negocios").select("id, tipo, preco, descricao, status, corretor_id"),
+      supabase.from("galerias").select("id, corretor_id, espacos_galeria(valor_aluguel, disponivel)"),
+    ]);
 
-    const { data: leads } = await supabase
-      .from("leads")
-      .select("id, status, corretor_id");
+    type NegRow = { id: string; tipo: string | null; preco: number | null; descricao: string | null; status: string; corretor_id: string | null };
+    type GalRow = { id: string; corretor_id: string | null; espacos_galeria?: { valor_aluguel: number | null; disponivel: boolean | null }[] };
 
     const statsMap: Record<string, CorretorStats> = {};
     for (const c of corretoresList) {
       const msgsDoCorretor = (msgs || []).filter((m) => m.sender_id === c.id);
       const leadsUnicos = new Set(msgsDoCorretor.map((m) => m.lead_id));
-      const leadsConvertidos = (leads || []).filter((l) => l.corretor_id === c.id && l.status === "convertido").length;
-      const leadsEmAndamento = (leads || []).filter((l) => l.corretor_id === c.id && l.status === "em-andamento").length;
+      const leadsAtribuidos = (leads || []).filter((l) => l.corretor_id === c.id);
+      const leadsConvertidos = leadsAtribuidos.filter((l) => l.status === "convertido").length;
+      const leadsEmAndamento = leadsAtribuidos.filter((l) => l.status === "em-andamento").length;
+
+      const negDoCorretor = ((negocios || []) as NegRow[]).filter((n) => n.corretor_id === c.id);
+      const galDoCorretor = ((galerias || []) as GalRow[]).filter((g) => g.corretor_id === c.id);
+
+      // Helpers de detecção de operação no negocio (lê tipo + descricao)
+      const isLocacao = (n: NegRow) => /Opera[cç][aã]o: Loca[cç][aã]o/i.test(n.descricao || "");
+      const isAmbos   = (n: NegRow) => /Opera[cç][aã]o: Venda e Loca[cç][aã]o/i.test(n.descricao || "");
+
+      const negociosPorTipo = {
+        negocio:  negDoCorretor.filter((n) => (n.tipo || "negocio") === "negocio").length,
+        imovel:   negDoCorretor.filter((n) => n.tipo === "imovel").length,
+        franquia: negDoCorretor.filter((n) => n.tipo === "franquia").length,
+      };
+
+      const ativos = negDoCorretor.filter((n) => n.status === "ativo");
+      const vgvVenda = ativos
+        .filter((n) => !isLocacao(n)) // inclui ambos e venda pura
+        .reduce((sum, n) => sum + (n.preco || 0), 0);
+      const vgvLocacaoMensal = ativos
+        .filter((n) => isLocacao(n) || isAmbos(n))
+        .reduce((sum, n) => sum + (n.preco || 0), 0) // se admin colocou preco com valor aluguel
+        + galDoCorretor.reduce((sum, g) => sum + (g.espacos_galeria || []).reduce((s2, e) => s2 + (e.valor_aluguel || 0), 0), 0);
+
+      const vendidos = negDoCorretor.filter((n) => n.status === "vendido");
+      const vgvRealizado = vendidos.reduce((sum, n) => sum + (n.preco || 0), 0);
+
+      const espacosCount = galDoCorretor.reduce((s, g) => s + (g.espacos_galeria?.length || 0), 0);
+
       statsMap[c.id] = {
         corretor_id: c.id,
         msgs_enviadas: msgsDoCorretor.length,
         leads_contactados: leadsUnicos.size,
         leads_convertidos: leadsConvertidos,
         leads_em_andamento: leadsEmAndamento,
+        leads_atribuidos: leadsAtribuidos.length,
+        negocios_total: negDoCorretor.length + galDoCorretor.length,
+        negocios_negocio: negociosPorTipo.negocio,
+        negocios_imovel: negociosPorTipo.imovel,
+        negocios_franquia: negociosPorTipo.franquia,
+        galerias_count: galDoCorretor.length,
+        espacos_count: espacosCount,
+        vgv_venda: vgvVenda,
+        vgv_locacao_mensal: vgvLocacaoMensal,
+        vgv_realizado: vgvRealizado,
+        negocios_vendidos: vendidos.length,
       };
     }
     setStats(statsMap);
@@ -198,7 +264,12 @@ const AdminCorretores = () => {
               </div>
               <div className="space-y-3">
                 {ranking.slice(0, 5).map((c, i) => {
-                  const s = stats[c.id] || { msgs_enviadas: 0, leads_contactados: 0, leads_convertidos: 0, leads_em_andamento: 0 };
+                  const s = stats[c.id] || {
+                    msgs_enviadas: 0, leads_contactados: 0, leads_convertidos: 0, leads_em_andamento: 0,
+                    leads_atribuidos: 0, negocios_total: 0, negocios_negocio: 0, negocios_imovel: 0,
+                    negocios_franquia: 0, galerias_count: 0, espacos_count: 0,
+                    vgv_venda: 0, vgv_locacao_mensal: 0, vgv_realizado: 0, negocios_vendidos: 0,
+                  };
                   const medalha = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}º`;
                   return (
                     <div key={c.id} className="flex items-center gap-4 rounded-lg bg-card p-3 shadow-sm">
@@ -437,13 +508,59 @@ const CorretorCard = ({ corretor, stats, updating, onToggle, expanded, onExpand 
         )}
 
         {corretor.ativo && stats && (
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Performance</p>
-            <div className="flex flex-wrap gap-2">
-              <StatPill icon={<MessageCircle className="h-3 w-3" />} value={stats.msgs_enviadas} label="msgs enviadas" />
-              <StatPill icon={<TrendingUp className="h-3 w-3" />} value={stats.leads_contactados} label="leads contactados" color="blue" />
-              <StatPill icon={<CheckCircle className="h-3 w-3" />} value={stats.leads_em_andamento} label="em andamento" />
-              <StatPill icon={<Star className="h-3 w-3" />} value={stats.leads_convertidos} label="fechados" color="green" />
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Atividade com leads</p>
+              <div className="flex flex-wrap gap-2">
+                <StatPill icon={<TrendingUp className="h-3 w-3" />} value={stats.leads_atribuidos} label="leads atribuídos" color="blue" />
+                <StatPill icon={<MessageCircle className="h-3 w-3" />} value={stats.msgs_enviadas} label="msgs enviadas" />
+                <StatPill icon={<CheckCircle className="h-3 w-3" />} value={stats.leads_em_andamento} label="em andamento" />
+                <StatPill icon={<Star className="h-3 w-3" />} value={stats.leads_convertidos} label="fechados" color="green" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                Portfólio comercial · {stats.negocios_total} ite{stats.negocios_total !== 1 ? "ns" : "m"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {stats.negocios_negocio > 0 && (
+                  <StatPill icon={<Briefcase className="h-3 w-3" />} value={stats.negocios_negocio} label="negócios" />
+                )}
+                {stats.negocios_imovel > 0 && (
+                  <StatPill icon={<Briefcase className="h-3 w-3" />} value={stats.negocios_imovel} label="imóveis" color="blue" />
+                )}
+                {stats.negocios_franquia > 0 && (
+                  <StatPill icon={<Award className="h-3 w-3" />} value={stats.negocios_franquia} label="franquias" />
+                )}
+                {stats.galerias_count > 0 && (
+                  <StatPill icon={<Briefcase className="h-3 w-3" />} value={`${stats.galerias_count}/${stats.espacos_count}`} label="galerias/espaços" color="green" />
+                )}
+                {stats.negocios_total === 0 && (
+                  <span className="text-xs text-muted-foreground italic">Nenhum item atribuído ou cadastrado</span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">VGV (Valor Geral)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="rounded-xl border border-green-200 bg-green-50/50 p-3">
+                  <p className="text-[10px] uppercase tracking-wide text-green-700 font-semibold">VGV em venda</p>
+                  <p className="text-lg font-bold text-green-700 mt-0.5">{formatMoneyShort(stats.vgv_venda)}</p>
+                  <p className="text-[11px] text-muted-foreground">soma dos preços ativos</p>
+                </div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3">
+                  <p className="text-[10px] uppercase tracking-wide text-blue-700 font-semibold">Aluguel mensal</p>
+                  <p className="text-lg font-bold text-blue-700 mt-0.5">{formatMoneyShort(stats.vgv_locacao_mensal)}</p>
+                  <p className="text-[11px] text-muted-foreground">somatório por mês</p>
+                </div>
+                <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-3">
+                  <p className="text-[10px] uppercase tracking-wide text-violet-700 font-semibold">Realizado</p>
+                  <p className="text-lg font-bold text-violet-700 mt-0.5">{formatMoneyShort(stats.vgv_realizado)}</p>
+                  <p className="text-[11px] text-muted-foreground">{stats.negocios_vendidos} vendido(s)</p>
+                </div>
+              </div>
             </div>
           </div>
         )}

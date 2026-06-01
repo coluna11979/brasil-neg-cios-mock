@@ -3,10 +3,11 @@ import usePageTitle from "@/hooks/usePageTitle";
 import CorretorLayout from "@/components/corretor/CorretorLayout";
 import { supabase } from "@/lib/supabase";
 import { NovoNegocioModal } from "@/pages/admin/Negocios";
-import { Plus, Store, ExternalLink, MapPin, Building2, Clock, Loader2, LayoutGrid, Home, Award } from "lucide-react";
+import { Plus, Store, ExternalLink, MapPin, Building2, Clock, Loader2, LayoutGrid, Home, Award, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { Negocio } from "@/stores/negocioStore";
 
-type Row = Negocio & { _kind: "negocio" | "galeria"; _qtdEspacos?: number };
+type Row = Negocio & { _kind: "negocio" | "galeria"; _qtdEspacos?: number; _qtdLeads?: number };
 
 function timeAgo(d: string): string {
   const diff = Date.now() - new Date(d).getTime();
@@ -41,7 +42,7 @@ const MeusNegocios = () => {
   const load = async (uid: string) => {
     setLoading(true);
 
-    const [{ data: negs }, { data: gals }] = await Promise.all([
+    const [{ data: negs }, { data: gals }, { data: leadsRows }] = await Promise.all([
       supabase
         .from("negocios")
         .select("*")
@@ -52,9 +53,26 @@ const MeusNegocios = () => {
         .select("id, nome, cidade, estado, endereco, descricao, imagem, criado_em, espacos_galeria(count)")
         .eq("corretor_id", uid)
         .order("criado_em", { ascending: false }),
+      // Leads atribuídos a esse corretor (pra contar quantos estão linkados a cada negócio/galeria)
+      supabase
+        .from("leads")
+        .select("id, negocio_id, galeria_id")
+        .eq("corretor_id", uid),
     ]);
 
-    const negocios: Row[] = (negs || []).map((n: Negocio) => ({ ...n, _kind: "negocio" }));
+    type LeadLink = { id: string; negocio_id: string | null; galeria_id: string | null };
+    const leadsByNegocio: Record<string, number> = {};
+    const leadsByGaleria: Record<string, number> = {};
+    for (const l of (leadsRows || []) as LeadLink[]) {
+      if (l.negocio_id) leadsByNegocio[l.negocio_id] = (leadsByNegocio[l.negocio_id] || 0) + 1;
+      if (l.galeria_id) leadsByGaleria[l.galeria_id] = (leadsByGaleria[l.galeria_id] || 0) + 1;
+    }
+
+    const negocios: Row[] = (negs || []).map((n: Negocio) => ({
+      ...n,
+      _kind: "negocio",
+      _qtdLeads: leadsByNegocio[n.id] || 0,
+    }));
 
     const galerias: Row[] = (gals || []).map((g: {
       id: string; nome: string; cidade: string; estado: string;
@@ -80,6 +98,7 @@ const MeusNegocios = () => {
       criado_em: g.criado_em,
       _kind: "galeria",
       _qtdEspacos: g.espacos_galeria?.[0]?.count ?? 0,
+      _qtdLeads: leadsByGaleria[g.id] || 0,
     } as unknown as Row));
 
     const merged = [...negocios, ...galerias].sort(
@@ -183,6 +202,15 @@ const MeusNegocios = () => {
                         <span className="inline-flex items-center gap-1">
                           <Clock className="h-3 w-3" /> {timeAgo(row.criado_em)} atrás
                         </span>
+                        {(row._qtdLeads || 0) > 0 && (
+                          <Link
+                            to="/corretor/leads"
+                            className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-700 hover:bg-amber-100"
+                            title="Ver leads atribuídos"
+                          >
+                            <Users className="h-3 w-3" /> {row._qtdLeads} lead(s) interessado(s)
+                          </Link>
+                        )}
                       </div>
                     </div>
                     <a
