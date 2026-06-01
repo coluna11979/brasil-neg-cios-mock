@@ -35,13 +35,39 @@ const Galerias = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const galeriaIdParam = searchParams.get("id");
+  const tipoEspacoParam = searchParams.get("tipo_espaco") || "";
+  const aluguelMinParam = parseFloat(searchParams.get("aluguel_min") || "0");
+  const aluguelMaxParam = parseFloat(searchParams.get("aluguel_max") || "Infinity") || Infinity;
+  const disponivelParam = searchParams.get("disponivel") === "1";
+  const bairroParam = (searchParams.get("bairro") || "").toLowerCase();
 
   const { galerias: todasGalerias, loading } = useGalerias();
 
-  // Se veio com ?id=, mostra só aquela galeria já expandida
-  const galeriasParaExibir = galeriaIdParam
-    ? todasGalerias.filter(g => g.id === galeriaIdParam)
-    : todasGalerias;
+  // Filtra galerias e seus espaços conforme parâmetros vindos pela URL
+  const galeriasParaExibir = todasGalerias
+    .filter(g => galeriaIdParam ? g.id === galeriaIdParam : true)
+    .filter(g => !bairroParam ||
+      (g.endereco || "").toLowerCase().includes(bairroParam) ||
+      (g.cidade || "").toLowerCase().includes(bairroParam))
+    .map(g => {
+      const espacosFiltrados = (g.espacos || []).filter((e) => {
+        if (tipoEspacoParam && (e.tipo || "").toLowerCase() !== tipoEspacoParam.toLowerCase()) return false;
+        if (disponivelParam && !e.disponivel) return false;
+        const aluguel = e.valor_aluguel || 0;
+        if (aluguelMinParam > 0 && aluguel < aluguelMinParam) return false;
+        if (Number.isFinite(aluguelMaxParam) && aluguel > aluguelMaxParam) return false;
+        return true;
+      });
+      return { ...g, espacos: espacosFiltrados };
+    })
+    .filter(g =>
+      // se há filtros de espaço, esconde galerias sem espaços compatíveis
+      (tipoEspacoParam || disponivelParam || aluguelMinParam > 0 || Number.isFinite(aluguelMaxParam))
+        ? g.espacos.length > 0
+        : true
+    );
+
+  const filtroAtivo = !!(tipoEspacoParam || disponivelParam || aluguelMinParam > 0 || (Number.isFinite(aluguelMaxParam) && aluguelMaxParam !== Infinity) || bairroParam);
 
   const [expandedGaleria, setExpandedGaleria] = useState<string | null>(galeriaIdParam);
 
