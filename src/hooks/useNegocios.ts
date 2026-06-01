@@ -2,6 +2,16 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Listing } from "@/data/mockListings";
 
+// Quando o usuário filtra por "Zona Sul/Norte/Leste/Oeste/Centro", expandimos
+// para os bairros que pertencem àquela zona — busca em titulo/descricao/bairro.
+const ZONA_BAIRROS: Record<string, string[]> = {
+  "Zona Sul":   ["Moema", "Vila Mariana", "Vila Olímpia", "Vila Olimpia", "Itaim", "Itaim Bibi", "Jardins", "Brooklin", "Ipiranga", "Saúde", "Saude", "Paraíso", "Paraiso", "Campo Belo", "Santo Amaro", "Chácara", "Chacara"],
+  "Zona Norte": ["Santana", "Tucuruvi", "Casa Verde", "Jaçanã", "Jacana", "Vila Guilherme", "Brasilândia", "Brasilandia", "Freguesia"],
+  "Zona Leste": ["Tatuapé", "Tatuape", "Mooca", "Penha", "Aricanduva", "Itaquera", "São Miguel", "Sao Miguel", "Carrão", "Carrao"],
+  "Zona Oeste": ["Pinheiros", "Perdizes", "Lapa", "Vila Madalena", "Butantã", "Butanta", "Barra Funda", "Alto de Pinheiros", "Sumaré", "Sumare", "Pompéia", "Pompeia", "Morumbi"],
+  "Centro":     ["Centro", "Sé", "Se", "República", "Republica", "Consolação", "Consolacao", "Bela Vista", "Liberdade", "Bom Retiro", "Brás", "Bras"],
+};
+
 // Mapeia o nome amigável da categoria para todos os valores aceitos no banco
 // (cobre slugs antigos + nomes com acento atuais).
 const CATEGORIA_ALIASES: Record<string, string[]> = {
@@ -126,13 +136,20 @@ export function useNegocios(filters?: {
       if (filters?.preco_max) query = query.lte("preco", filters.preco_max);
       if (filters?.faturamento_min) query = query.gte("faturamento_mensal", filters.faturamento_min);
       if (filters?.cidade) query = query.ilike("cidade", `%${filters.cidade}%`);
-      // Bairro: alem do campo bairro (que geralmente esta nulo), busca tambem em
-      // titulo e descricao porque a maioria dos cadastros antigos coloca o bairro la.
+      // Bairro: além do campo bairro (geralmente nulo), busca em titulo+descricao
+      // porque os cadastros antigos colocam o bairro no titulo.
+      // Se for uma ZONA (Sul/Norte/Leste/Oeste/Centro), expande pra todos os bairros dela.
       if (filters?.bairro) {
-        const b = filters.bairro.replace(/[(),"']/g, "");
-        query = query.or(
-          `bairro.ilike.%${b}%,titulo.ilike.%${b}%,descricao.ilike.%${b}%`
-        );
+        const sanitize = (s: string) => s.replace(/[(),"'`]/g, "");
+        const bairrosBusca = ZONA_BAIRROS[filters.bairro] || [filters.bairro];
+        const orParts: string[] = [];
+        bairrosBusca.forEach((b) => {
+          const safe = sanitize(b);
+          orParts.push(`bairro.ilike.%${safe}%`);
+          orParts.push(`titulo.ilike.%${safe}%`);
+          orParts.push(`descricao.ilike.%${safe}%`);
+        });
+        query = query.or(orParts.join(","));
       }
       if (filters?.busca) {
         query = query.or(
