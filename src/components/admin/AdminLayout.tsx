@@ -14,6 +14,7 @@ import {
   Settings,
   Plug,
   UserCheck as UserCheckIcon,
+  Instagram,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout, getAdminEmail } from "@/stores/authStore";
@@ -28,6 +29,7 @@ const navItems = [
   { to: "/admin/corretores", label: "Corretores", icon: UserCheck },
   { to: "/admin/materiais", label: "Materiais", icon: Package },
   { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
+  { to: "/admin/social-selling", label: "Social Selling", icon: Instagram },
   { to: "/admin/integracoes", label: "Integrações", icon: Plug },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ];

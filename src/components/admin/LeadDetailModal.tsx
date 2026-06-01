@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   X,
   Mail,
@@ -14,9 +15,12 @@ import {
   Flame,
   Thermometer,
   Snowflake,
+  Instagram,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { Lead } from "@/stores/leadStore";
+import { SocialSellingTab } from "@/components/admin/social-selling/SocialSellingTab";
 
 const statusConfig: Record<
   string,
@@ -92,6 +96,7 @@ interface Props {
 }
 
 const LeadDetailModal = ({ lead, onClose, onStatusChange }: Props) => {
+  const [activeTab, setActiveTab] = useState("detalhes");
   const status = statusConfig[lead.status] || statusConfig.novo;
   const origem = origemConfig[lead.origem] || { label: lead.origem, icon: MessageCircle };
   const OrigemIcon = origem.icon;
@@ -183,8 +188,30 @@ const LeadDetailModal = ({ lead, onClose, onStatusChange }: Props) => {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="px-6 pt-4 border-b border-border">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="h-9">
+              <TabsTrigger value="detalhes" className="text-xs">Detalhes</TabsTrigger>
+              <TabsTrigger value="social-selling" className="text-xs gap-1.5">
+                <Instagram className="h-3.5 w-3.5" />
+                Social Selling
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
         {/* Content */}
         <div className="px-6 py-5 space-y-6">
+          {activeTab === "social-selling" && (
+            <SocialSellingTab
+              leadId={lead.id}
+              leadName={lead.nome}
+              instagramUsername={(lead as any).instagram_username ?? null}
+            />
+          )}
+
+          {activeTab === "detalhes" && <>
           {/* Metrics row */}
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg bg-muted/50 p-3 text-center">
@@ -316,6 +343,7 @@ const LeadDetailModal = ({ lead, onClose, onStatusChange }: Props) => {
               </div>
             </div>
           )}
+          </>}
         </div>
 
         {/* Footer actions */}

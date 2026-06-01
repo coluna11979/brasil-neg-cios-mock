@@ -53,6 +53,7 @@ const CorretorNovaSenha = lazy(() => import("./pages/corretor/NovaSenha"));
 const AdminMateriais = lazy(() => import("./pages/admin/Materiais"));
 const AdminConfiguracoes = lazy(() => import("./pages/admin/Configuracoes"));
 const AdminIntegracoes = lazy(() => import("./pages/admin/Integracoes"));
+const AdminSocialSelling = lazy(() => import("./pages/admin/SocialSelling"));
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,7 @@ const App = () => (
                   <Route path="/admin/configuracoes" element={<ProtectedRoute><AdminConfiguracoes /></ProtectedRoute>} />
                   <Route path="/admin/integracoes" element={<ProtectedRoute><AdminIntegracoes /></ProtectedRoute>} />
                   <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
+                  <Route path="/admin/social-selling" element={<ProtectedRoute><AdminSocialSelling /></ProtectedRoute>} />
 
                   {/* Corretor — públicas */}
                   <Route path="/corretor/login" element={<CorretorLogin />} />
