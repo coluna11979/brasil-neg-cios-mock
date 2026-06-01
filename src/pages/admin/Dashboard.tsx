@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAllLeads, getLeadStats, type Lead } from "@/stores/leadStore";
 import { mockListings, mockGalerias } from "@/data/mockListings";
+import { supabase } from "@/lib/supabase";
+import { Trophy, DollarSign, Award, KeyRound } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -57,6 +59,35 @@ const origemLabels: Record<string, string> = {
 const PIE_COLORS = ["#3b82f6", "#f59e0b", "#22c55e", "#ef4444"];
 const BAR_COLORS = ["#0d9488", "#6366f1", "#f97316", "#06b6d4", "#ec4899", "#8b5cf6"];
 
+function formatMoneyShort(v: number): string {
+  if (!v || v <= 0) return "R$ 0";
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
+  return `R$ ${v.toLocaleString("pt-BR")}`;
+}
+
+interface RankRow {
+  id: string;
+  nome: string;
+  foto_url: string | null;
+  vgv_venda: number;
+  aluguel_mensal: number;
+  realizado: number;
+  vendidos: number;
+  leads_atribuidos: number;
+}
+
+interface PlataformaStats {
+  vgv_venda_total: number;
+  aluguel_mensal_total: number;
+  vgv_realizado_total: number;
+  total_vendidos: number;
+  total_negocios_ativos: number;
+  total_galerias: number;
+  total_espacos: number;
+  ranking: RankRow[];
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -72,23 +103,95 @@ const Dashboard = () => {
   const [stats, setStats] = useState<Awaited<ReturnType<typeof getLeadStats>> | null>(null);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [platStats, setPlatStats] = useState<PlataformaStats | null>(null);
 
   useEffect(() => {
     async function fetchData() {
-      const [statsData, leadsData] = await Promise.all([
+      const [
+        statsData,
+        leadsData,
+        negociosRes,
+        galeriasRes,
+        corretoresRes,
+        leadsAtribuidosRes,
+      ] = await Promise.all([
         getLeadStats(),
         getAllLeads(),
+        supabase.from("negocios").select("id, tipo, preco, descricao, status, corretor_id"),
+        supabase.from("galerias").select("id, corretor_id, espacos_galeria(valor_aluguel)"),
+        supabase.from("profiles").select("id, nome, foto_url").eq("role", "corretor").eq("ativo", true),
+        supabase.from("leads").select("corretor_id"),
       ]);
       setStats(statsData);
       setRecentLeads(leadsData.slice(0, 5));
+
+      // ── Stats da plataforma ──
+      type NegRow = { id: string; tipo: string | null; preco: number | null; descricao: string | null; status: string; corretor_id: string | null };
+      type GalRow = { id: string; corretor_id: string | null; espacos_galeria?: { valor_aluguel: number | null }[] };
+      type CorRow = { id: string; nome: string; foto_url: string | null };
+
+      const negocios = (negociosRes.data || []) as NegRow[];
+      const galerias = (galeriasRes.data || []) as GalRow[];
+      const corretores = (corretoresRes.data || []) as CorRow[];
+      const leadsAtribuidosRows = (leadsAtribuidosRes.data || []) as { corretor_id: string | null }[];
+
+      const isLocacao = (n: NegRow) => /Opera[cç][aã]o: Loca[cç][aã]o(?! e Venda)/i.test(n.descricao || "");
+      const ativos = negocios.filter((n) => n.status === "ativo");
+      const vendidos = negocios.filter((n) => n.status === "vendido");
+
+      const vgvVendaTotal = ativos.filter((n) => !isLocacao(n)).reduce((s, n) => s + (n.preco || 0), 0);
+      const aluguelMensalTotal =
+        ativos.filter((n) => isLocacao(n) || /Venda e Loca[cç][aã]o/i.test(n.descricao || "")).reduce((s, n) => s + (n.preco || 0), 0) +
+        galerias.reduce((s, g) => s + (g.espacos_galeria || []).reduce((s2, e) => s2 + (e.valor_aluguel || 0), 0), 0);
+      const vgvRealizadoTotal = vendidos.reduce((s, n) => s + (n.preco || 0), 0);
+
+      const totalEspacosReal = galerias.reduce((s, g) => s + (g.espacos_galeria?.length || 0), 0);
+
+      // Ranking
+      const ranking: RankRow[] = corretores
+        .map((c) => {
+          const negDoC = negocios.filter((n) => n.corretor_id === c.id);
+          const galDoC = galerias.filter((g) => g.corretor_id === c.id);
+          const ativosC = negDoC.filter((n) => n.status === "ativo");
+          const vendidosC = negDoC.filter((n) => n.status === "vendido");
+          const vgvV = ativosC.filter((n) => !isLocacao(n)).reduce((s, n) => s + (n.preco || 0), 0);
+          const aluguel = ativosC.filter((n) => isLocacao(n) || /Venda e Loca[cç][aã]o/i.test(n.descricao || "")).reduce((s, n) => s + (n.preco || 0), 0) +
+            galDoC.reduce((s, g) => s + (g.espacos_galeria || []).reduce((s2, e) => s2 + (e.valor_aluguel || 0), 0), 0);
+          const realizado = vendidosC.reduce((s, n) => s + (n.preco || 0), 0);
+          const leadsCount = leadsAtribuidosRows.filter((l) => l.corretor_id === c.id).length;
+          return {
+            id: c.id,
+            nome: c.nome,
+            foto_url: c.foto_url,
+            vgv_venda: vgvV,
+            aluguel_mensal: aluguel,
+            realizado,
+            vendidos: vendidosC.length,
+            leads_atribuidos: leadsCount,
+          };
+        })
+        .sort((a, b) => (b.realizado + b.vgv_venda) - (a.realizado + a.vgv_venda))
+        .slice(0, 5);
+
+      setPlatStats({
+        vgv_venda_total: vgvVendaTotal,
+        aluguel_mensal_total: aluguelMensalTotal,
+        vgv_realizado_total: vgvRealizadoTotal,
+        total_vendidos: vendidos.length,
+        total_negocios_ativos: ativos.length,
+        total_galerias: galerias.length,
+        total_espacos: totalEspacosReal,
+        ranking,
+      });
+
       setLoading(false);
     }
     fetchData();
   }, []);
 
-  const totalNegociosAtivos = mockListings.length;
-  const totalGalerias = mockGalerias.length;
-  const totalEspacos = mockGalerias.reduce((acc, g) => acc + g.espacos.filter((e) => e.disponivel).length, 0);
+  const totalNegociosAtivos = platStats?.total_negocios_ativos ?? mockListings.length;
+  const totalGalerias = platStats?.total_galerias ?? mockGalerias.length;
+  const totalEspacos = platStats?.total_espacos ?? mockGalerias.reduce((acc, g) => acc + g.espacos.filter((e) => e.disponivel).length, 0);
 
   if (loading || !stats) {
     return (
@@ -185,6 +288,126 @@ const Dashboard = () => {
             </p>
           </div>
         </div>
+
+        {/* Desempenho Comercial — VGV da plataforma */}
+        {platStats && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-bold text-foreground">Desempenho Comercial</h2>
+              <span className="text-xs text-muted-foreground">Valores agregados de todos os corretores</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-green-700 font-medium">VGV em venda</p>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                    <DollarSign className="h-5 w-5 text-green-700" />
+                  </div>
+                </div>
+                <p className="mt-2 font-display text-2xl font-bold text-green-800">
+                  {formatMoneyShort(platStats.vgv_venda_total)}
+                </p>
+                <p className="mt-1 text-xs text-green-700/80">Soma de itens ativos</p>
+              </div>
+
+              <div className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-sky-50 p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-blue-700 font-medium">Aluguel mensal</p>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                    <KeyRound className="h-5 w-5 text-blue-700" />
+                  </div>
+                </div>
+                <p className="mt-2 font-display text-2xl font-bold text-blue-800">
+                  {formatMoneyShort(platStats.aluguel_mensal_total)}
+                </p>
+                <p className="mt-1 text-xs text-blue-700/80">Locação + espaços</p>
+              </div>
+
+              <div className="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-purple-50 p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-violet-700 font-medium">Realizado</p>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100">
+                    <Award className="h-5 w-5 text-violet-700" />
+                  </div>
+                </div>
+                <p className="mt-2 font-display text-2xl font-bold text-violet-800">
+                  {formatMoneyShort(platStats.vgv_realizado_total)}
+                </p>
+                <p className="mt-1 text-xs text-violet-700/80">{platStats.total_vendidos} negócio(s) fechado(s)</p>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-amber-700 font-medium">Conversão</p>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
+                    <TrendingUp className="h-5 w-5 text-amber-700" />
+                  </div>
+                </div>
+                <p className="mt-2 font-display text-2xl font-bold text-amber-800">
+                  {platStats.total_negocios_ativos > 0
+                    ? ((platStats.total_vendidos / (platStats.total_negocios_ativos + platStats.total_vendidos)) * 100).toFixed(1)
+                    : "0"}%
+                </p>
+                <p className="mt-1 text-xs text-amber-700/80">vendidos / total cadastrados</p>
+              </div>
+            </div>
+
+            {/* Ranking Top 5 corretores */}
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy className="h-5 w-5 text-amber-500" />
+                <h3 className="font-display font-semibold text-foreground">Top 5 corretores por VGV</h3>
+              </div>
+              {platStats.ranking.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic py-4 text-center">
+                  Nenhum corretor com negócios atribuídos ainda.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {platStats.ranking.map((r, idx) => {
+                    const medals = ["🥇", "🥈", "🥉"];
+                    return (
+                      <Link
+                        key={r.id}
+                        to="/admin/corretores"
+                        className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 hover:bg-muted transition-colors"
+                      >
+                        <div className="flex h-8 w-8 items-center justify-center text-lg">
+                          {medals[idx] ?? <span className="text-sm font-bold text-muted-foreground">#{idx + 1}</span>}
+                        </div>
+                        {r.foto_url ? (
+                          <img src={r.foto_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                            {r.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground truncate">{r.nome}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {r.leads_atribuidos} lead(s) · {r.vendidos} vendido(s)
+                          </p>
+                        </div>
+                        <div className="text-right hidden sm:block">
+                          <p className="text-[10px] uppercase text-muted-foreground">VGV venda</p>
+                          <p className="text-sm font-bold text-green-700">{formatMoneyShort(r.vgv_venda)}</p>
+                        </div>
+                        <div className="text-right hidden md:block">
+                          <p className="text-[10px] uppercase text-muted-foreground">Aluguel/mês</p>
+                          <p className="text-sm font-bold text-blue-700">{formatMoneyShort(r.aluguel_mensal)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase text-muted-foreground">Realizado</p>
+                          <p className="text-sm font-bold text-violet-700">{formatMoneyShort(r.realizado)}</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
