@@ -29,6 +29,8 @@ const EMPTY_AUTOMATION: SocialSellingAutomation = {
   trigger_type: "manual",
   trigger_config: {},
   cadence_config: { days: [] },
+  qualification_config: {},
+  on_reply_config: {},
   created_at: "",
   updated_at: "",
 };

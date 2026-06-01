@@ -21,7 +21,9 @@ export interface SocialSellingAutomation {
   is_active: boolean;
   trigger_type: string;
   trigger_config: Record<string, any>;
-  cadence_config: { days: CadenceDay[] };
+  cadence_config: { days: CadenceDay[]; action_modes?: Record<string, string> };
+  qualification_config: { ai_prompt?: string; ai_score_min?: number };
+  on_reply_config: { move_to_pipeline_id?: string; move_to_stage_id?: string; notify_whatsapp?: boolean };
   created_at: string;
   updated_at: string;
 }
