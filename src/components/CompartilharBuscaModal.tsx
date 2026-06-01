@@ -189,20 +189,6 @@ const CompartilharBuscaModal = ({ open, onClose, defaults, clienteNome, clienteT
     window.open(wa, "_blank");
   };
 
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "NegociaAky — Oportunidades selecionadas",
-          text: clienteNome ? `${clienteNome.split(" ")[0]}, veja essas oportunidades:` : "Veja essas oportunidades:",
-          url,
-        });
-      } catch { /* */ }
-    } else {
-      handleCopy();
-    }
-  };
-
   if (!open) return null;
 
   // ─── Painéis por tipo ─────────────────────────────────────────────────────
@@ -334,24 +320,19 @@ const CompartilharBuscaModal = ({ open, onClose, defaults, clienteNome, clienteT
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row items-stretch gap-2 px-5 py-4 border-t border-border bg-muted/20">
-          <Button variant="outline" onClick={handleCopy} className="gap-2">
-            {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-            {copied ? "Copiado!" : "Copiar"}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 px-5 py-4 border-t border-border bg-muted/20">
+          <Button variant="outline" onClick={handleCopy} className="gap-2 min-w-0">
+            {copied ? <Check className="h-4 w-4 text-green-600 shrink-0" /> : <Copy className="h-4 w-4 shrink-0" />}
+            <span className="truncate">{copied ? "Copiado!" : "Copiar"}</span>
           </Button>
-          <Button variant="outline" onClick={() => window.open(url, "_blank")} className="gap-2">
-            <ExternalLink className="h-4 w-4" />
-            Pré-visualizar
+          <Button variant="outline" onClick={() => window.open(url, "_blank")} className="gap-2 min-w-0">
+            <ExternalLink className="h-4 w-4 shrink-0" />
+            <span className="truncate">Pré-visualizar</span>
           </Button>
-          <Button onClick={handleWhatsApp} className="gap-2 bg-green-600 hover:bg-green-700">
-            <MessageCircle className="h-4 w-4" />
-            {clienteTelefone ? "Enviar no WhatsApp" : "Abrir WhatsApp"}
+          <Button onClick={handleWhatsApp} className="gap-2 bg-green-600 hover:bg-green-700 min-w-0 col-span-2 sm:col-span-1">
+            <MessageCircle className="h-4 w-4 shrink-0" />
+            <span className="truncate">{clienteTelefone ? "Enviar WhatsApp" : "WhatsApp"}</span>
           </Button>
-          {typeof navigator !== "undefined" && "share" in navigator && (
-            <Button variant="ghost" onClick={handleNativeShare} className="gap-2">
-              <Share2 className="h-4 w-4" /> Compartilhar
-            </Button>
-          )}
         </div>
       </div>
     </div>
