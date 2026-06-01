@@ -31,8 +31,20 @@ import {
   LayoutGrid,
   Trash2,
   ExternalLink,
+  Share2,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
+
+// Sugere faixa de preço a partir de um valor numérico
+function suggestPriceRange(preco: number | null | undefined): string {
+  if (!preco) return "";
+  if (preco <= 50_000)  return "Até R$ 50.000";
+  if (preco <= 150_000) return "R$ 50.000 - R$ 150.000";
+  if (preco <= 300_000) return "R$ 150.000 - R$ 300.000";
+  if (preco <= 500_000) return "R$ 300.000 - R$ 500.000";
+  return "Acima de R$ 500.000";
+}
 import { callClaude } from "@/lib/anthropic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1263,6 +1275,7 @@ const AdminNegocios = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingNegocio, setEditingNegocio] = useState<Negocio | null>(null);
+  const [shareItem, setShareItem] = useState<Negocio | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -1609,6 +1622,14 @@ const AdminNegocios = () => {
                           Ver página
                         </a>
                         <button
+                          onClick={() => setShareItem(negocio)}
+                          className="flex items-center gap-1.5 rounded-lg bg-violet-50 border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
+                          title="Compartilhar link filtrado por categoria"
+                        >
+                          <Share2 className="h-3.5 w-3.5" />
+                          Compartilhar
+                        </button>
+                        <button
                           onClick={() => setEditingNegocio(negocio)}
                           className="flex items-center gap-1.5 rounded-lg bg-muted border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors"
                         >
@@ -1650,6 +1671,20 @@ const AdminNegocios = () => {
             );
           })}
         </div>
+      )}
+
+      {shareItem && (
+        <CompartilharBuscaModal
+          open={!!shareItem}
+          onClose={() => setShareItem(null)}
+          defaults={{
+            categoria: shareItem.categoria,
+            tipo: (shareItem as { tipo?: string }).tipo,
+            bairro: shareItem.bairro || undefined,
+            cidade: shareItem.cidade,
+            preco: suggestPriceRange(shareItem.preco),
+          }}
+        />
       )}
     </AdminLayout>
   );

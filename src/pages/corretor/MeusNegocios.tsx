@@ -3,8 +3,18 @@ import usePageTitle from "@/hooks/usePageTitle";
 import CorretorLayout from "@/components/corretor/CorretorLayout";
 import { supabase } from "@/lib/supabase";
 import { NovoNegocioModal } from "@/pages/admin/Negocios";
-import { Plus, Store, ExternalLink, MapPin, Building2, Clock, Loader2, LayoutGrid, Home, Award, Users } from "lucide-react";
+import { Plus, Store, ExternalLink, MapPin, Building2, Clock, Loader2, LayoutGrid, Home, Award, Users, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
+
+function suggestPriceRange(preco: number | null | undefined): string {
+  if (!preco) return "";
+  if (preco <= 50_000)  return "Até R$ 50.000";
+  if (preco <= 150_000) return "R$ 50.000 - R$ 150.000";
+  if (preco <= 300_000) return "R$ 150.000 - R$ 300.000";
+  if (preco <= 500_000) return "R$ 300.000 - R$ 500.000";
+  return "Acima de R$ 500.000";
+}
 import type { Negocio } from "@/stores/negocioStore";
 
 type Row = Negocio & { _kind: "negocio" | "galeria"; _qtdEspacos?: number; _qtdLeads?: number };
@@ -38,6 +48,7 @@ const MeusNegocios = () => {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [shareItem, setShareItem] = useState<Row | null>(null);
 
   const load = async (uid: string) => {
     setLoading(true);
@@ -213,15 +224,25 @@ const MeusNegocios = () => {
                         )}
                       </div>
                     </div>
-                    <a
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Ver página
-                    </a>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Ver página
+                      </a>
+                      <button
+                        onClick={() => setShareItem(row)}
+                        className="flex items-center gap-1.5 rounded-lg bg-violet-50 border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
+                        title="Compartilhar link filtrado por categoria"
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
+                        Compartilhar
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -236,6 +257,20 @@ const MeusNegocios = () => {
             corretorId={userId}
             defaultStatus="pendente"
             hideStatusSelector
+          />
+        )}
+
+        {shareItem && (
+          <CompartilharBuscaModal
+            open={!!shareItem}
+            onClose={() => setShareItem(null)}
+            defaults={{
+              categoria: shareItem.categoria,
+              tipo: (shareItem as { tipo?: string }).tipo,
+              bairro: shareItem.bairro || undefined,
+              cidade: shareItem.cidade,
+              preco: suggestPriceRange(shareItem.preco),
+            }}
           />
         )}
       </div>
