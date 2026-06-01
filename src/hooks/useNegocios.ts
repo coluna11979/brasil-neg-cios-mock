@@ -126,7 +126,14 @@ export function useNegocios(filters?: {
       if (filters?.preco_max) query = query.lte("preco", filters.preco_max);
       if (filters?.faturamento_min) query = query.gte("faturamento_mensal", filters.faturamento_min);
       if (filters?.cidade) query = query.ilike("cidade", `%${filters.cidade}%`);
-      if (filters?.bairro) query = query.ilike("bairro", `%${filters.bairro}%`);
+      // Bairro: alem do campo bairro (que geralmente esta nulo), busca tambem em
+      // titulo e descricao porque a maioria dos cadastros antigos coloca o bairro la.
+      if (filters?.bairro) {
+        const b = filters.bairro.replace(/[(),"']/g, "");
+        query = query.or(
+          `bairro.ilike.%${b}%,titulo.ilike.%${b}%,descricao.ilike.%${b}%`
+        );
+      }
       if (filters?.busca) {
         query = query.or(
           `titulo.ilike.%${filters.busca}%,descricao.ilike.%${filters.busca}%`
