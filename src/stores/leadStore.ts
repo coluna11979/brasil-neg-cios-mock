@@ -3,6 +3,28 @@ import { callClaude } from "@/lib/anthropic";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
 import { getLeadIntent, describeIntent, intentItemLabel } from "@/lib/leadIntent";
 import { getAiPrompt } from "@/lib/aiPrompts";
+import { pickBestCorretor } from "@/lib/leadRouter";
+
+/** Marca o visitante atual como lead já capturado (silencia popups, evita formularios duplicados). */
+export function markLeadCaptured(leadId: string) {
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("negociaaky_lead_id", leadId);
+      localStorage.setItem("negociaaky_subscribed", "true");
+    }
+  } catch { /* SSR / privacy mode */ }
+}
+
+/** Retorna true se o visitante atual já preencheu algum formulário/virou lead. */
+export function isLeadCaptured(): boolean {
+  try {
+    if (typeof localStorage === "undefined") return false;
+    return !!(
+      localStorage.getItem("negociaaky_lead_id") ||
+      localStorage.getItem("negociaaky_subscribed")
+    );
+  } catch { return false; }
+}
 
 export interface Lead {
   id: string;
@@ -86,6 +108,21 @@ export async function addLead(lead: {
     corretor_id = galeria?.corretor_id ?? null;
   }
 
+  // Auto-roteamento: se o lead não veio com corretor definido (ex: lead vindo de
+  // /anunciar, busca, newsletter), escolhe automaticamente o corretor mais
+  // qualificado disponível pra atender rápido.
+  if (!corretor_id) {
+    corretor_id = await pickBestCorretor({
+      nome: lead.nome,
+      email: lead.email,
+      telefone: lead.telefone,
+      mensagem: lead.mensagem,
+      origem: lead.origem,
+      negocio_titulo: lead.negocio_titulo,
+      galeria_nome: lead.galeria_nome,
+    });
+  }
+
   // Se já existe lead com mesmo telefone, reaproveita em vez de duplicar
   if (lead.telefone) {
     const digits = lead.telefone.replace(/\D/g, "");
@@ -117,13 +154,41 @@ export async function addLead(lead: {
             espaco_numero: lead.espaco_numero || null,
           })
           .eq("id", existing[0].id);
+        markLeadCaptured(existing[0].id);
         console.info(`[addLead] Lead com telefone ${lead.telefone} já existia (${existing[0].nome}). Atualizado em vez de duplicar.`);
         return true;
       }
     }
   }
 
-  const { error } = await supabase
+  // Dedupe também por email (caso o lead não tenha telefone)
+  if (lead.email && !lead.telefone) {
+    const { data: byEmail } = await supabase
+      .from("leads")
+      .select("id, nome")
+      .ilike("email", lead.email.trim())
+      .limit(1);
+    if (byEmail && byEmail.length > 0) {
+      await supabase
+        .from("leads")
+        .update({
+          atualizado_em: new Date().toISOString(),
+          mensagem: lead.mensagem || null,
+          negocio_id: lead.negocio_id || null,
+          negocio_titulo: lead.negocio_titulo || null,
+          galeria_id: lead.galeria_id || null,
+          galeria_nome: lead.galeria_nome || null,
+          espaco_id: lead.espaco_id || null,
+          espaco_numero: lead.espaco_numero || null,
+        })
+        .eq("id", byEmail[0].id);
+      markLeadCaptured(byEmail[0].id);
+      console.info(`[addLead] Lead com email ${lead.email} já existia (${byEmail[0].nome}). Atualizado.`);
+      return true;
+    }
+  }
+
+  const { data: inserted, error } = await supabase
     .from("leads")
     .insert({
       nome: lead.nome,
@@ -139,16 +204,27 @@ export async function addLead(lead: {
       espaco_numero: lead.espaco_numero || null,
       corretor_id,
       status: "novo",
-    });
+    })
+    .select("id")
+    .single();
 
   if (error) {
-    // 23505 = unique_violation — outro request concorrente criou o lead nesse meio tempo
     if ((error as { code?: string }).code === "23505") {
       console.info("[addLead] Telefone já existente (concorrência). Ignorando duplicação.");
       return true;
     }
     console.error("Erro ao salvar lead:", error);
     return false;
+  }
+
+  // Marca o visitante como capturado (silencia popups e formularios duplicados)
+  if (inserted?.id) markLeadCaptured(inserted.id);
+
+  // Notifica o corretor escolhido via WhatsApp + gera sugestão IA (não bloqueia o retorno)
+  if (corretor_id && inserted?.id) {
+    assignLead(inserted.id, corretor_id).catch((e) => {
+      console.warn("[addLead] auto-routing notificação falhou:", e);
+    });
   }
   return true;
 }

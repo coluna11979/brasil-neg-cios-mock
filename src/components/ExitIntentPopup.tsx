@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, Gift, ArrowRight, Phone } from "lucide-react";
-import { addLead } from "@/stores/leadStore";
+import { addLead, isLeadCaptured } from "@/stores/leadStore";
 
 const ExitIntentPopup = () => {
   const [show, setShow] = useState(false);
@@ -11,10 +11,9 @@ const ExitIntentPopup = () => {
 
   const handleMouseLeave = useCallback((e: MouseEvent) => {
     if (e.clientY <= 5) {
-      if (
-        sessionStorage.getItem("exit_popup_shown") === "true" ||
-        localStorage.getItem("negociaaky_subscribed") === "true"
-      ) return;
+      // Não mostra se o visitante já é lead (preencheu qualquer formulário antes)
+      if (isLeadCaptured()) return;
+      if (sessionStorage.getItem("exit_popup_shown") === "true") return;
       sessionStorage.setItem("exit_popup_shown", "true");
       setShow(true);
     }
