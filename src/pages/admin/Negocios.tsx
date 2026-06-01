@@ -30,6 +30,7 @@ import {
   Award,
   LayoutGrid,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { callClaude } from "@/lib/anthropic";
@@ -1581,6 +1582,20 @@ const AdminNegocios = () => {
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     ) : (
                       <>
+                        <a
+                          href={
+                            (negocio as { tipo?: string }).tipo === "galeria"
+                              ? `/galerias?id=${negocio.id}`
+                              : `/anuncio/${negocio.id}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors"
+                          title="Abrir página pública em nova aba"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Ver página
+                        </a>
                         <button
                           onClick={() => setEditingNegocio(negocio)}
                           className="flex items-center gap-1.5 rounded-lg bg-muted border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors"
