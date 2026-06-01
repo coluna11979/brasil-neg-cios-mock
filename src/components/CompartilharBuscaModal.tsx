@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { X, Copy, Check, Share2, ExternalLink, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/lib/supabase";
 
 const FAIXAS = [
   { label: "Até R$ 50.000", value: "Até R$ 50.000" },
@@ -52,6 +53,31 @@ const CompartilharBuscaModal = ({ open, onClose, defaults, clienteNome, clienteT
   const [bairro, setBairro] = useState(defaults?.bairro || "");
   const [q, setQ] = useState("");
   const [copied, setCopied] = useState(false);
+  const [bairrosOpts, setBairrosOpts] = useState<string[]>([]);
+
+  // Busca bairros distintos do sistema (negocios.bairro + galerias.endereco)
+  useEffect(() => {
+    if (!open) return;
+    let cancel = false;
+    (async () => {
+      const [{ data: negs }, { data: gals }] = await Promise.all([
+        supabase.from("negocios").select("bairro").not("bairro", "is", null),
+        supabase.from("galerias").select("endereco").not("endereco", "is", null),
+      ]);
+      const setBr = new Set<string>();
+      (negs || []).forEach((n: { bairro: string | null }) => {
+        const v = (n.bairro || "").trim();
+        if (v) setBr.add(v);
+      });
+      // Para galerias, pega só a primeira parte do endereço (antes da vírgula)
+      (gals || []).forEach((g: { endereco: string | null }) => {
+        const first = (g.endereco || "").split(",")[0].trim();
+        if (first) setBr.add(first);
+      });
+      if (!cancel) setBairrosOpts(Array.from(setBr).sort((a, b) => a.localeCompare(b, "pt-BR")));
+    })();
+    return () => { cancel = true; };
+  }, [open]);
 
   // Origem real (negociaaky.com.br se em prod; senão usa origin atual)
   const origin = useMemo(() => {
@@ -171,8 +197,19 @@ const CompartilharBuscaModal = ({ open, onClose, defaults, clienteNome, clienteT
             </div>
             <div>
               <Label className="text-xs">Bairro / Região</Label>
-              <Input value={bairro} onChange={(e) => setBairro(e.target.value)}
-                placeholder="Ex: Pinheiros" className="mt-1.5" />
+              <Select value={bairro || "_any"} onValueChange={(v) => setBairro(v === "_any" ? "" : v)}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Qualquer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_any">Qualquer</SelectItem>
+                  {bairrosOpts.length === 0 ? (
+                    <div className="px-2 py-2 text-xs text-muted-foreground">Nenhum bairro cadastrado ainda</div>
+                  ) : (
+                    bairrosOpts.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
