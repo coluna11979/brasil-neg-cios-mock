@@ -32,10 +32,12 @@ import {
   Trash2,
   ExternalLink,
   Share2,
+  Megaphone,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
 import EditGaleriaModal from "@/components/admin/EditGaleriaModal";
+import PublicarRedesModal from "@/components/admin/PublicarRedesModal";
 
 // Sugere faixa de preço a partir de um valor numérico
 function suggestPriceRange(preco: number | null | undefined): string {
@@ -369,7 +371,8 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
       await supabase.storage.from("lead-images").upload(path, pendingPhoto, { upsert: true, contentType: pendingPhoto.type });
       const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
       const foto_url = urlData.publicUrl;
-      await supabase.from("negocios").update({ foto_url }).eq("id", savedNegocio.id);
+      // Coluna real é `imagem` — `foto_url` é só alias em memória
+      await supabase.from("negocios").update({ imagem: foto_url }).eq("id", savedNegocio.id);
       savedNegocio = { ...savedNegocio, foto_url };
     }
 
@@ -992,7 +995,8 @@ const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModalProps) 
       await supabase.storage.from("lead-images").upload(path, file, { upsert: true, contentType: file.type });
       const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
       const url = urlData.publicUrl + "?t=" + Date.now();
-      await supabase.from("negocios").update({ foto_url: urlData.publicUrl }).eq("id", negocio.id);
+      // Coluna real é `imagem` — `foto_url` é só alias em memória
+      await supabase.from("negocios").update({ imagem: urlData.publicUrl }).eq("id", negocio.id);
       setFotoUrl(url);
     } catch (err) {
       console.error("Erro ao fazer upload:", err);
@@ -1290,6 +1294,7 @@ const AdminNegocios = () => {
   const [editingNegocio, setEditingNegocio] = useState<Negocio | null>(null);
   const [editingGaleriaId, setEditingGaleriaId] = useState<string | null>(null);
   const [shareItem, setShareItem] = useState<Negocio | null>(null);
+  const [publishItem, setPublishItem] = useState<Negocio | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -1549,32 +1554,32 @@ const AdminNegocios = () => {
                         <h3 className="font-display font-bold text-foreground leading-tight">
                           {negocio.titulo}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                          <span className="text-sm text-muted-foreground">{negocio.categoria}</span>
-                          <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <MapPin className="h-3.5 w-3.5" />
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
+                          <span className="text-base sm:text-sm text-muted-foreground">{negocio.categoria}</span>
+                          <span className="flex items-center gap-1 text-base sm:text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                             {negocio.cidade}, {negocio.estado}
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
+                          <span className="flex items-center gap-1 text-sm sm:text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                             {timeAgo(negocio.criado_em)}
                           </span>
                         </div>
                       </div>
-                      <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusCfg.bg} ${statusCfg.color}`}>
+                      <span className={`shrink-0 rounded-full border px-3 sm:px-2.5 py-1 sm:py-0.5 text-sm sm:text-xs font-semibold ${statusCfg.bg} ${statusCfg.color}`}>
                         {statusCfg.label}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-4 mt-2">
+                    <div className="flex flex-wrap gap-4 mt-2.5">
                       {negocio.preco && (
-                        <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
-                          <DollarSign className="h-3.5 w-3.5 text-primary" />
+                        <span className="flex items-center gap-1.5 text-base sm:text-sm font-semibold text-foreground">
+                          <DollarSign className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-primary" />
                           {formatCurrency(negocio.preco)}
                         </span>
                       )}
                       {negocio.faturamento_mensal && (
-                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+                        <span className="flex items-center gap-1.5 text-base sm:text-sm text-muted-foreground">
+                          <TrendingUp className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-green-600" />
                           Fatura {formatCurrency(negocio.faturamento_mensal)}/mês
                         </span>
                       )}
@@ -1587,15 +1592,15 @@ const AdminNegocios = () => {
                   <div className="px-4 pb-4 border-t border-border/60 pt-3 bg-muted/20">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                        <p className="text-sm sm:text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                           Proprietário
                         </p>
-                        <p className="font-medium text-foreground text-sm">{negocio.proprietario_nome}</p>
+                        <p className="font-medium text-foreground text-base sm:text-sm">{negocio.proprietario_nome}</p>
                         <a
                           href={`mailto:${negocio.proprietario_email}`}
-                          className="flex items-center gap-1.5 text-sm text-primary hover:underline mt-1"
+                          className="flex items-center gap-1.5 text-base sm:text-sm text-primary hover:underline mt-1 break-all"
                         >
-                          <Mail className="h-3.5 w-3.5" />
+                          <Mail className="h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0" />
                           {negocio.proprietario_email}
                         </a>
                         {negocio.proprietario_telefone && (
@@ -1603,18 +1608,18 @@ const AdminNegocios = () => {
                             href={`https://wa.me/55${negocio.proprietario_telefone.replace(/\D/g, "")}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-sm text-green-600 hover:underline mt-1"
+                            className="flex items-center gap-1.5 text-base sm:text-sm text-green-600 hover:underline mt-1"
                           >
-                            <Phone className="h-3.5 w-3.5" />
+                            <Phone className="h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0" />
                             {negocio.proprietario_telefone}
                           </a>
                         )}
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                        <p className="text-sm sm:text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                           Detalhes
                         </p>
-                        <div className="space-y-1 text-sm">
+                        <div className="space-y-1.5 text-base sm:text-sm">
                           {negocio.area_m2 && (
                             <p className="text-muted-foreground">
                               Área: <span className="text-foreground font-medium">{negocio.area_m2} m²</span>
@@ -1635,10 +1640,10 @@ const AdminNegocios = () => {
                     </div>
                     {negocio.descricao && (
                       <div className="mt-3">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                        <p className="text-sm sm:text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
                           Descrição
                         </p>
-                        <p className="text-sm text-foreground leading-relaxed bg-card rounded-lg p-3 border border-border">
+                        <p className="text-base sm:text-sm text-foreground leading-relaxed bg-card rounded-lg p-3 border border-border">
                           {negocio.descricao}
                         </p>
                       </div>
@@ -1646,22 +1651,36 @@ const AdminNegocios = () => {
                   </div>
                 )}
 
-                {/* Footer: Actions */}
-                <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-muted/10">
+                {/* Footer: Actions — mobile-first, stacked no mobile / inline no desktop */}
+                <div className="border-t border-border bg-muted/10 px-3 sm:px-4 py-3 space-y-2.5 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
+                  {/* Toggle "Ver detalhes" — sempre visível, full width no mobile */}
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : negocio.id)}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex w-full sm:w-auto items-center justify-center sm:justify-start gap-1.5 text-sm sm:text-xs text-muted-foreground hover:text-foreground active:text-foreground py-2 sm:py-0 transition-colors min-h-[36px] sm:min-h-0"
                   >
-                    <Eye className="h-3.5 w-3.5" />
+                    <Eye className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                     {isExpanded ? "Ocultar detalhes" : "Ver detalhes"}
-                    {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5 sm:h-3 sm:w-3" /> : <ChevronDown className="h-3.5 w-3.5 sm:h-3 sm:w-3" />}
                   </button>
 
-                  <div className="flex items-center gap-2">
-                    {isUpdating ? (
+                  {isUpdating ? (
+                    <div className="flex items-center justify-center py-2">
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    ) : (
-                      <>
+                    </div>
+                  ) : (
+                    <>
+                      {/* CTA PRIMÁRIO: Publicar nas redes — full-width no mobile, em destaque */}
+                      <button
+                        onClick={() => setPublishItem(negocio)}
+                        className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-500 to-violet-500 px-4 py-2.5 sm:py-1.5 text-sm sm:text-xs font-bold text-white hover:opacity-90 active:opacity-80 active:scale-[0.98] transition-all min-h-[44px] sm:min-h-0 shadow-sm sm:order-3"
+                        title="Gerar arte e publicar nas redes sociais"
+                      >
+                        <Megaphone className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                        Publicar nas redes
+                      </button>
+
+                      {/* Ações secundárias — grid no mobile, inline no desktop */}
+                      <div className="grid grid-cols-3 gap-1.5 sm:flex sm:items-center sm:gap-2 sm:order-2">
                         <a
                           href={
                             (negocio as { tipo?: string }).tipo === "galeria"
@@ -1670,18 +1689,19 @@ const AdminNegocios = () => {
                           }
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors"
-                          title="Abrir página pública em nova aba"
+                          className="flex items-center justify-center gap-1 rounded-lg bg-primary/10 border border-primary/30 px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-xs font-semibold text-primary hover:bg-primary/15 active:bg-primary/20 active:scale-95 transition-all min-h-[40px] sm:min-h-0"
+                          title="Abrir página pública"
                         >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          Ver página
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                          <span className="hidden xs:inline sm:inline">Ver página</span>
+                          <span className="xs:hidden sm:hidden">Página</span>
                         </a>
                         <button
                           onClick={() => setShareItem(negocio)}
-                          className="flex items-center gap-1.5 rounded-lg bg-violet-50 border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
-                          title="Compartilhar link filtrado por categoria"
+                          className="flex items-center justify-center gap-1 rounded-lg bg-violet-50 border border-violet-200 px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-xs font-semibold text-violet-700 hover:bg-violet-100 active:bg-violet-200 active:scale-95 transition-all min-h-[40px] sm:min-h-0"
+                          title="Compartilhar link filtrado"
                         >
-                          <Share2 className="h-3.5 w-3.5" />
+                          <Share2 className="h-3.5 w-3.5 shrink-0" />
                           Compartilhar
                         </button>
                         <button
@@ -1692,46 +1712,56 @@ const AdminNegocios = () => {
                               setEditingNegocio(negocio);
                             }
                           }}
-                          className="flex items-center gap-1.5 rounded-lg bg-muted border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors"
+                          className="flex items-center justify-center gap-1 rounded-lg bg-muted border border-border px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-xs font-semibold text-foreground hover:bg-muted/80 active:bg-muted/60 active:scale-95 transition-all min-h-[40px] sm:min-h-0"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="h-3.5 w-3.5 shrink-0" />
                           Editar
                         </button>
+
+                        {/* Ações de status — só quando aplicáveis */}
                         {negocio.status !== "ativo" && (
                           <button
                             onClick={() => handleStatusChange(negocio.id, "ativo")}
-                            className="flex items-center gap-1.5 rounded-lg bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100 transition-colors"
+                            className="flex items-center justify-center gap-1 rounded-lg bg-green-50 border border-green-200 px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-xs font-semibold text-green-700 hover:bg-green-100 active:bg-green-200 active:scale-95 transition-all min-h-[40px] sm:min-h-0"
                           >
-                            <CheckCircle className="h-3.5 w-3.5" />
+                            <CheckCircle className="h-3.5 w-3.5 shrink-0" />
                             Aprovar
                           </button>
                         )}
                         {negocio.status !== "rejeitado" && (
                           <button
                             onClick={() => handleStatusChange(negocio.id, "rejeitado")}
-                            className="flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
+                            className="flex items-center justify-center gap-1 rounded-lg bg-red-50 border border-red-200 px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-xs font-semibold text-red-700 hover:bg-red-100 active:bg-red-200 active:scale-95 transition-all min-h-[40px] sm:min-h-0"
                           >
-                            <XCircle className="h-3.5 w-3.5" />
+                            <XCircle className="h-3.5 w-3.5 shrink-0" />
                             Rejeitar
                           </button>
                         )}
                         {negocio.status === "ativo" && (
                           <button
                             onClick={() => handleStatusChange(negocio.id, "vendido")}
-                            className="flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                            className="flex items-center justify-center gap-1 rounded-lg bg-blue-50 border border-blue-200 px-2 py-2 sm:px-3 sm:py-1.5 text-xs sm:text-xs font-semibold text-blue-700 hover:bg-blue-100 active:bg-blue-200 active:scale-95 transition-all min-h-[40px] sm:min-h-0"
                           >
-                            <CheckCircle className="h-3.5 w-3.5" />
-                            Marcar Vendido
+                            <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                            <span className="hidden xs:inline sm:inline">Marcar Vendido</span>
+                            <span className="xs:hidden sm:hidden">Vendido</span>
                           </button>
                         )}
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {publishItem && (
+        <PublicarRedesModal
+          negocio={publishItem}
+          onClose={() => setPublishItem(null)}
+        />
       )}
 
       {shareItem && (

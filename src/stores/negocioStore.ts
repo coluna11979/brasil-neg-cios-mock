@@ -30,16 +30,26 @@ export async function getAllNegocios(): Promise<Negocio[]> {
     console.error("Erro ao buscar negócios:", error);
     return [];
   }
-  return data as Negocio[];
+  // Tabela `negocios` guarda foto em `imagem` (URL) ou `imagens` (array).
+  // Mapeamos pra `foto_url` em memória pra todos os componentes continuarem funcionando.
+  return (data as (Negocio & { imagem?: string; imagens?: string[] })[]).map((row) => ({
+    ...row,
+    foto_url: row.foto_url || row.imagem || (row.imagens && row.imagens[0]) || undefined,
+  })) as Negocio[];
 }
 
 export async function updateNegocio(
   id: string,
   fields: Partial<Omit<Negocio, "id" | "criado_em" | "created_at">>
 ): Promise<boolean> {
+  // foto_url é alias em memória — coluna real é `imagem`
+  const { foto_url, ...rest } = fields;
+  const dbFields: Record<string, unknown> = { ...rest };
+  if (foto_url !== undefined) dbFields.imagem = foto_url;
+
   const { error } = await supabase
     .from("negocios")
-    .update(fields)
+    .update(dbFields)
     .eq("id", id);
 
   if (error) {

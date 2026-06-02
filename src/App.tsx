@@ -19,6 +19,7 @@ const Anuncio = lazy(() => import("./pages/Anuncio"));
 const Contato = lazy(() => import("./pages/Contato"));
 const Anunciar = lazy(() => import("./pages/Anunciar"));
 const Galerias = lazy(() => import("./pages/Galerias"));
+const Links = lazy(() => import("./pages/Links"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Admin pages
@@ -86,6 +87,7 @@ const App = () => (
                   <Route path="/contato/:id" element={<Contato />} />
                   <Route path="/anunciar" element={<Anunciar />} />
                   <Route path="/galerias" element={<Galerias />} />
+                  <Route path="/links" element={<Links />} />
                   <Route path="/vender" element={<VenderNegocio />} />
                   <Route path="/vender-terreno" element={<VenderTerreno />} />
                   <Route path="/seja-corretor" element={<SejaCorretor />} />

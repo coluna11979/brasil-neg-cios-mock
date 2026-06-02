@@ -6,8 +6,12 @@ import AIChatbot from "./AIChatbot";
 const GlobalCaptureWidgets = () => {
   const location = useLocation();
 
-  // Don't show on admin or corretor pages
-  if (location.pathname.startsWith("/admin") || location.pathname.startsWith("/corretor")) {
+  // Don't show on admin, corretor, or /links pages
+  if (
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/corretor") ||
+    location.pathname === "/links"
+  ) {
     return null;
   }
 
