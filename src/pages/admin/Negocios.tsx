@@ -33,6 +33,8 @@ import {
   ExternalLink,
   Share2,
   Megaphone,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
@@ -173,6 +175,7 @@ interface NovoNegocioModalProps {
 export const NovoNegocioModal = ({
   onClose, onSaved, corretorId, defaultStatus, hideStatusSelector,
 }: NovoNegocioModalProps) => {
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [tipoAnuncio, setTipoAnuncio] = useState<TipoAnuncio>("negocio");
   const [form, setForm] = useState({ ...EMPTY_FORM, status: defaultStatus ?? EMPTY_FORM.status });
   // Campos específicos por tipo
@@ -384,41 +387,122 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
     if (e.target === e.currentTarget) onClose();
   };
 
+  // ── Wizard: validação por step antes de permitir avançar ──
+  const validateStep = (s: number): boolean => {
+    const errs: Record<string, string> = {};
+    if (s === 2) {
+      if (!form.titulo.trim()) errs.titulo = "Dê um nome ao anúncio";
+      if (tipoAnuncio !== "galeria" && !form.categoria) errs.categoria = "Escolha uma categoria";
+      if (!form.cidade.trim()) errs.cidade = "Cidade obrigatória";
+      if (!form.estado) errs.estado = "Selecione o estado";
+      if (!form.descricao.trim()) errs.descricao = "Faça uma descrição";
+      if (tipoAnuncio === "imovel" && !imovelExtra.tipo_imovel.trim())
+        errs.tipo_imovel = "Informe o tipo do imóvel";
+      if (tipoAnuncio === "galeria" && !espacos.some((sp) => sp.numero.trim()))
+        errs.espacos = "Cadastre ao menos 1 espaço";
+      if (tipoAnuncio === "franquia" && !franquiaExtra.investimento.trim())
+        errs.investimento = "Informe o investimento inicial";
+    }
+    if (s === 3) {
+      if (!form.proprietario_nome.trim()) errs.proprietario_nome = "Nome obrigatório";
+      if (!form.proprietario_email.trim()) errs.proprietario_email = "E-mail obrigatório";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.proprietario_email))
+        errs.proprietario_email = "E-mail inválido";
+    }
+    setErrors((prev) => ({ ...prev, ...errs }));
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(step + 1 === 2 ? 1 : step)) {
+      // step 1 não tem validação obrigatória — sempre avança
+      setStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s));
+      // scroll to top do modal
+      setTimeout(() => document.getElementById("modal-scroll-top")?.scrollIntoView({ behavior: "smooth" }), 0);
+    }
+  };
+  const handleBack = () => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
+
+  const STEP_META = [
+    { n: 1, label: "Tipo & Foto" },
+    { n: 2, label: "Detalhes" },
+    { n: 3, label: "Valores & Contato" },
+  ];
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-stretch sm:items-start sm:justify-center bg-black/50 backdrop-blur-sm overflow-y-auto sm:py-6 sm:px-4"
       onClick={handleBackdrop}
     >
-      <div className="relative w-full max-w-2xl bg-card shadow-2xl min-h-full sm:min-h-0 sm:rounded-2xl sm:border sm:border-border">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <Plus className="h-5 w-5 text-primary" />
+      <div id="modal-scroll-top" className="relative w-full max-w-2xl bg-card shadow-2xl min-h-full sm:min-h-0 sm:rounded-2xl sm:border sm:border-border flex flex-col">
+        {/* Modal Header — fica sticky com progress bar */}
+        <div className="sticky top-0 z-10 bg-card border-b border-border sm:rounded-t-2xl">
+          <div className="flex items-center justify-between px-5 py-3 sm:px-6 sm:py-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+                <Plus className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-display text-base sm:text-lg font-bold text-foreground truncate">
+                  Novo {TIPO_META[tipoAnuncio].label}
+                </h2>
+                <p className="text-xs text-muted-foreground">Passo {step} de 3 · {STEP_META[step-1].label}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-display text-lg font-bold text-foreground">
-                Novo {TIPO_META[tipoAnuncio].label}
-              </h2>
-              <p className="text-xs text-muted-foreground">Cadastro direto pelo admin</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
+            <button
+              onClick={onClose}
+              aria-label="Fechar"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+            >
             <X className="h-4 w-4" />
           </button>
+          </div>
+
+          {/* Progress bar dos 3 passos */}
+          <div className="px-5 sm:px-6 pb-4">
+            <div className="flex items-center gap-2">
+              {STEP_META.map(({ n, label }, idx) => {
+                const done = step > n;
+                const active = step === n;
+                return (
+                  <div key={n} className="flex-1 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => done && setStep(n as 1 | 2 | 3)}
+                      disabled={!done}
+                      className={`flex items-center gap-2 ${done ? "cursor-pointer" : "cursor-default"}`}
+                    >
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                        active ? "bg-primary text-primary-foreground" :
+                        done   ? "bg-green-500 text-white" :
+                                 "bg-muted text-muted-foreground"
+                      }`}>
+                        {done ? "✓" : n}
+                      </div>
+                      <span className={`hidden sm:inline text-xs font-medium ${
+                        active ? "text-foreground" : "text-muted-foreground"
+                      }`}>{label}</span>
+                    </button>
+                    {idx < STEP_META.length - 1 && (
+                      <div className={`h-0.5 flex-1 rounded-full ${done ? "bg-green-500" : "bg-muted"}`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 p-5 sm:p-6 space-y-6">
           {errors.submit && (
             <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {errors.submit}
             </div>
           )}
 
+          {/* ═══════════════ STEP 1: Tipo & Foto ═══════════════ */}
+          {step === 1 && (<>
           {/* Tipo de anúncio */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold">Tipo de anúncio</Label>
@@ -503,6 +587,10 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
             <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoSelect} />
           </div>
 
+          </>)}
+
+          {/* ════════ STEP 2: Detalhes ════════ */}
+          {step === 2 && (<>
           {/* Sobre o Negócio */}
           <div className="space-y-4">
             <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
@@ -839,6 +927,10 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
             </div>
           </div>
 
+          </>)}
+
+          {/* ════════ STEP 3: Valores & Contato ════════ */}
+          {step === 3 && (<>
           {/* Financeiro */}
           <div className="space-y-4">
             <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
@@ -938,20 +1030,39 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
-            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+          </>)}
+        </form>
+
+        {/* Footer Wizard — sticky no rodapé com Voltar/Avançar/Salvar */}
+        <div className="sticky bottom-0 z-10 border-t border-border bg-card px-5 py-3 sm:px-6 sm:py-4 sm:rounded-b-2xl flex items-center justify-between gap-2 safe-area-bottom">
+          {step > 1 ? (
+            <Button type="button" variant="outline" onClick={handleBack} disabled={saving} className="gap-2">
+              <ChevronLeft className="h-4 w-4" /> Voltar
+            </Button>
+          ) : (
+            <Button type="button" variant="ghost" onClick={onClose} disabled={saving} className="text-muted-foreground">
               Cancelar
             </Button>
-            <Button type="submit" className="gap-2" disabled={saving}>
+          )}
+          {step < 3 ? (
+            <Button type="button" onClick={handleNext} className="gap-2">
+              Avançar <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={(e) => handleSubmit(e as unknown as React.FormEvent)}
+              className="gap-2"
+              disabled={saving}
+            >
               {saving ? (
                 <><Loader2 className="h-4 w-4 animate-spin" />Salvando...</>
               ) : (
                 <><Save className="h-4 w-4" />Salvar {TIPO_META[tipoAnuncio].label}</>
               )}
             </Button>
-          </div>
-        </form>
+          )}
+        </div>
       </div>
     </div>
   );
