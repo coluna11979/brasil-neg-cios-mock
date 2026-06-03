@@ -187,15 +187,32 @@ export const NovoNegocioModal = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
-  const [pendingPreview, setPendingPreview] = useState("");
+  const MAX_FOTOS = 6;
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPendingPhoto(file);
-    setPendingPreview(URL.createObjectURL(file));
+  // Previews em memória (URL.createObjectURL)
+  const photoPreviews = pendingPhotos.map((f) => URL.createObjectURL(f));
+
+  const handleFotosSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setPendingPhotos((prev) => [...prev, ...files].slice(0, MAX_FOTOS));
+    if (e.target) e.target.value = ""; // permite re-selecionar o mesmo arquivo
+  };
+
+  const removePhoto = (idx: number) => {
+    setPendingPhotos((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const movePhotoToFirst = (idx: number) => {
+    setPendingPhotos((prev) => {
+      if (idx <= 0 || idx >= prev.length) return prev;
+      const copy = [...prev];
+      const [item] = copy.splice(idx, 1);
+      copy.unshift(item);
+      return copy;
+    });
   };
 
   const handleGerarDescricao = async () => {
@@ -282,11 +299,12 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
         return;
       }
 
-      // Foto
+      // Foto principal (primeira) — galerias só usam 1
       let imagemUrl: string | null = null;
-      if (pendingPhoto) {
+      const fotoPrincipal = pendingPhotos[0];
+      if (fotoPrincipal) {
         const path = `galerias/${galeriaData.id}.jpg`;
-        await supabase.storage.from("lead-images").upload(path, pendingPhoto, { upsert: true, contentType: pendingPhoto.type });
+        await supabase.storage.from("lead-images").upload(path, fotoPrincipal, { upsert: true, contentType: fotoPrincipal.type });
         const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
         imagemUrl = urlData.publicUrl;
         await supabase.from("galerias").update({ imagem: imagemUrl }).eq("id", galeriaData.id);
@@ -369,14 +387,29 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
 
     let savedNegocio = data as Negocio;
 
-    if (pendingPhoto && savedNegocio.id) {
-      const path = `negocios/${savedNegocio.id}.jpg`;
-      await supabase.storage.from("lead-images").upload(path, pendingPhoto, { upsert: true, contentType: pendingPhoto.type });
-      const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
-      const foto_url = urlData.publicUrl;
-      // Coluna real é `imagem` — `foto_url` é só alias em memória
-      await supabase.from("negocios").update({ imagem: foto_url }).eq("id", savedNegocio.id);
-      savedNegocio = { ...savedNegocio, foto_url };
+    // Upload de até 6 imagens. A primeira vira a `imagem` principal,
+    // todas vão pro array `imagens`.
+    if (pendingPhotos.length > 0 && savedNegocio.id) {
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < pendingPhotos.length; i++) {
+        const file = pendingPhotos[i];
+        const ext = (file.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
+        const path = `negocios/${savedNegocio.id}-${i}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("lead-images")
+          .upload(path, file, { upsert: true, contentType: file.type });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
+          uploadedUrls.push(urlData.publicUrl);
+        }
+      }
+      if (uploadedUrls.length > 0) {
+        await supabase
+          .from("negocios")
+          .update({ imagem: uploadedUrls[0], imagens: uploadedUrls })
+          .eq("id", savedNegocio.id);
+        savedNegocio = { ...savedNegocio, imagem: uploadedUrls[0], imagens: uploadedUrls } as Negocio;
+      }
     }
 
     onSaved(savedNegocio);
@@ -555,36 +588,83 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
           </div>
           )}
 
-          {/* Foto do Negócio */}
+          {/* Fotos do Negócio (até 6) */}
           <div className="space-y-3">
-            <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
-              <Camera className="h-4 w-4 text-primary" />
-              Foto do Negócio
-              <span className="text-xs font-normal text-muted-foreground">(opcional, mas recomendada)</span>
-            </h3>
-            <div
-              onClick={() => fotoInputRef.current?.click()}
-              className="relative cursor-pointer rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden"
-              style={{ height: 160 }}
-            >
-              {pendingPreview ? (
-                <>
-                  <img src={pendingPreview} alt="preview" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <div className="flex items-center gap-2 rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-foreground">
-                      <Camera className="h-3.5 w-3.5" /> Trocar foto
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                  <ImageIcon className="h-10 w-10 opacity-20" />
-                  <p className="text-sm font-medium">Clique para adicionar foto</p>
-                  <p className="text-xs opacity-60">JPG, PNG — recomendado 1200×800</p>
-                </div>
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+                <Camera className="h-4 w-4 text-primary" />
+                Fotos
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({pendingPhotos.length}/{MAX_FOTOS} · 1ª é a capa)
+                </span>
+              </h3>
+              {pendingPhotos.length < MAX_FOTOS && (
+                <button
+                  type="button"
+                  onClick={() => fotoInputRef.current?.click()}
+                  className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="h-3 w-3" /> Adicionar
+                </button>
               )}
             </div>
-            <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoSelect} />
+
+            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-2">
+              {pendingPhotos.map((file, idx) => (
+                <div
+                  key={`${file.name}-${idx}`}
+                  className="relative aspect-square rounded-xl overflow-hidden border border-border bg-muted group"
+                >
+                  <img src={photoPreviews[idx]} alt={`foto ${idx + 1}`} className="w-full h-full object-cover" />
+                  {idx === 0 && (
+                    <span className="absolute top-1 left-1 rounded bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5">
+                      CAPA
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end justify-end p-1 gap-1 opacity-0 group-hover:opacity-100">
+                    {idx > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => movePhotoToFirst(idx)}
+                        className="rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-foreground hover:bg-white"
+                        title="Tornar capa"
+                      >
+                        ⭐
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(idx)}
+                      className="rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-destructive hover:bg-white"
+                      title="Remover"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {pendingPhotos.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => fotoInputRef.current?.click()}
+                  className="col-span-3 md:col-span-6 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors aspect-[16/5] text-muted-foreground"
+                >
+                  <ImageIcon className="h-8 w-8 opacity-30" />
+                  <p className="text-sm font-medium">Clique para adicionar fotos</p>
+                  <p className="text-xs opacity-60">Até 6 imagens · JPG/PNG · 1200×800 recomendado</p>
+                </button>
+              )}
+            </div>
+
+            <input
+              ref={fotoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFotosSelect}
+            />
           </div>
 
           </>)}
@@ -1076,7 +1156,7 @@ interface EditNegocioModalProps {
   onSaved: (negocio: Negocio) => void;
 }
 
-const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModalProps) => {
+export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModalProps) => {
   const [form, setForm] = useState({
     titulo: negocio.titulo,
     categoria: negocio.categoria,

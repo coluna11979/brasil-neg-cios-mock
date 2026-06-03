@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import usePageTitle from "@/hooks/usePageTitle";
 import CorretorLayout from "@/components/corretor/CorretorLayout";
 import { supabase } from "@/lib/supabase";
-import { NovoNegocioModal } from "@/pages/admin/Negocios";
-import { Plus, Store, ExternalLink, MapPin, Building2, Clock, Loader2, LayoutGrid, Home, Award, Users, Share2 } from "lucide-react";
+import { NovoNegocioModal, EditNegocioModal } from "@/pages/admin/Negocios";
+import EditGaleriaModal from "@/components/admin/EditGaleriaModal";
+import { Plus, Store, ExternalLink, MapPin, Building2, Clock, Loader2, LayoutGrid, Home, Award, Users, Share2, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
 
@@ -49,6 +50,8 @@ const MeusNegocios = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [shareItem, setShareItem] = useState<Row | null>(null);
+  const [editItem, setEditItem] = useState<Row | null>(null);
+  const [editGaleriaId, setEditGaleriaId] = useState<string | null>(null);
 
   const load = async (uid: string) => {
     setLoading(true);
@@ -225,6 +228,17 @@ const MeusNegocios = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => {
+                          if (isGaleria) setEditGaleriaId(row.id);
+                          else setEditItem(row);
+                        }}
+                        className="flex items-center gap-1.5 rounded-lg bg-muted border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors"
+                        title="Editar dados e fotos"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </button>
                       <a
                         href={link}
                         target="_blank"
@@ -271,6 +285,22 @@ const MeusNegocios = () => {
               cidade: shareItem.cidade,
               preco: suggestPriceRange(shareItem.preco),
             }}
+          />
+        )}
+
+        {editItem && (
+          <EditNegocioModal
+            negocio={editItem}
+            onClose={() => setEditItem(null)}
+            onSaved={() => { setEditItem(null); if (userId) load(userId); }}
+          />
+        )}
+
+        {editGaleriaId && (
+          <EditGaleriaModal
+            galeriaId={editGaleriaId}
+            onClose={() => setEditGaleriaId(null)}
+            onSaved={() => { setEditGaleriaId(null); if (userId) load(userId); }}
           />
         )}
       </div>
