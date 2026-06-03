@@ -1259,6 +1259,11 @@ interface EditNegocioModalProps {
 }
 
 export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModalProps) => {
+  const negocioAny = negocio as Negocio & {
+    badge_texto?: string | null;
+    badge_cor?: "green" | "blue" | "red" | "amber" | "violet" | "slate" | null;
+    mostrar_preco_foto?: boolean;
+  };
   const [form, setForm] = useState({
     titulo: negocio.titulo,
     categoria: negocio.categoria,
@@ -1272,6 +1277,9 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
     proprietario_telefone: negocio.proprietario_telefone ?? "",
     proprietario_email: negocio.proprietario_email,
     status: negocio.status,
+    badge_texto: negocioAny.badge_texto ?? "",
+    badge_cor: (negocioAny.badge_cor ?? "green") as "green" | "blue" | "red" | "amber" | "violet" | "slate",
+    mostrar_preco_foto: negocioAny.mostrar_preco_foto ?? false,
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1334,6 +1342,9 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
       proprietario_telefone: form.proprietario_telefone || undefined,
       proprietario_email: form.proprietario_email,
       status: form.status,
+      badge_texto: form.badge_texto.trim() || null,
+      badge_cor: form.badge_cor,
+      mostrar_preco_foto: form.mostrar_preco_foto,
     };
 
     const ok = await updateNegocio(negocio.id, fields);
@@ -1437,6 +1448,91 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
               )}
             </div>
             <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoSelect} />
+          </div>
+
+          {/* Legendas sobre a foto principal */}
+          <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+            <div>
+              <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+                <Sparkles className="h-4 w-4 text-violet-600" />
+                Legendas sobre a foto
+                <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Etiqueta colorida + preço em destaque sobre a foto — chama atenção na busca.
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium">Etiqueta principal (canto superior esquerdo)</Label>
+              <Input
+                value={form.badge_texto}
+                onChange={(e) => setForm((p) => ({ ...p, badge_texto: e.target.value.slice(0, 20) }))}
+                placeholder="Ex: LOCAÇÃO, PROMOÇÃO, OPORTUNIDADE…"
+                className="mt-1.5"
+                maxLength={20}
+              />
+              <div className="mt-2 flex flex-wrap gap-1">
+                {BADGE_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, badge_texto: p }))}
+                    className="rounded-full bg-card border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {form.badge_texto && (
+              <div>
+                <Label className="text-xs font-medium">Cor da etiqueta</Label>
+                <div className="mt-1.5 flex gap-2 flex-wrap">
+                  {BADGE_CORES.map((c) => (
+                    <button
+                      key={c.v}
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, badge_cor: c.v }))}
+                      className={`flex items-center gap-1.5 rounded-lg border-2 px-2.5 py-1 text-xs font-medium transition-colors ${
+                        form.badge_cor === c.v ? "border-foreground" : "border-transparent"
+                      }`}
+                      title={c.label}
+                    >
+                      <span className={`h-4 w-4 rounded-sm ${c.cls}`} />
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={form.mostrar_preco_foto}
+                onChange={(e) => setForm((p) => ({ ...p, mostrar_preco_foto: e.target.checked }))}
+              />
+              <span>Mostrar <strong>preço</strong> em destaque sobre a foto (canto inferior direito)</span>
+            </label>
+
+            {/* Preview ao vivo */}
+            {(form.badge_texto || form.mostrar_preco_foto) && fotoUrl && (
+              <div>
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">Pré-visualização</p>
+                <ImagemComLegenda
+                  src={fotoUrl}
+                  alt="preview"
+                  className="rounded-xl overflow-hidden border border-border"
+                  imgClassName="w-full h-40 object-cover"
+                  badgeTexto={form.badge_texto}
+                  badgeCor={form.badge_cor}
+                  mostrarPreco={form.mostrar_preco_foto}
+                  preco={form.preco ? Number(form.preco) : undefined}
+                />
+              </div>
+            )}
           </div>
 
           {/* Sobre o Negócio */}

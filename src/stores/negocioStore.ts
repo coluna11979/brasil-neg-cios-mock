@@ -18,6 +18,10 @@ export interface Negocio {
   criado_em: string;
   /** @deprecated use criado_em */
   created_at?: string;
+  // Legendas sobre a foto
+  badge_texto?: string | null;
+  badge_cor?: "green" | "blue" | "red" | "amber" | "violet" | "slate" | null;
+  mostrar_preco_foto?: boolean;
 }
 
 export async function getAllNegocios(): Promise<Negocio[]> {
