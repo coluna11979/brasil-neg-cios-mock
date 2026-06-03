@@ -39,6 +39,7 @@ import {
 import AdminLayout from "@/components/admin/AdminLayout";
 import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
 import EditGaleriaModal from "@/components/admin/EditGaleriaModal";
+import ImagemComLegenda from "@/components/ImagemComLegenda";
 import PublicarRedesModal from "@/components/admin/PublicarRedesModal";
 
 // Sugere faixa de preço a partir de um valor numérico
@@ -135,7 +136,20 @@ const EMPTY_FORM = {
   proprietario_telefone: "",
   proprietario_email: "",
   status: "ativo" as Negocio["status"],
+  badge_texto: "",
+  badge_cor: "green" as "green" | "blue" | "red" | "amber" | "violet" | "slate",
+  mostrar_preco_foto: false,
 };
+
+const BADGE_PRESETS = ["LOCAÇÃO", "VENDA", "OPORTUNIDADE", "PROMOÇÃO", "NOVO", "DESTAQUE", "REDUZIDO"];
+const BADGE_CORES: { v: "green" | "blue" | "red" | "amber" | "violet" | "slate"; label: string; cls: string }[] = [
+  { v: "green",  label: "Verde",    cls: "bg-green-500" },
+  { v: "blue",   label: "Azul",     cls: "bg-blue-500" },
+  { v: "red",    label: "Vermelho", cls: "bg-red-500" },
+  { v: "amber",  label: "Amarelo",  cls: "bg-amber-500" },
+  { v: "violet", label: "Roxo",     cls: "bg-violet-500" },
+  { v: "slate",  label: "Preto",    cls: "bg-slate-800" },
+];
 
 // ── Tipos de anúncio (mesmos do site público /anunciar) ──────────────────────
 type TipoAnuncio = "negocio" | "imovel" | "galeria" | "franquia";
@@ -374,6 +388,9 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
         proprietario_email: form.proprietario_email,
         status: form.status,
         corretor_id: corretorId || null,
+        badge_texto: form.badge_texto.trim() || null,
+        badge_cor: form.badge_cor,
+        mostrar_preco_foto: form.mostrar_preco_foto,
       })
       .select()
       .single();
@@ -665,6 +682,91 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
               className="hidden"
               onChange={handleFotosSelect}
             />
+          </div>
+
+          {/* Legendas sobre a foto principal */}
+          <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+            <div>
+              <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+                <Sparkles className="h-4 w-4 text-violet-600" />
+                Legendas sobre a foto
+                <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Aparecem sobrepostas na foto principal — destacam seu anúncio na busca.
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium">Etiqueta principal (canto superior esquerdo)</Label>
+              <Input
+                value={form.badge_texto}
+                onChange={(e) => setForm((p) => ({ ...p, badge_texto: e.target.value.slice(0, 20) }))}
+                placeholder="Ex: LOCAÇÃO, PROMOÇÃO, OPORTUNIDADE…"
+                className="mt-1.5"
+                maxLength={20}
+              />
+              <div className="mt-2 flex flex-wrap gap-1">
+                {BADGE_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, badge_texto: p }))}
+                    className="rounded-full bg-card border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {form.badge_texto && (
+              <div>
+                <Label className="text-xs font-medium">Cor da etiqueta</Label>
+                <div className="mt-1.5 flex gap-2 flex-wrap">
+                  {BADGE_CORES.map((c) => (
+                    <button
+                      key={c.v}
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, badge_cor: c.v }))}
+                      className={`flex items-center gap-1.5 rounded-lg border-2 px-2.5 py-1 text-xs font-medium transition-colors ${
+                        form.badge_cor === c.v ? "border-foreground" : "border-transparent"
+                      }`}
+                      title={c.label}
+                    >
+                      <span className={`h-4 w-4 rounded-sm ${c.cls}`} />
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={form.mostrar_preco_foto}
+                onChange={(e) => setForm((p) => ({ ...p, mostrar_preco_foto: e.target.checked }))}
+              />
+              <span>Mostrar <strong>preço</strong> em destaque sobre a foto (canto inferior direito)</span>
+            </label>
+
+            {/* Preview */}
+            {(form.badge_texto || form.mostrar_preco_foto) && pendingPhotos[0] && (
+              <div>
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">Pré-visualização</p>
+                <ImagemComLegenda
+                  src={photoPreviews[0]}
+                  alt="preview"
+                  className="rounded-xl overflow-hidden border border-border"
+                  imgClassName="w-full h-40 object-cover"
+                  badgeTexto={form.badge_texto}
+                  badgeCor={form.badge_cor}
+                  mostrarPreco={form.mostrar_preco_foto}
+                  preco={form.preco ? Number(form.preco) : undefined}
+                />
+              </div>
+            )}
           </div>
 
           </>)}

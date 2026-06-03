@@ -13,6 +13,10 @@ export interface Listing {
   destaque?: boolean;
   tipo?: "venda" | "venda-imovel" | "aluguel-imovel" | "galeria";
   areaM2?: number;
+  // Legendas sobre a foto (opcional)
+  badge_texto?: string | null;
+  badge_cor?: "green" | "blue" | "red" | "amber" | "violet" | "slate" | null;
+  mostrar_preco_foto?: boolean;
 }
 
 export interface EspacoGaleria {

@@ -43,7 +43,23 @@ const ListingCard = ({ listing }: ListingCardProps) => {
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute left-3 top-3 flex gap-2">
+        <div className="absolute left-3 top-3 flex gap-2 flex-wrap">
+          {/* Etiqueta personalizada do admin (LOCAÇÃO, PROMOÇÃO, etc) */}
+          {listing.badge_texto && (
+            <span
+              className={`rounded-md px-3 py-1 text-xs font-bold tracking-wider uppercase shadow-lg text-white ${
+                listing.badge_cor === "blue"   ? "bg-blue-500" :
+                listing.badge_cor === "red"    ? "bg-red-500" :
+                listing.badge_cor === "amber"  ? "bg-amber-500" :
+                listing.badge_cor === "violet" ? "bg-violet-500" :
+                listing.badge_cor === "slate"  ? "bg-slate-800" :
+                "bg-green-500"
+              }`}
+              style={{ letterSpacing: "0.08em" }}
+            >
+              {listing.badge_texto}
+            </span>
+          )}
           {listing.destaque && (
             <div className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
               Destaque
@@ -56,6 +72,16 @@ const ListingCard = ({ listing }: ListingCardProps) => {
             </Badge>
           )}
         </div>
+
+        {/* Preço em destaque sobre a foto (canto inferior direito) */}
+        {listing.mostrar_preco_foto && listing.preco > 0 && (
+          <div className="absolute bottom-3 right-3 rounded-md bg-white/95 backdrop-blur px-3 py-2 shadow-lg">
+            <p className="text-base font-bold text-foreground leading-none whitespace-nowrap">
+              {listing.preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+              {isAluguel && <span className="text-xs font-medium text-muted-foreground">/mês</span>}
+            </p>
+          </div>
+        )}
 
         {/* Botão favorito */}
         <button

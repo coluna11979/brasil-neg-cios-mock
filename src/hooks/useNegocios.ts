@@ -43,6 +43,9 @@ export function adaptNegocio(n: NegocioSupabase): Listing {
     imagem: n.imagem ?? "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800",
     imagens: n.imagens ?? undefined,
     destaque: n.destaque,
+    badge_texto: (n as { badge_texto?: string | null }).badge_texto ?? null,
+    badge_cor: (n as { badge_cor?: Listing["badge_cor"] }).badge_cor ?? null,
+    mostrar_preco_foto: (n as { mostrar_preco_foto?: boolean }).mostrar_preco_foto ?? false,
   };
 }
 

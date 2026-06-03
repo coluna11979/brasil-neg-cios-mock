@@ -187,9 +187,34 @@ Descrição: ${listing.descricao_completa || listing.descricao}`;
                     loading="lazy"
                     className="h-full w-full object-cover transition-opacity duration-300"
                   />
-                  {listing.destaque && (
-                    <div className="absolute left-4 top-4 rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-foreground">
-                      Destaque
+                  <div className="absolute left-4 top-4 flex gap-2 flex-wrap">
+                    {listing.badge_texto && (
+                      <span
+                        className={`rounded-md px-3 py-1.5 text-sm font-bold tracking-wider uppercase shadow-lg text-white ${
+                          listing.badge_cor === "blue"   ? "bg-blue-500" :
+                          listing.badge_cor === "red"    ? "bg-red-500" :
+                          listing.badge_cor === "amber"  ? "bg-amber-500" :
+                          listing.badge_cor === "violet" ? "bg-violet-500" :
+                          listing.badge_cor === "slate"  ? "bg-slate-800" :
+                          "bg-green-500"
+                        }`}
+                        style={{ letterSpacing: "0.08em" }}
+                      >
+                        {listing.badge_texto}
+                      </span>
+                    )}
+                    {listing.destaque && (
+                      <div className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-foreground">
+                        Destaque
+                      </div>
+                    )}
+                  </div>
+                  {listing.mostrar_preco_foto && listing.preco > 0 && (
+                    <div className="absolute bottom-4 right-4 rounded-md bg-white/95 backdrop-blur px-4 py-2.5 shadow-lg">
+                      <p className="text-lg font-bold text-foreground leading-none whitespace-nowrap">
+                        {listing.preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+                        {listing.tipo === "aluguel-imovel" && <span className="text-sm font-medium text-muted-foreground">/mês</span>}
+                      </p>
                     </div>
                   )}
 
