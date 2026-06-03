@@ -371,9 +371,43 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
         )}
 
-        <main className={imersivo ? "flex-1 overflow-hidden" : "flex-1 p-4 md:p-6 overflow-auto"}>
+        <main className={imersivo ? "flex-1 overflow-hidden" : "flex-1 p-4 md:p-6 overflow-auto pb-20 md:pb-6"}>
           {children}
         </main>
+
+        {/* Bottom Navigation Mobile (5 itens principais + "Mais") */}
+        {!imersivo && (
+          <nav
+            className="md:hidden fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+            style={{ paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}
+            aria-label="Navegação principal"
+          >
+            {NAV.slice(0, 4).map(({ to, label, icon: Icon }) => {
+              const active = location.pathname.startsWith(to);
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`flex flex-col items-center justify-center gap-0.5 py-2 transition-colors ${
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${active ? "stroke-[2.4]" : ""}`} />
+                  <span className="text-[10px] font-medium leading-none">{label.split(" ")[0]}</span>
+                </Link>
+              );
+            })}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className={`flex flex-col items-center justify-center gap-0.5 py-2 transition-colors ${
+                mobileOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Menu className="h-5 w-5" />
+              <span className="text-[10px] font-medium leading-none">Mais</span>
+            </button>
+          </nav>
+        )}
       </div>
     </div>
   );

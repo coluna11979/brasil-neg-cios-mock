@@ -170,4 +170,15 @@
       transform: translateY(0);
     }
   }
+
+  /* Safe-area utilities pra dispositivos com notch/home indicator (iOS/Android moderno) */
+  .safe-area-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
 }
