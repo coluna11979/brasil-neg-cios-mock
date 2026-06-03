@@ -410,14 +410,14 @@ const Pipeline = () => {
 
         {/* Kanban */}
         {tab === "vendas" ? (
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-px-4 -mx-4 px-4 md:mx-0 md:px-0 md:snap-none">
             {VENDAS_COLUMNS.map((col) => {
               const colLeads = leads.filter((l) => l.status === col.id);
               const isOver = dragOverLeadCol === col.id;
               return (
                 <div
                   key={col.id}
-                  className={`flex-shrink-0 w-[280px] rounded-xl border transition-all ${
+                  className={`flex-shrink-0 w-[85vw] sm:w-[280px] snap-start rounded-xl border transition-all ${
                     isOver ? "border-primary bg-primary/5 shadow-lg" : "border-border bg-muted/30"
                   }`}
                   onDragOver={(e) => { e.preventDefault(); setDragOverLeadCol(col.id); }}
@@ -506,7 +506,7 @@ const Pipeline = () => {
           </div>
         ) : (
           /* Captação Kanban */
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-px-4 -mx-4 px-4 md:mx-0 md:px-0 md:snap-none">
             {CAPTACAO_COLUMNS.map((col) => {
               const colCaps = captacoes.filter((c) => c.status === col.id);
               const isOver = dragOverCapCol === col.id;

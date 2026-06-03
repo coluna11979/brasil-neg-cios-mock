@@ -386,10 +386,10 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4"
+      className="fixed inset-0 z-50 flex items-stretch sm:items-start sm:justify-center bg-black/50 backdrop-blur-sm overflow-y-auto sm:py-6 sm:px-4"
       onClick={handleBackdrop}
     >
-      <div className="relative w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl">
+      <div className="relative w-full max-w-2xl bg-card shadow-2xl min-h-full sm:min-h-0 sm:rounded-2xl sm:border sm:border-border">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
@@ -1059,10 +1059,10 @@ const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModalProps) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4"
+      className="fixed inset-0 z-50 flex items-stretch sm:items-start sm:justify-center bg-black/50 backdrop-blur-sm overflow-y-auto sm:py-6 sm:px-4"
       onClick={handleBackdrop}
     >
-      <div className="relative w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl">
+      <div className="relative w-full max-w-2xl bg-card shadow-2xl min-h-full sm:min-h-0 sm:rounded-2xl sm:border sm:border-border">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
