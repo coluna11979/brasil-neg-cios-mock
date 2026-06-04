@@ -53,6 +53,7 @@ const TEMAS_COR: TemaCor[] = [
 const SELOS_PRESET = [
   "À VENDA",
   "ALUGA-SE",
+  "ESPAÇO DISPONÍVEL",
   "OPORTUNIDADE",
   "PASSA-PONTO",
   "PREÇO REDUZIDO",
@@ -64,6 +65,29 @@ const SELOS_PRESET = [
 
 const titleCase = (s: string) =>
   s.toLowerCase().replace(/(^|\s|-)([a-zà-ú])/g, (_, sep, ch) => sep + ch.toUpperCase());
+
+// Se o título tem " – " ou " — " ou " - ", separa em [título, bairro].
+// Ex: "Salão de Beleza Premium – Jardins" → titulo: "Salão de Beleza Premium", bairro: "Jardins"
+function splitTituloBairro(t: string): { titulo: string; bairro: string } {
+  if (!t) return { titulo: "", bairro: "" };
+  const m = t.match(/^(.+?)\s+[–—-]\s+(.+)$/);
+  if (m) return { titulo: m[1].trim(), bairro: m[2].trim() };
+  return { titulo: t.trim(), bairro: "" };
+}
+
+// Mapeia cada selo pra cor de tema padrão — garante consistência visual no grid
+const SELO_TO_TEMA: Record<string, string> = {
+  "À VENDA":           "cyan",
+  "ALUGA-SE":          "cyan",
+  "ESPAÇO DISPONÍVEL": "cyan",
+  "OPORTUNIDADE":      "cyan",
+  "PASSA-PONTO":     "violet",
+  "PREÇO REDUZIDO":  "red",
+  "NOVO":            "cyan",
+  "URGENTE":         "red",
+  "VENDIDO":         "green",
+  "ALUGOU":          "green",
+};
 
 // A tabela negocios pode ter foto em `imagens` (array), `imagem` (single) ou `foto_url`
 // Galerias mapeadas pra Negocio também caem aqui pelo foto_url.
@@ -87,12 +111,15 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
   const [imgSrc, setImgSrc] = useState<string>(() => pickInitialPhoto(negocio));
   const [imgLoading, setImgLoading] = useState(false);
   const [headline, setHeadline] = useState("À VENDA");
-  const [titulo, setTitulo] = useState(negocio.titulo || "");
-  const [local, setLocal] = useState(
-    negocio.bairro
-      ? titleCase(negocio.bairro)
-      : `${titleCase(negocio.cidade || "")}${negocio.estado ? `, ${negocio.estado.toUpperCase()}` : ""}`
-  );
+  // Auto-split: se título tem " – ", separa em título + bairro pra não truncar no grid
+  const initialSplit = splitTituloBairro(negocio.titulo || "");
+  const [titulo, setTitulo] = useState(initialSplit.titulo);
+  const [local, setLocal] = useState(() => {
+    // Prioridade: bairro extraído do título > bairro do cadastro > cidade/UF
+    if (initialSplit.bairro) return initialSplit.bairro;
+    if (negocio.bairro) return titleCase(negocio.bairro);
+    return `${titleCase(negocio.cidade || "")}${negocio.estado ? `, ${negocio.estado.toUpperCase()}` : ""}`;
+  });
   const [preco, setPreco] = useState(negocio.preco ? formatCurrencyShort(negocio.preco) : "");
   const [faturamento, setFaturamento] = useState(
     negocio.faturamento_mensal ? formatCurrencyShort(negocio.faturamento_mensal) : ""
@@ -101,6 +128,8 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
   const [locacao, setLocacao] = useState("");
   const [tema, setTema] = useState<TemaCor>(TEMAS_COR[0]);
   const [customColor, setCustomColor] = useState("#00E6FF");
+  const [showCTA, setShowCTA] = useState(false);
+  const [ctaText, setCtaText] = useState("💬 INTERESSE? MANDE DM");
   // Qual métrica fica no pill destacado (estilo META)
   type DestaqueMetrica = "valor" | "lucro" | "faturamento" | "locacao";
   const [destaque, setDestaque] = useState<DestaqueMetrica>("valor");
@@ -164,7 +193,7 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
   useEffect(() => {
     drawCanvas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formato, headline, titulo, local, preco, faturamento, lucro, locacao, tema, customColor, destaque, fontsReady]);
+  }, [formato, headline, titulo, local, preco, faturamento, lucro, locacao, tema, customColor, destaque, showCTA, ctaText, fontsReady]);
 
   // Easings + helper de visibilidade animada
   function vis(t: number, start: number, end: number): number {
@@ -232,7 +261,8 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
     ctx.fillRect(0, 0, w, h);
 
     // ── BLOCO 1: TÍTULO + BAIRRO (TOPO CENTRALIZADO) ──────────────────────
-    const tituloAreaTop = safeTop + (isStory ? 100 : 90);
+    // Espaço extra reservado pro selo + respiro
+    const tituloAreaTop = safeTop + (isStory ? 160 : 140);
     const tituloMaxW = w - padX * 2;
 
     // Auto-shrink no título
@@ -259,25 +289,56 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
     ctx.shadowOffsetY = 0;
     ctx.globalAlpha = 1;
 
-    // Bairro / Local (subtítulo centralizado, leve) — anim 0.20 → 0.38
+    // Bairro / Local — quando tem múltiplas linhas, vira EYEBROW + INFO PRINCIPAL
+    // (hierarquia tipográfica estilo editorial)
     let afterSubY = tituloEndY;
     if (local.trim()) {
       const localVis = easeOutCubic(vis(animT, 0.20, 0.38));
       const localYOff = lerp(20, 0, localVis);
       ctx.globalAlpha = localVis;
-      const localSize = isStory ? 54 : 48;
-      ctx.font = `500 ${localSize}px Poppins, sans-serif`;
-      ctx.fillStyle = "rgba(255,255,255,0.92)";
       ctx.textAlign = "center";
       ctx.shadowColor = "rgba(0,0,0,0.8)";
       ctx.shadowBlur = 16;
       ctx.shadowOffsetY = 4;
-      const subY = tituloEndY + (isStory ? 50 : 40) + localSize;
-      ctx.fillText(local, cx, subY + localYOff);
+
+      const localLines = local.split("\n").map((l) => l.trim()).filter(Boolean);
+
+      if (localLines.length === 1) {
+        // ── Linha única: render normal
+        const localSize = isStory ? 54 : 48;
+        ctx.font = `500 ${localSize}px Poppins, sans-serif`;
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        const subY = tituloEndY + (isStory ? 50 : 40) + localSize;
+        ctx.fillText(localLines[0], cx, subY + localYOff);
+        afterSubY = subY;
+      } else {
+        // ── 2+ linhas: HIERARQUIA EDITORIAL
+        // Linha 1 → eyebrow (pequena, tracked, opacidade 70%)
+        // Linhas 2+ → info principal (maior, peso medium, branco)
+        const eyebrowSize = isStory ? 28 : 24;
+        const mainSize = isStory ? 56 : 50;
+        const eyebrowGap = isStory ? 18 : 14;
+        const mainLineH = mainSize * 1.1;
+
+        // Eyebrow (linha 1)
+        ctx.font = `700 ${eyebrowSize}px Poppins, sans-serif`;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        const eyebrowY = tituloEndY + (isStory ? 50 : 40) + eyebrowSize;
+        drawTracked(ctx, localLines[0].toUpperCase(), cx, eyebrowY + localYOff, isStory ? 4 : 3, "center");
+
+        // Info principal (linhas 2+)
+        ctx.font = `600 ${mainSize}px Poppins, sans-serif`;
+        ctx.fillStyle = "#fff";
+        const mainFirstY = eyebrowY + eyebrowGap + mainSize;
+        for (let i = 1; i < localLines.length; i++) {
+          ctx.fillText(localLines[i], cx, mainFirstY + (i - 1) * mainLineH + localYOff);
+        }
+        afterSubY = mainFirstY + (localLines.length - 2) * mainLineH;
+      }
+
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
       ctx.globalAlpha = 1;
-      afterSubY = subY;
     }
 
     // ── BLOCO 3: ASSINATURA DA MARCA (rodapé centralizado) ────────────────
@@ -289,15 +350,69 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
     const gapLogoWord = isStory ? 22 : 18;
     const gapWordTag = isStory ? 18 : 14;
     const brandH = logoSize + gapLogoWord + wordmarkSize + gapWordTag + taglineSize;
+    const ctaH = showCTA && ctaText.trim() ? (isStory ? 70 : 56) : 0;
+    const ctaGap = ctaH > 0 ? (isStory ? 40 : 32) : 0;
     const brandBottomMargin = isStory ? safeBottom + 50 : 70;
     const brandTopY = h - brandBottomMargin - brandH;
+    const ctaY = brandTopY - ctaGap - ctaH;
+
+    // ── CTA opcional (acima da marca) ─────────────────────────────────────
+    if (showCTA && ctaText.trim()) {
+      const ctaFontSize = isStory ? 32 : 28;
+      ctx.font = `800 ${ctaFontSize}px Poppins, sans-serif`;
+      const text = ctaText.toUpperCase();
+      const textW = ctx.measureText(text).width;
+
+      // Pill pill com border na cor do tema
+      const padX = isStory ? 36 : 30;
+      const pillW = textW + padX * 2;
+      const pillX = cx - pillW / 2;
+
+      ctx.save();
+      // Aplica fade-in junto com o resto da marca na animação
+      const ctaAlpha = animT === 1 ? 1 : easeOutCubic(vis(animT, 0.72, 0.90));
+      ctx.globalAlpha = ctaAlpha;
+
+      // Sombra suave
+      ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+      ctx.shadowBlur = 20;
+      ctx.shadowOffsetY = 6;
+      roundRect(ctx, pillX, ctaY, pillW, ctaH, ctaH / 2);
+      ctx.fillStyle = "rgba(13, 17, 23, 0.7)";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+
+      // Border na cor do tema
+      ctx.strokeStyle = ACCENT;
+      ctx.lineWidth = 3;
+      roundRect(ctx, pillX, ctaY, pillW, ctaH, ctaH / 2);
+      ctx.stroke();
+
+      // Texto
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, cx, ctaY + ctaH / 2 + 2);
+      ctx.textBaseline = "alphabetic";
+      ctx.restore();
+    }
 
     // Anim marca: fade-in 0.78 → 0.95
     const brandVis = easeOutCubic(vis(animT, 0.78, 0.95));
     ctx.globalAlpha = brandVis;
 
-    // Ícone transparente centralizado
+    // Ícone transparente centralizado — com glow sutil na cor do tema
     if (logoElRef.current) {
+      // Halo glow atrás (radial gradient sutil)
+      const glowR = logoSize * 0.9;
+      const glow = ctx.createRadialGradient(cx, brandTopY + logoSize / 2, 0, cx, brandTopY + logoSize / 2, glowR);
+      glow.addColorStop(0, hexToRgba(ACCENT, 0.35));
+      glow.addColorStop(0.5, hexToRgba(ACCENT, 0.15));
+      glow.addColorStop(1, hexToRgba(ACCENT, 0));
+      ctx.fillStyle = glow;
+      ctx.fillRect(cx - glowR, brandTopY + logoSize / 2 - glowR, glowR * 2, glowR * 2);
+      // Logo por cima
       ctx.drawImage(logoElRef.current, cx - logoSize / 2, brandTopY, logoSize, logoSize);
     }
 
@@ -356,8 +471,8 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
 
     const hasHero = hero !== null;
     const fatValueSize = isStory ? 66 : 56;
-    const pillValueSize = isStory ? 76 : 66;
-    const pillH = pillValueSize + (isStory ? 52 : 44);
+    const pillValueSize = isStory ? 86 : 76;
+    const pillH = pillValueSize + (isStory ? 56 : 48);
     const lineGap = isStory ? 22 : 16;
     const pillGapTop = isStory ? 36 : 28;
     const totalMetricsH =
@@ -366,7 +481,17 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
       (textMetrics.length > 0 && hasHero ? pillGapTop : 0) +
       (hasHero ? pillH : 0);
 
-    let metricsY = metricsAreaTop + Math.max(0, (metricsAreaH - totalMetricsH) / 2);
+    // Posição vertical das métricas:
+    // - se tem TEXTO + pill → centraliza no espaço disponível
+    // - se tem SÓ pill (vazio em volta) → aproxima do subtítulo pra evitar void visual
+    let metricsY: number;
+    if (textMetrics.length === 0 && hasHero) {
+      // Só o pill: posiciona em ~30% do espaço (mais próximo do subtítulo)
+      metricsY = metricsAreaTop + Math.max(0, metricsAreaH * 0.25);
+    } else {
+      // Texto + pill: centraliza normalmente
+      metricsY = metricsAreaTop + Math.max(0, (metricsAreaH - totalMetricsH) / 2);
+    }
 
     // Renderiza cada métrica textual (centralizada) — anim em cascata
     for (let i = 0; i < textMetrics.length; i++) {
@@ -416,7 +541,7 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
       const pillAlpha = vis(animT, 0.62, 0.78);
       ctx.globalAlpha = pillAlpha;
 
-      const pillLabelSize = isStory ? 60 : 52;
+      const pillLabelSize = isStory ? 68 : 60;
       const pillLabelText = `${hero.label}: `;
       const pillValueText = hero.value;
 
@@ -425,7 +550,7 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
       ctx.font = `900 ${pillValueSize}px Poppins, sans-serif`;
       const valueW = ctx.measureText(pillValueText).width;
 
-      const pillPadX = isStory ? 56 : 48;
+      const pillPadX = isStory ? 64 : 56;
       const pillW = labelW + valueW + pillPadX * 2;
       const pillX = cx - pillW / 2;
       const pillY = metricsY;
@@ -471,16 +596,15 @@ const PublicarRedesModal = ({ negocio, onClose }: Props) => {
       ctx.globalAlpha = 1;
     }
 
-    // ── SELO discreto opcional (canto superior, só se for headline custom) ─
-    // No estilo META não tem badge — só desenha se o usuário quis um destaque diferente do default
-    if (headline.trim() && headline.toUpperCase() !== "À VENDA") {
-      ctx.font = `800 ${isStory ? 34 : 28}px Poppins, sans-serif`;
+    // ── SELO no topo (sempre desenha quando preenchido — inclusive À VENDA) ─
+    if (headline.trim()) {
+      ctx.font = `800 ${isStory ? 48 : 42}px Poppins, sans-serif`;
       const text = headline.toUpperCase();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const metrics = ctx.measureText(text);
-      const bw = metrics.width + 44;
-      const bh = isStory ? 60 : 52;
+      const bw = metrics.width + 64;
+      const bh = isStory ? 82 : 72;
       const bx = cx - bw / 2;
       const by = safeTop + (isStory ? 30 : 30);
 
@@ -882,7 +1006,23 @@ REGRAS:
                   {SELOS_PRESET.map((s) => (
                     <button
                       key={s}
-                      onClick={() => setHeadline(s)}
+                      onClick={() => {
+                        setHeadline(s);
+                        // Auto-aplica tema de cor associado ao selo (consistência no grid)
+                        const temaId = SELO_TO_TEMA[s];
+                        if (temaId) {
+                          const t = TEMAS_COR.find((x) => x.id === temaId);
+                          if (t) setTema(t);
+                        }
+                        // Auto-ativa/desativa CTA:
+                        // - desativa pra VENDIDO/ALUGOU (negócio já fechado)
+                        // - ativa pra todos os outros (aumenta conversão)
+                        if (s === "VENDIDO" || s === "ALUGOU") {
+                          setShowCTA(false);
+                        } else {
+                          setShowCTA(true);
+                        }
+                      }}
                       className={`rounded-full px-3 py-2 sm:px-2.5 sm:py-1 text-sm sm:text-xs font-bold transition-all active:scale-95 ${
                         headline === s
                           ? "bg-primary text-primary-foreground"
@@ -959,24 +1099,53 @@ REGRAS:
 
               <div className="space-y-3">
                 <div>
-                  <Label className="text-sm sm:text-xs text-muted-foreground font-semibold">Título do anúncio</Label>
-                  <Input
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-sm sm:text-xs text-muted-foreground font-semibold">
+                      Título do anúncio
+                      <span className="font-normal text-muted-foreground/70 ml-1">(Enter quebra linha)</span>
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={() => setTitulo(smartTitleCase(titulo))}
+                      className="flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-1 text-[11px] sm:text-[10px] font-bold text-amber-700 hover:bg-amber-100 active:scale-95 transition-all"
+                      title="Formatar em Title Case"
+                    >
+                      Aa
+                    </button>
+                  </div>
+                  <Textarea
                     value={titulo}
                     onChange={(e) => setTitulo(e.target.value)}
-                    className="mt-1 h-11 sm:h-9 text-base sm:text-sm font-medium"
-                    maxLength={80}
+                    rows={2}
+                    maxLength={120}
+                    className="text-base sm:text-sm font-medium resize-none"
                   />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1 mb-1">
-                    <MapPin className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-muted-foreground" />
-                    <Label className="text-sm sm:text-xs text-muted-foreground font-semibold">Local / Bairro</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-muted-foreground" />
+                      <Label className="text-sm sm:text-xs text-muted-foreground font-semibold">
+                        Local / Bairro
+                        <span className="font-normal text-muted-foreground/70 ml-1">(Enter quebra linha)</span>
+                      </Label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLocal(smartTitleCase(local))}
+                      className="flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-1 text-[11px] sm:text-[10px] font-bold text-amber-700 hover:bg-amber-100 active:scale-95 transition-all"
+                      title="Formatar em Title Case"
+                    >
+                      Aa
+                    </button>
                   </div>
-                  <Input
+                  <Textarea
                     value={local}
                     onChange={(e) => setLocal(e.target.value)}
                     placeholder="Pinheiros"
-                    className="h-11 sm:h-9 text-base sm:text-sm"
+                    rows={2}
+                    maxLength={120}
+                    className="text-base sm:text-sm resize-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1056,6 +1225,68 @@ REGRAS:
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Toggle: CTA opcional no rodapé */}
+                <div className="rounded-lg border border-border bg-muted/30 p-2.5 mt-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <Label className="text-sm sm:text-xs font-bold flex items-center gap-1.5">
+                        <Megaphone className="h-3.5 w-3.5 sm:h-3 sm:w-3 text-primary" />
+                        CTA opcional (acima da logo)
+                      </Label>
+                      <p className="text-xs sm:text-[11px] text-muted-foreground mt-1 leading-tight">
+                        Adiciona um pill com chamada pra ação no rodapé
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCTA(!showCTA)}
+                      role="switch"
+                      aria-checked={showCTA}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors active:scale-95 ${
+                        showCTA ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                          showCTA ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {showCTA && (
+                    <div className="mt-2.5 space-y-2">
+                      <Input
+                        value={ctaText}
+                        onChange={(e) => setCtaText(e.target.value)}
+                        placeholder="Texto do CTA"
+                        maxLength={40}
+                        className="h-11 sm:h-9 text-base sm:text-sm font-semibold"
+                      />
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          "💬 INTERESSE? MANDE DM",
+                          "📲 LINK NA BIO",
+                          "🔗 NEGOCIAAKY.COM.BR",
+                          "👇 CHAMA NO WHATS",
+                          "📞 AGENDE UMA VISITA",
+                        ].map((preset) => (
+                          <button
+                            key={preset}
+                            onClick={() => setCtaText(preset)}
+                            className={`rounded-full px-2.5 py-1 text-xs sm:text-[11px] font-bold transition-all active:scale-95 ${
+                              ctaText === preset
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1319,6 +1550,24 @@ function formatCurrencyShort(v: number): string {
   return `R$ ${v.toLocaleString("pt-BR")}`;
 }
 
+// Title Case brasileiro — mantém preposições/artigos curtos em minúsculo
+function smartTitleCase(s: string): string {
+  if (!s) return s;
+  const minor = new Set([
+    "de","da","do","das","dos","e","em","a","o","na","no",
+    "com","por","para","pelo","pela","ao","aos","às","à"
+  ]);
+  return s.split("\n").map((line) =>
+    line.split(/\s+/).map((w, i) => {
+      const lower = w.toLowerCase();
+      // Preserva sigla/abreviação se já tava toda em CAPS (ex: SP, CEP, EST.)
+      if (w.length > 1 && w === w.toUpperCase() && /[A-Z]/.test(w)) return w;
+      if (i > 0 && minor.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    }).join(" ")
+  ).join("\n");
+}
+
 // Converte hex (#RRGGBB ou #RGB) pra rgba com alpha
 function hexToRgba(hex: string, alpha: number): string {
   let h = hex.replace("#", "");
@@ -1356,20 +1605,26 @@ function countLines(
   ctx: CanvasRenderingContext2D,
   text: string, maxW: number, maxLines: number
 ): number {
-  const words = (text || "").split(/\s+/);
-  let line = ""; let lines = 0;
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxW && line) {
-      lines++;
-      line = word;
-      if (lines >= maxLines) return maxLines;
-    } else {
-      line = test;
+  // Quebras manuais (\n) contam como linhas extras
+  const segments = (text || "").split("\n").map((s) => s.trim()).filter(Boolean);
+  let total = 0;
+  for (const seg of segments) {
+    const words = seg.split(/\s+/);
+    let line = "";
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > maxW && line) {
+        total++;
+        line = word;
+        if (total >= maxLines) return maxLines;
+      } else {
+        line = test;
+      }
     }
+    if (line) total++;
+    if (total >= maxLines) return maxLines;
   }
-  if (line) lines++;
-  return Math.min(lines, maxLines);
+  return Math.min(total, maxLines);
 }
 
 function wrapText(
@@ -1408,35 +1663,46 @@ function wrapTextCenter(
   ctx: CanvasRenderingContext2D,
   text: string, cx: number, y: number, maxW: number, lh: number, maxLines: number
 ): number {
-  const words = (text || "").split(/\s+/);
+  // Respeita quebras manuais (\n) primeiro, depois auto-wrap em cada segmento
+  const manualSegments = (text || "").split("\n").map((s) => s.trim()).filter(Boolean);
   const lines: string[] = [];
-  let line = "";
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxW && line) {
-      lines.push(line);
-      line = word;
-      if (lines.length === maxLines - 1) {
-        const idx = words.indexOf(word);
-        const rest = [word, ...words.slice(idx + 1)].join(" ");
-        let last = rest;
-        while (ctx.measureText(last + "…").width > maxW && last.length > 0) {
-          last = last.slice(0, -1);
-        }
-        lines.push(last + (rest.length > last.length ? "…" : ""));
-        line = "";
-        break;
+
+  const pushWithAutoWrap = (segment: string) => {
+    const words = segment.split(/\s+/);
+    let line = "";
+    for (const word of words) {
+      if (lines.length >= maxLines) return;
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > maxW && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
       }
-    } else {
-      line = test;
+    }
+    if (line && lines.length < maxLines) lines.push(line);
+  };
+
+  for (const seg of manualSegments) {
+    if (lines.length >= maxLines) break;
+    pushWithAutoWrap(seg);
+  }
+
+  // Trunca última linha se ainda tem texto sobrando (estourou maxLines)
+  if (lines.length === maxLines) {
+    const last = lines[maxLines - 1];
+    if (ctx.measureText(last).width > maxW) {
+      let t = last;
+      while (ctx.measureText(t + "…").width > maxW && t.length > 0) t = t.slice(0, -1);
+      lines[maxLines - 1] = t + "…";
     }
   }
-  if (line && lines.length < maxLines) lines.push(line);
+
   const prevAlign = ctx.textAlign;
   ctx.textAlign = "center";
   lines.forEach((l, i) => ctx.fillText(l, cx, y + i * lh));
   ctx.textAlign = prevAlign;
-  return y + (lines.length - 1) * lh;
+  return y + (Math.max(1, lines.length) - 1) * lh;
 }
 
 // Formato de legenda inspirado no META Negócios:
