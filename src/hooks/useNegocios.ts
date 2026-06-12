@@ -206,6 +206,8 @@ export function useGalerias() {
         .from("galerias")
         .select("*, espacos:espacos_galeria(*)")
         .eq("estado", "SP")
+        // Só galerias ativas aparecem no site público (rejeitadas/pendentes ficam ocultas)
+        .or("status.is.null,status.eq.ativo")
         .order("criado_em", { ascending: false });
       setGalerias(data || []);
       setLoading(false);

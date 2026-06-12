@@ -1830,12 +1830,13 @@ const AdminNegocios = () => {
       // Busca galerias e mescla na mesma lista (mapeadas para shape de Negocio)
       const { data: galeriasData } = await supabase
         .from("galerias")
-        .select("id, nome, cidade, estado, endereco, descricao, imagem, criado_em, espacos_galeria(count)")
+        .select("id, nome, cidade, estado, endereco, descricao, imagem, status, criado_em, espacos_galeria(count)")
         .order("criado_em", { ascending: false });
 
       const galeriasMapped: Negocio[] = (galeriasData || []).map((g: {
         id: string; nome: string; cidade: string; estado: string;
         endereco: string; descricao: string | null; imagem: string | null;
+        status?: string;
         criado_em: string;
         espacos_galeria?: { count: number }[];
       }) => {
@@ -1852,7 +1853,7 @@ const AdminNegocios = () => {
           faturamento_mensal: null,
           area_m2: null,
           descricao: g.descricao || "",
-          status: "ativo" as Negocio["status"],
+          status: (g.status || "ativo") as Negocio["status"],
           proprietario_nome: "",
           proprietario_telefone: null,
           proprietario_email: "",
@@ -1874,10 +1875,14 @@ const AdminNegocios = () => {
 
   const handleStatusChange = async (id: string, newStatus: Negocio["status"]) => {
     setUpdating(id);
-    const ok = await updateNegocioStatus(id, newStatus);
+    // Detecta se é galeria (tem "Galeria ·" na categoria mapeada)
+    const item = negocios.find((n) => n.id === id);
+    const isGaleria = (item as { tipo?: string })?.tipo === "galeria";
+    const ok = isGaleria
+      ? !(await supabase.from("galerias").update({ status: newStatus }).eq("id", id)).error
+      : await updateNegocioStatus(id, newStatus);
     if (ok) {
       setNegocios((prev) => prev.map((n) => (n.id === id ? { ...n, status: newStatus } : n)));
-      // #5 — toast pra confirmar que o item realmente saiu do ar
       if (newStatus === "rejeitado") {
         try { (window as unknown as { sonner?: { toast: (msg: string) => void } }).sonner?.toast("Anúncio rejeitado — não aparece mais no site"); } catch { /* */ }
       }
