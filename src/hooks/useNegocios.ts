@@ -44,6 +44,7 @@ export function adaptNegocio(n: NegocioSupabase): Listing {
     tipo: n.tipo as Listing["tipo"],
     cidade: n.cidade,
     estado: n.estado,
+    bairro: n.bairro,
     preco: n.preco,
     faturamentoMensal: n.faturamento_mensal,
     areaM2: n.area_m2 ?? undefined,

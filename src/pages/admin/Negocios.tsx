@@ -1294,6 +1294,7 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
     categoria: negocio.categoria,
     cidade: negocio.cidade,
     estado: negocio.estado,
+    bairro: (negocio as Negocio & { bairro?: string | null }).bairro ?? "",
     preco: negocio.preco?.toString() ?? "",
     faturamento_mensal: negocio.faturamento_mensal?.toString() ?? "",
     area_m2: negocio.area_m2?.toString() ?? "",
@@ -1404,6 +1405,7 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
       categoria: form.categoria,
       cidade: form.cidade,
       estado: form.estado,
+      bairro: form.bairro || null,
       preco: form.preco ? Number(form.preco) : undefined,
       faturamento_mensal: form.faturamento_mensal ? Number(form.faturamento_mensal) : undefined,
       area_m2: form.area_m2 ? Number(form.area_m2) : undefined,
@@ -1727,6 +1729,20 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
                   </SelectContent>
                 </Select>
                 {errors.estado && <p className="mt-1 text-xs text-destructive">{errors.estado}</p>}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="e-bairro">Bairro / Região</Label>
+              <div className="relative mt-1.5">
+                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="e-bairro"
+                  name="bairro"
+                  value={form.bairro}
+                  onChange={handleChange}
+                  placeholder="Ex: Pinheiros, Moema, Centro..."
+                  className="pl-10"
+                />
               </div>
             </div>
             <div>

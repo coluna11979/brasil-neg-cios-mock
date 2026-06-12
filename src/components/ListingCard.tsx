@@ -111,6 +111,7 @@ const ListingCard = ({ listing }: ListingCardProps) => {
         <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
           <MapPin className="h-4 w-4" />
           <span>
+            {listing.bairro ? `${listing.bairro} · ` : ""}
             {listing.cidade}, {listing.estado}
           </span>
         </div>

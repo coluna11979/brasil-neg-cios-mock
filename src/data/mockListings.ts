@@ -4,6 +4,7 @@ export interface Listing {
   categoria: string;
   cidade: string;
   estado: string;
+  bairro?: string | null;
   preco: number;
   faturamentoMensal: number;
   descricao: string;

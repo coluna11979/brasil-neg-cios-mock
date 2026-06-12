@@ -71,7 +71,7 @@ const Anuncio = () => {
 ---
 Negócio: ${listing.titulo}
 Categoria: ${getCategoryName(listing.categoria)}
-Localização: ${listing.cidade}, ${listing.estado}
+Localização: ${listing.bairro ? `${listing.bairro} · ` : ""}${listing.cidade}, ${listing.estado}
 Preço: ${formatCurrency(listing.preco)}
 ${listing.faturamento_mensal > 0 ? `Faturamento mensal: ${formatCurrency(listing.faturamento_mensal)}\nRetorno estimado: ~${Math.round(listing.preco / listing.faturamento_mensal)} meses` : ""}
 ${listing.area_m2 ? `Área: ${listing.area_m2}m²` : ""}
@@ -275,6 +275,7 @@ Descrição: ${listing.descricao_completa || listing.descricao}`;
                 <div className="mt-3 flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-5 w-5" />
                   <span className="text-lg">
+                    {listing.bairro ? `${listing.bairro} · ` : ""}
                     {listing.cidade}, {listing.estado}
                   </span>
                 </div>

@@ -99,6 +99,47 @@ const Busca = () => {
     bairro: bairro || undefined,
   });
 
+  // Para o filtro dinâmico de bairro — busca sem aplicar o filtro de bairro
+  // pra extrair quais bairros têm resultado dentro do tipo/categoria/preço atuais.
+  const { negocios: negociosParaBairros } = useNegocios({
+    categoria: categoria || undefined,
+    tipo: tipo || undefined,
+    busca: busca || undefined,
+    preco_min: faixa?.min,
+    preco_max: faixa?.max,
+    faturamento_min: faturamentoMin > 0 ? faturamentoMin : undefined,
+  });
+
+  // Monta as opções do dropdown a partir dos bairros REAIS salvos nos negócios.
+  // Une com a lista canônica BAIRROS_SP (zonas + bairros conhecidos) quando aparecem
+  // no título/descrição. O bairro selecionado nunca some. Fallback pra lista completa
+  // quando não há nenhum resultado (filtros muito restritivos).
+  const bairrosDisponiveis = (() => {
+    if (negociosParaBairros.length === 0) return BAIRROS_SP;
+
+    const set = new Set<string>();
+
+    // 1. Bairros gravados diretamente no cadastro (fonte da verdade)
+    negociosParaBairros.forEach((n) => {
+      const b = (n as { bairro?: string | null }).bairro?.trim();
+      if (b) set.add(b);
+    });
+
+    // 2. Zonas/bairros canônicos que aparecem em título ou descrição
+    const textos = negociosParaBairros
+      .map((n) => `${n.titulo || ""} ${n.descricao || ""}`.toLowerCase())
+      .join(" | ");
+    BAIRROS_SP.forEach((b) => {
+      if (textos.includes(b.toLowerCase())) set.add(b);
+    });
+
+    // 3. Mantém o bairro atualmente selecionado visível
+    if (bairro) set.add(bairro);
+
+    const list = Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return list.length > 0 ? list : BAIRROS_SP;
+  })();
+
   const filteredListings = negociosRaw.map(adaptNegocio);
   const hasActiveFilters = categoria || tipo || preco || busca || faturamentoMin > 0 || bairro;
 
@@ -312,7 +353,7 @@ const Busca = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Qualquer bairro</SelectItem>
-                  {BAIRROS_SP.map((b) => (
+                  {bairrosDisponiveis.map((b) => (
                     <SelectItem key={b} value={b}>{b}</SelectItem>
                   ))}
                 </SelectContent>
