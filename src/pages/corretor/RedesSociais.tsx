@@ -38,6 +38,46 @@ function formatPhone(tel: string) {
   if (d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
   return tel;
 }
+// Nunca exibe "Administrador" nas artes. Quando o nome é vazio ou genérico,
+// usa o nome da marca como assinatura institucional.
+function getDisplayName(name: string) {
+  const n = (name || "").trim();
+  if (!n || n.toLowerCase() === "administrador") return "NegociaAky";
+  return n;
+}
+function getDisplayRole(name: string) {
+  const n = (name || "").trim();
+  if (!n || n.toLowerCase() === "administrador") return "Plataforma de Negócios";
+  return "Corretor de Negócios";
+}
+// Detecta se o negócio é locação/aluguel (vs venda).
+// Olha badge_texto, descrição (campo "Operação: Locação") e título.
+function isLocacao(n: Negocio): boolean {
+  const badge = (n.badge_texto || "").toUpperCase();
+  if (badge.includes("LOCAÇÃO") || badge.includes("LOCACAO") || badge.includes("ALUGUEL")) return true;
+  const txt = `${n.descricao || ""} ${n.titulo || ""}`.toLowerCase();
+  if (txt.includes("operação: locação") || txt.includes("operacao: locacao")) return true;
+  if (txt.includes("operação: venda e locação")) return true;
+  return false;
+}
+// Mantém o bairro como o corretor cadastrou (inclui sub-localização tipo "Jardim Ângela - Menininha").
+function cleanBairro(bairro: string | null | undefined): string {
+  return (bairro || "").trim();
+}
+// Rótulos contextuais (venda vs locação)
+function valueLabel(n: Negocio) { return isLocacao(n) ? "Valor do Aluguel" : "Valor de Venda"; }
+function ctaLabel(n: Negocio)   { return isLocacao(n) ? "📲 Quero alugar!"  : "📲 Quero esse negócio!"; }
+function opLabel(n: Negocio)    { return isLocacao(n) ? "LOCAÇÃO"           : "VENDA"; }
+// True quando o profile é a assinatura institucional NegociaAky (sem corretor real logado).
+function isInstitutional(name: string) {
+  const n = (name || "").trim();
+  return !n || n.toLowerCase() === "administrador";
+}
+// Localização compacta priorizando o bairro
+function localText(n: Negocio) {
+  const b = cleanBairro((n as Negocio & { bairro?: string | null }).bairro);
+  return b || n.cidade;
+}
 
 // ─── POST INSTAGRAM (360×360) ─────────────────────────────────────────────────
 function PostInstagram({ negocio, profile, divRef }: {
@@ -76,14 +116,15 @@ function PostInstagram({ negocio, profile, divRef }: {
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 200, height: 200, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}20 0%, transparent 70%)` }} />
         </>}
 
-        {/* Top bar overlaid */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 2 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 26, height: 26, borderRadius: 6, background: c.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "#000" }}>NJ</div>
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8.5, letterSpacing: 1.5, textTransform: "uppercase" }}>NegociaAky</span>
-          </div>
-          <div style={{ background: "rgba(0,0,0,0.45)", border: `1px solid ${c.accent}80`, borderRadius: 20, padding: "2px 8px", fontSize: 8.5, color: c.light, letterSpacing: 0.5 }}>
-            {negocio.categoria}
+        {/* Top bar — só badges (operação + categoria) à direita; marca vai no rodapé */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", zIndex: 2 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+            <div style={{ background: c.accent, color: "#000", borderRadius: 20, padding: "3px 11px", fontSize: 9, fontWeight: 900, letterSpacing: 1, boxShadow: "0 2px 8px rgba(0,0,0,0.35)" }}>
+              {opLabel(negocio)}
+            </div>
+            <div style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${c.accent}60`, borderRadius: 20, padding: "2px 9px", fontSize: 7.5, color: c.light, letterSpacing: 0.3 }}>
+              {negocio.categoria}
+            </div>
           </div>
         </div>
 
@@ -114,17 +155,22 @@ function PostInstagram({ negocio, profile, divRef }: {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {negocio.preco && (
               <div style={{ background: `${c.accent}22`, border: `1px solid ${c.accent}50`, borderRadius: 6, padding: "3px 8px", fontSize: 10, color: c.accent, fontWeight: 700 }}>
-                💰 {formatCurrency(negocio.preco)}
+                💰 {formatCurrency(negocio.preco)}{isLocacao(negocio) ? "/mês" : ""}
               </div>
             )}
-            {negocio.faturamento_mensal && (
+            {negocio.area_m2 && (
+              <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: 6, padding: "3px 8px", fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
+                📐 {negocio.area_m2}m²
+              </div>
+            )}
+            {negocio.faturamento_mensal && !isLocacao(negocio) && (
               <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: 6, padding: "3px 8px", fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
                 📈 {formatCurrency(negocio.faturamento_mensal)}/mês
               </div>
             )}
-            {negocio.cidade && (
+            {localText(negocio) && (
               <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px", fontSize: 9.5, color: "rgba(255,255,255,0.55)" }}>
-                📍 {negocio.cidade} · {negocio.estado}
+                📍 {localText(negocio)}
               </div>
             )}
           </div>
@@ -133,15 +179,17 @@ function PostInstagram({ negocio, profile, divRef }: {
         {/* Corretor strip */}
         <div style={{ borderTop: `1px solid rgba(255,255,255,0.08)`, padding: "8px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${c.accent}`, flexShrink: 0, background: "#1e3a8a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${c.accent}`, flexShrink: 0, background: "#0a1228", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {profile.foto_url
                 ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
-                : <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{getInitials(profile.nome)}</span>
+                : isInstitutional(profile.nome)
+                  ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "82%", height: "82%", objectFit: "contain" }} />
+                  : <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>
               }
             </div>
             <div>
-              <div style={{ fontSize: 9.5, fontWeight: 700, color: "#fff" }}>{profile.nome}</div>
-              <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.4)" }}>Corretor de Negócios</div>
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: "#fff" }}>{getDisplayName(profile.nome)}</div>
+              <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.4)" }}>{getDisplayRole(profile.nome)}</div>
             </div>
           </div>
           {profile.telefone && (
@@ -188,14 +236,15 @@ function StoryPost({ negocio, profile, divRef }: {
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 180, height: 180, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}25 0%, transparent 70%)` }} />
         </>}
 
-        {/* Top bar */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 2 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 7, background: c.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#000" }}>NJ</div>
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase" }}>NegociaAky</span>
-          </div>
-          <div style={{ background: "rgba(0,0,0,0.45)", border: `1px solid ${c.accent}80`, borderRadius: 20, padding: "2px 9px", fontSize: 8, color: c.light }}>
-            {negocio.categoria}
+        {/* Top bar — só badges (operação + categoria) à direita; marca vai no rodapé */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", zIndex: 2 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+            <div style={{ background: c.accent, color: "#000", borderRadius: 20, padding: "3px 12px", fontSize: 9.5, fontWeight: 900, letterSpacing: 1, boxShadow: "0 2px 8px rgba(0,0,0,0.35)" }}>
+              {opLabel(negocio)}
+            </div>
+            <div style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${c.accent}60`, borderRadius: 20, padding: "2px 10px", fontSize: 7.5, color: c.light, letterSpacing: 0.3 }}>
+              {negocio.categoria}
+            </div>
           </div>
         </div>
 
@@ -229,21 +278,27 @@ function StoryPost({ negocio, profile, divRef }: {
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {negocio.preco && (
               <div style={{ background: `${c.accent}20`, border: `1px solid ${c.accent}45`, borderRadius: 8, padding: "7px 12px" }}>
-                <div style={{ fontSize: 8, color: c.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 1 }}>Valor de Venda</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{formatCurrency(negocio.preco)}</div>
+                <div style={{ fontSize: 8, color: c.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 1 }}>{valueLabel(negocio)}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{formatCurrency(negocio.preco)}{isLocacao(negocio) ? <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}> /mês</span> : null}</div>
               </div>
             )}
             <div style={{ display: "flex", gap: 5 }}>
-              {negocio.faturamento_mensal && (
+              {negocio.area_m2 && (
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 7, padding: "6px 8px", textAlign: "center" }}>
+                  <div style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", marginBottom: 1 }}>Área</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{negocio.area_m2}m²</div>
+                </div>
+              )}
+              {negocio.faturamento_mensal && !isLocacao(negocio) && (
                 <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 7, padding: "6px 8px", textAlign: "center" }}>
                   <div style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", marginBottom: 1 }}>Faturamento</div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{formatCurrency(negocio.faturamento_mensal)}/mês</div>
                 </div>
               )}
-              {negocio.cidade && (
+              {localText(negocio) && (
                 <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 7, padding: "6px 8px", textAlign: "center" }}>
-                  <div style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", marginBottom: 1 }}>Local</div>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: "#fff" }}>{negocio.cidade}</div>
+                  <div style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", marginBottom: 1 }}>Localização</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: "#fff" }}>{localText(negocio)}</div>
                 </div>
               )}
             </div>
@@ -253,17 +308,19 @@ function StoryPost({ negocio, profile, divRef }: {
         {/* CTA + Corretor */}
         <div>
           <div style={{ background: c.accent, borderRadius: 50, padding: "10px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: "#000", marginBottom: 8 }}>
-            📲 Entre em contato!
+            {ctaLabel(negocio)}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 10px" }}>
-            <div style={{ width: 26, height: 26, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${c.accent}`, flexShrink: 0, background: "#1e3a8a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${c.accent}`, flexShrink: 0, background: "#0a1228", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {profile.foto_url
                 ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
-                : <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{getInitials(profile.nome)}</span>
+                : isInstitutional(profile.nome)
+                  ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "82%", height: "82%", objectFit: "contain" }} />
+                  : <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>
               }
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 9.5, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.nome}</div>
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getDisplayName(profile.nome)}</div>
               {profile.telefone && <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.45)" }}>{formatPhone(profile.telefone)}</div>}
             </div>
           </div>
@@ -340,10 +397,10 @@ function PostCaptacaoVendedor({ profile, bairro, divRef }: {
         <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #22c55e", flexShrink: 0, background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {profile.foto_url
             ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
-            : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(profile.nome)}</span>}
+            : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>}
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{profile.nome}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{getDisplayName(profile.nome)}</div>
           {profile.creci && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)" }}>CRECI {profile.creci}</div>}
         </div>
         <div style={{ background: "#22c55e", borderRadius: 20, padding: "5px 12px", fontSize: 9, fontWeight: 800, color: "#000" }}>
@@ -421,10 +478,10 @@ function PostCaptacaoInvestidor({ profile, bairro, divRef }: {
         <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #C49A1E", flexShrink: 0, background: "#1c1208", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {profile.foto_url
             ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
-            : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(profile.nome)}</span>}
+            : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>}
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{profile.nome}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{getDisplayName(profile.nome)}</div>
           {profile.creci && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)" }}>CRECI {profile.creci}</div>}
         </div>
         <div style={{ background: "#C49A1E", borderRadius: 20, padding: "5px 12px", fontSize: 9, fontWeight: 800, color: "#000" }}>
@@ -460,7 +517,7 @@ const GATILHOS: Record<GatilhoMental, { icon: string; label: string; desc: strin
 
 // ─── Expert copy builder ──────────────────────────────────────────────────────
 function buildCopyPrompt(params: {
-  contexto: "negocio_venda" | "captacao_vendedor" | "captacao_investidor";
+  contexto: "negocio_venda" | "imovel_locacao" | "captacao_vendedor" | "captacao_investidor";
   formato: Formato;
   gatilho: GatilhoMental;
   dadosNegocio?: string;
@@ -478,12 +535,14 @@ function buildCopyPrompt(params: {
 
   const audiencias: Record<typeof contexto, string> = {
     negocio_venda:       "PÚBLICO-ALVO: Compradores e investidores que buscam adquirir um negócio lucrativo.",
+    imovel_locacao:      "PÚBLICO-ALVO: Empreendedores e empresas procurando um ponto comercial para ALUGAR e operar seu negócio.",
     captacao_vendedor:   "PÚBLICO-ALVO: Donos de negócio do bairro que podem estar pensando em vender seu estabelecimento.",
     captacao_investidor: "PÚBLICO-ALVO: Investidores e empreendedores que querem comprar um negócio pronto e lucrativo.",
   };
 
   const contextoCopy: Record<typeof contexto, string> = {
-    negocio_venda:       "OBJETIVO: Anunciar este negócio À VENDA e atrair compradores qualificados para entrar em contato com o corretor.",
+    negocio_venda:       "OBJETIVO: Anunciar este negócio À VENDA e atrair compradores qualificados para entrar em contato com o corretor. NUNCA fale em 'comprar' como sinônimo de 'alugar'.",
+    imovel_locacao:      "OBJETIVO: Anunciar este imóvel/ponto comercial PARA LOCAÇÃO (aluguel) e atrair empresários interessados em alugar. NUNCA fale em 'comprar', 'venda' ou 'valor de aquisição' — é ALUGUEL MENSAL. Use termos como 'alugue agora', 'ponto para locação', 'aluguel acessível', 'localização estratégica'. OBRIGATÓRIO: cite explicitamente o TIPO DE IMÓVEL (salão, loja, sala comercial, galpão, etc — pegue do campo Tipo de imóvel ou Descrição) e a METRAGEM (m²) — esses dois dados são decisivos pro empresário escolher.",
     captacao_vendedor:   "OBJETIVO: Fazer donos de negócio do bairro entrarem em contato com o corretor para AVALIAR e LISTAR seu negócio para venda.",
     captacao_investidor: "OBJETIVO: Fazer investidores entrarem em contato com o corretor para CONHECER as oportunidades de negócios disponíveis.",
   };
@@ -571,10 +630,7 @@ const CorretorRedesSociais = () => {
     init();
   }, []);
 
-  // Categorias com produtos disponíveis
-  const catsComProdutos = TODAS_CATS.filter((cat) => negocios.some((n) => n.categoria === cat));
-
-  // Negócios filtrados por categoria + busca
+  // Negócios filtrados por categoria + busca (drill-in)
   const negociosDaCat = catSelecionada
     ? negocios.filter((n) => n.categoria === catSelecionada)
     : negocios;
@@ -582,6 +638,27 @@ const CorretorRedesSociais = () => {
     n.titulo.toLowerCase().includes(search.toLowerCase()) ||
     n.cidade.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Busca GLOBAL (top-level, sem categoria selecionada) — pesquisa em todos os campos
+  const buscaGlobal = !catSelecionada && search.trim()
+    ? negocios.filter((n) => {
+        const q = search.toLowerCase();
+        return (
+          n.titulo.toLowerCase().includes(q) ||
+          n.cidade.toLowerCase().includes(q) ||
+          n.categoria.toLowerCase().includes(q) ||
+          ((n as Negocio & { bairro?: string | null }).bairro || "").toLowerCase().includes(q)
+        );
+      })
+    : [];
+
+  const handleSelectFromGlobal = (n: Negocio) => {
+    setCatSelecionada(n.categoria);
+    setSelected(n);
+    setShowNegociosPicker(false);
+    setSearch("");
+    setCopy("");
+  };
 
   const handleSelectCategoria = (cat: string) => {
     setCatSelecionada(cat);
@@ -607,7 +684,7 @@ const CorretorRedesSociais = () => {
   const handleGerarCopyCaptacao = async () => {
     setGeneratingCopyCaptacao(true);
     setCopyCaptacao("");
-    const corretorInfo = `Corretor: ${profile.nome}${profile.creci ? " · CRECI " + profile.creci : ""}${profile.telefone ? " · " + formatPhone(profile.telefone) : ""}`;
+    const corretorInfo = `Corretor: ${getDisplayName(profile.nome)}${profile.creci ? " · CRECI " + profile.creci : ""}${profile.telefone ? " · " + formatPhone(profile.telefone) : ""}`;
     const prompt = buildCopyPrompt({
       contexto: tipoCaptacao === "vendedor" ? "captacao_vendedor" : "captacao_investidor",
       formato,
@@ -645,17 +722,24 @@ const CorretorRedesSociais = () => {
     if (!selected) return;
     setGeneratingCopy(true);
     setCopy("");
+    const ehLocacao = isLocacao(selected);
+    const localPretty = localText(selected) + (selected.estado ? `, ${selected.estado}` : "");
+    // Extrai "Tipo de imóvel: X" da descrição se existir (vem do form Novo Negócio)
+    const tipoImovelMatch = (selected.descricao || "").match(/Tipo de im[óo]vel:\s*([^\n.·—]+)/i);
+    const tipoImovel = tipoImovelMatch?.[1]?.trim();
     const dadosNegocio = [
       `Nome: ${selected.titulo}`,
       `Categoria: ${selected.categoria}`,
-      `Local: ${selected.cidade}, ${selected.estado}`,
-      selected.preco              ? `Valor de venda: ${formatCurrency(selected.preco)}` : "",
-      selected.faturamento_mensal ? `Faturamento mensal: ${formatCurrency(selected.faturamento_mensal)}` : "",
-      selected.area_m2            ? `Área: ${selected.area_m2}m²` : "",
-      selected.descricao          ? `Descrição: ${selected.descricao}` : "",
+      `Tipo de operação: ${ehLocacao ? "LOCAÇÃO (aluguel)" : "VENDA"}`,
+      tipoImovel                           ? `Tipo de imóvel: ${tipoImovel}` : "",
+      `Local: ${localPretty}`,
+      selected.preco                       ? `${ehLocacao ? "Valor do aluguel mensal" : "Valor de venda"}: ${formatCurrency(selected.preco)}${ehLocacao ? "/mês" : ""}` : "",
+      selected.faturamento_mensal && !ehLocacao ? `Faturamento mensal: ${formatCurrency(selected.faturamento_mensal)}` : "",
+      selected.area_m2                     ? `Área útil: ${selected.area_m2}m²` : "",
+      selected.descricao                   ? `Descrição completa do imóvel/negócio:\n${selected.descricao}` : "",
     ].filter(Boolean).join("\n");
-    const corretorInfo = `Corretor: ${profile.nome}${profile.telefone ? " · " + formatPhone(profile.telefone) : ""}${profile.creci ? " · CRECI " + profile.creci : ""}`;
-    const prompt = buildCopyPrompt({ contexto: "negocio_venda", formato, gatilho, dadosNegocio, corretorInfo });
+    const corretorInfo = `Corretor: ${getDisplayName(profile.nome)}${profile.telefone ? " · " + formatPhone(profile.telefone) : ""}${profile.creci ? " · CRECI " + profile.creci : ""}`;
+    const prompt = buildCopyPrompt({ contexto: ehLocacao ? "imovel_locacao" : "negocio_venda", formato, gatilho, dadosNegocio, corretorInfo });
     try {
       const result = await callClaude(prompt);
       setCopy(result.trim());
@@ -919,8 +1003,61 @@ const CorretorRedesSociais = () => {
                 )}
               </div>
 
-              {/* ── Seletor de categoria ── */}
+              {/* ── Busca global (top-level) ── */}
               {!catSelecionada && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder={`Buscar entre ${negocios.length} produto${negocios.length !== 1 ? "s" : ""} do site...`}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-border bg-muted/30 outline-none focus:ring-1 focus:ring-primary focus:bg-card transition-colors"
+                  />
+                </div>
+              )}
+
+              {/* ── Resultado da busca global (lista flat com thumb + categoria) ── */}
+              {!catSelecionada && search.trim() && (
+                <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+                  <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border bg-muted/20">
+                    {buscaGlobal.length} resultado{buscaGlobal.length !== 1 ? "s" : ""} encontrado{buscaGlobal.length !== 1 ? "s" : ""}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto divide-y divide-border/50">
+                    {buscaGlobal.length === 0 ? (
+                      <p className="text-center py-8 text-xs text-muted-foreground">Nenhum produto encontrado. Tente outro termo.</p>
+                    ) : buscaGlobal.map((n) => {
+                      const c = getCat(n.categoria);
+                      return (
+                        <button key={n.id} onClick={() => handleSelectFromGlobal(n)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors">
+                          <div className="h-11 w-11 shrink-0 rounded-lg overflow-hidden bg-muted/40">
+                            {n.foto_url ? (
+                              <img src={n.foto_url} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-lg" style={{ background: `${c.accent}20` }}>
+                                {c.icon}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground text-xs truncate">{n.titulo}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              <span style={{ color: c.accent }}>{c.icon} {n.categoria}</span>
+                              <span className="mx-1">·</span>
+                              <span>{n.cidade}</span>
+                            </p>
+                          </div>
+                          {n.preco ? <span className="text-xs font-bold text-primary shrink-0">{formatCurrency(n.preco)}</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Seletor de categoria (grid — só quando busca está vazia) ── */}
+              {!catSelecionada && !search.trim() && (
                 <div className="grid grid-cols-2 gap-2">
                   {TODAS_CATS.map((cat) => {
                     const c = getCat(cat);
@@ -928,16 +1065,15 @@ const CorretorRedesSociais = () => {
                     const hasProducts = count > 0;
                     return (
                       <button key={cat}
-                        onClick={() => hasProducts && handleSelectCategoria(cat)}
-                        disabled={!hasProducts}
-                        className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                        onClick={() => handleSelectCategoria(cat)}
+                        className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer ${
                           hasProducts
-                            ? "border-border bg-muted/20 hover:bg-muted/50 hover:border-primary/30 cursor-pointer"
-                            : "border-border/40 bg-muted/10 opacity-40 cursor-not-allowed"
+                            ? "border-border bg-muted/20 hover:bg-muted/50 hover:border-primary/30"
+                            : "border-border/40 bg-muted/10 hover:bg-muted/30 hover:border-border opacity-70"
                         }`}>
                         <div
-                          style={hasProducts ? { background: `${c.accent}20`, border: `1px solid ${c.accent}40` } : {}}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-xl shrink-0 bg-muted/30">
+                          style={{ background: `${c.accent}20`, border: `1px solid ${c.accent}40` }}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-xl shrink-0">
                           {c.icon}
                         </div>
                         <div className="min-w-0">
