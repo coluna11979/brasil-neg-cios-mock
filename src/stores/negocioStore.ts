@@ -14,6 +14,9 @@ export interface Negocio {
   proprietario_email: string;
   proprietario_telefone?: string;
   foto_url?: string;
+  imagem?: string | null;
+  imagens?: string[];
+  destaque?: boolean;
   status: "pendente" | "ativo" | "rejeitado" | "vendido" | "rascunho";
   criado_em: string;
   /** @deprecated use criado_em */
@@ -74,6 +77,28 @@ export async function updateNegocioStatus(
 
   if (error) {
     console.error("Erro ao atualizar negócio:", error);
+    return false;
+  }
+  return true;
+}
+
+/** Exclui permanentemente um negócio (e tudo que depender dele em cascata). */
+export async function deleteNegocio(id: string): Promise<boolean> {
+  const { error } = await supabase.from("negocios").delete().eq("id", id);
+  if (error) {
+    console.error("Erro ao excluir negócio:", error);
+    return false;
+  }
+  return true;
+}
+
+/** Exclui permanentemente uma galeria (e seus espaços em cascata, se houver FK). */
+export async function deleteGaleria(id: string): Promise<boolean> {
+  // Remove espaços primeiro (caso não tenha ON DELETE CASCADE)
+  await supabase.from("espacos_galeria").delete().eq("galeria_id", id);
+  const { error } = await supabase.from("galerias").delete().eq("id", id);
+  if (error) {
+    console.error("Erro ao excluir galeria:", error);
     return false;
   }
   return true;

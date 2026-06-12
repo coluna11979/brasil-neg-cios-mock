@@ -35,6 +35,7 @@ import {
   Megaphone,
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
@@ -67,6 +68,8 @@ import {
   getAllNegocios,
   updateNegocioStatus,
   updateNegocio,
+  deleteNegocio,
+  deleteGaleria,
   formatCurrency,
   type Negocio,
 } from "@/stores/negocioStore";
@@ -139,6 +142,7 @@ const EMPTY_FORM = {
   badge_texto: "",
   badge_cor: "green" as "green" | "blue" | "red" | "amber" | "violet" | "slate",
   mostrar_preco_foto: false,
+  destaque: false,
 };
 
 const BADGE_PRESETS = ["LOCAÇÃO", "VENDA", "OPORTUNIDADE", "PROMOÇÃO", "NOVO", "DESTAQUE", "REDUZIDO"];
@@ -391,6 +395,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
         badge_texto: form.badge_texto.trim() || null,
         badge_cor: form.badge_cor,
         mostrar_preco_foto: form.mostrar_preco_foto,
+        destaque: form.destaque,
       })
       .select()
       .single();
@@ -579,6 +584,17 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
             </div>
           </div>
 
+          {/* Aviso pro corretor (quando hideStatusSelector) — explica que vai como pendente */}
+          {hideStatusSelector && (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-800">
+                <strong>Seu cadastro vai como Pendente</strong> — o admin precisa aprovar antes de aparecer no site.
+                Você acompanha o status na sua lista <strong>Meus Negócios</strong>.
+              </div>
+            </div>
+          )}
+
           {/* Status (admin pode definir direto; corretor não vê — vai como pendente) */}
           {!hideStatusSelector && (
           <div className="rounded-lg bg-muted/40 border border-border p-4 flex items-center gap-4">
@@ -749,6 +765,15 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
                 onChange={(e) => setForm((p) => ({ ...p, mostrar_preco_foto: e.target.checked }))}
               />
               <span>Mostrar <strong>preço</strong> em destaque sobre a foto (canto inferior direito)</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.destaque}
+                onChange={(e) => setForm((p) => ({ ...p, destaque: e.target.checked }))}
+              />
+              <span>⭐ Marcar como <strong>Destaque</strong> (aparece no topo da home e ganha selo "Destaque" no card)</span>
             </label>
 
             {/* Preview */}
@@ -1280,30 +1305,54 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
     badge_texto: negocioAny.badge_texto ?? "",
     badge_cor: (negocioAny.badge_cor ?? "green") as "green" | "blue" | "red" | "amber" | "violet" | "slate",
     mostrar_preco_foto: negocioAny.mostrar_preco_foto ?? false,
+    destaque: negocioAny.destaque ?? false,
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [fotoUrl, setFotoUrl] = useState(negocio.foto_url || "");
+  const MAX_FOTOS_EDIT = 6;
+  // URLs já salvas no banco + arquivos pendentes pra upload
+  const initialUrls = (() => {
+    const n = negocioAny as Negocio & { imagens?: string[] | null; imagem?: string };
+    if (Array.isArray(n.imagens) && n.imagens.length > 0) return n.imagens.filter(Boolean);
+    if (n.imagem) return [n.imagem];
+    return [];
+  })();
+  const [photoUrls, setPhotoUrls] = useState<string[]>(initialUrls);
+  const [photoUploads, setPhotoUploads] = useState<File[]>([]);
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingFoto(true);
-    try {
-      const path = `negocios/${negocio.id}.jpg`;
-      await supabase.storage.from("lead-images").upload(path, file, { upsert: true, contentType: file.type });
-      const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
-      const url = urlData.publicUrl + "?t=" + Date.now();
-      // Coluna real é `imagem` — `foto_url` é só alias em memória
-      await supabase.from("negocios").update({ imagem: urlData.publicUrl }).eq("id", negocio.id);
-      setFotoUrl(url);
-    } catch (err) {
-      console.error("Erro ao fazer upload:", err);
-    } finally {
-      setUploadingFoto(false);
-    }
+  // foto principal pra preview de legenda (primeira)
+  const previewMainUrl = photoUploads[0] ? URL.createObjectURL(photoUploads[0]) : photoUrls[0];
+
+  const handleFotosSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const total = photoUrls.length + photoUploads.length;
+    const acceptable = files.slice(0, Math.max(0, MAX_FOTOS_EDIT - total));
+    setPhotoUploads((prev) => [...prev, ...acceptable]);
+    if (e.target) e.target.value = "";
+  };
+
+  const removePhotoUrl = (idx: number) => setPhotoUrls((prev) => prev.filter((_, i) => i !== idx));
+  const removePhotoUpload = (idx: number) => setPhotoUploads((prev) => prev.filter((_, i) => i !== idx));
+  const movePhotoUrlToFirst = (idx: number) => {
+    setPhotoUrls((prev) => {
+      if (idx <= 0 || idx >= prev.length) return prev;
+      const copy = [...prev];
+      const [item] = copy.splice(idx, 1);
+      copy.unshift(item);
+      return copy;
+    });
+  };
+  const movePhotoUploadToFirst = (idx: number) => {
+    setPhotoUploads((prev) => {
+      if (idx <= 0 || idx >= prev.length) return prev;
+      const copy = [...prev];
+      const [item] = copy.splice(idx, 1);
+      copy.unshift(item);
+      return copy;
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -1329,6 +1378,26 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
     if (!validate()) return;
     setSaving(true);
 
+    // 1) Upload das fotos novas
+    let finalUrls = [...photoUrls];
+    if (photoUploads.length > 0) {
+      setUploadingFoto(true);
+      for (let i = 0; i < photoUploads.length; i++) {
+        const file = photoUploads[i];
+        const ext = (file.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
+        const path = `negocios/${negocio.id}-${Date.now()}-${i}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("lead-images")
+          .upload(path, file, { upsert: true, contentType: file.type });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
+          finalUrls.push(urlData.publicUrl);
+        }
+      }
+      setUploadingFoto(false);
+    }
+    finalUrls = finalUrls.slice(0, MAX_FOTOS_EDIT);
+
     const fields = {
       titulo: form.titulo,
       categoria: form.categoria,
@@ -1345,7 +1414,11 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
       badge_texto: form.badge_texto.trim() || null,
       badge_cor: form.badge_cor,
       mostrar_preco_foto: form.mostrar_preco_foto,
-    };
+      destaque: form.destaque,
+      // Persiste as URLs (1ª = capa)
+      imagem: finalUrls[0] || null,
+      imagens: finalUrls,
+    } as Partial<Negocio> & { imagem?: string | null; imagens?: string[] };
 
     const ok = await updateNegocio(negocio.id, fields);
     setSaving(false);
@@ -1354,7 +1427,7 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
       setErrors({ submit: "Erro ao salvar. Tente novamente." });
       return;
     }
-    onSaved({ ...negocio, ...fields });
+    onSaved({ ...negocio, ...fields } as Negocio);
   };
 
   const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -1413,41 +1486,96 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
             </Select>
           </div>
 
-          {/* Foto do Negócio */}
+          {/* Fotos do Negócio (até 6) */}
           <div className="space-y-3">
-            <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
-              <Camera className="h-4 w-4 text-primary" />
-              Foto do Negócio
-              <span className="text-xs font-normal text-muted-foreground">(usada nas artes de redes sociais)</span>
-            </h3>
-            <div
-              onClick={() => fotoInputRef.current?.click()}
-              className="relative cursor-pointer rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden"
-              style={{ height: 160 }}
-            >
-              {uploadingFoto ? (
-                <div className="flex h-full items-center justify-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <span className="text-sm">Enviando foto...</span>
-                </div>
-              ) : fotoUrl ? (
-                <>
-                  <img src={fotoUrl} alt="foto do negócio" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <div className="flex items-center gap-2 rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-foreground">
-                      <Camera className="h-3.5 w-3.5" /> Trocar foto
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                  <ImageIcon className="h-10 w-10 opacity-20" />
-                  <p className="text-sm font-medium">Clique para adicionar foto</p>
-                  <p className="text-xs opacity-60">JPG, PNG — recomendado 1200×800</p>
-                </div>
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+                <Camera className="h-4 w-4 text-primary" />
+                Fotos
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({photoUrls.length + photoUploads.length}/{MAX_FOTOS_EDIT} · 1ª é a capa)
+                </span>
+              </h3>
+              {photoUrls.length + photoUploads.length < MAX_FOTOS_EDIT && (
+                <button
+                  type="button"
+                  onClick={() => fotoInputRef.current?.click()}
+                  className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="h-3 w-3" /> Adicionar
+                </button>
               )}
             </div>
-            <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoSelect} />
+
+            {uploadingFoto && (
+              <div className="rounded-lg border border-border bg-muted p-2 text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Enviando fotos...
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-2">
+              {/* URLs já salvas */}
+              {photoUrls.map((url, idx) => (
+                <div key={`url-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-border bg-muted group">
+                  <img src={url} alt={`foto ${idx + 1}`} className="w-full h-full object-cover" />
+                  {idx === 0 && photoUploads.length === 0 && (
+                    <span className="absolute top-1 left-1 rounded bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5">CAPA</span>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end justify-end p-1 gap-1 opacity-0 group-hover:opacity-100">
+                    {idx > 0 && (
+                      <button type="button" onClick={() => movePhotoUrlToFirst(idx)}
+                        className="rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-foreground hover:bg-white" title="Tornar capa">⭐</button>
+                    )}
+                    <button type="button" onClick={() => removePhotoUrl(idx)}
+                      className="rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-destructive hover:bg-white" title="Remover">✕</button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Uploads novos pendentes */}
+              {photoUploads.map((file, idx) => {
+                const previewUrl = URL.createObjectURL(file);
+                const isCapa = photoUrls.length === 0 && idx === 0;
+                return (
+                  <div key={`new-${idx}-${file.name}`} className="relative aspect-square rounded-xl overflow-hidden border border-border bg-muted group">
+                    <img src={previewUrl} alt={`nova ${idx + 1}`} className="w-full h-full object-cover" />
+                    <span className="absolute top-1 right-1 rounded bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5">NOVA</span>
+                    {isCapa && (
+                      <span className="absolute top-1 left-1 rounded bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5">CAPA</span>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end justify-end p-1 gap-1 opacity-0 group-hover:opacity-100">
+                      {idx > 0 && (
+                        <button type="button" onClick={() => movePhotoUploadToFirst(idx)}
+                          className="rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-foreground hover:bg-white" title="Tornar capa">⭐</button>
+                      )}
+                      <button type="button" onClick={() => removePhotoUpload(idx)}
+                        className="rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-destructive hover:bg-white" title="Remover">✕</button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {photoUrls.length === 0 && photoUploads.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => fotoInputRef.current?.click()}
+                  className="col-span-3 md:col-span-6 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors aspect-[16/5] text-muted-foreground"
+                >
+                  <ImageIcon className="h-8 w-8 opacity-30" />
+                  <p className="text-sm font-medium">Clique para adicionar fotos</p>
+                  <p className="text-xs opacity-60">Até 6 imagens · JPG/PNG · 1200×800 recomendado</p>
+                </button>
+              )}
+            </div>
+
+            <input
+              ref={fotoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFotosSelect}
+            />
           </div>
 
           {/* Legendas sobre a foto principal */}
@@ -1517,12 +1645,21 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
               <span>Mostrar <strong>preço</strong> em destaque sobre a foto (canto inferior direito)</span>
             </label>
 
+            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.destaque}
+                onChange={(e) => setForm((p) => ({ ...p, destaque: e.target.checked }))}
+              />
+              <span>⭐ Marcar como <strong>Destaque</strong> (aparece no topo da home e ganha selo "Destaque" no card)</span>
+            </label>
+
             {/* Preview ao vivo */}
-            {(form.badge_texto || form.mostrar_preco_foto) && fotoUrl && (
+            {(form.badge_texto || form.mostrar_preco_foto) && previewMainUrl && (
               <div>
                 <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">Pré-visualização</p>
                 <ImagemComLegenda
-                  src={fotoUrl}
+                  src={previewMainUrl}
                   alt="preview"
                   className="rounded-xl overflow-hidden border border-border"
                   imgClassName="w-full h-40 object-cover"
@@ -1739,7 +1876,23 @@ const AdminNegocios = () => {
     const ok = await updateNegocioStatus(id, newStatus);
     if (ok) {
       setNegocios((prev) => prev.map((n) => (n.id === id ? { ...n, status: newStatus } : n)));
+      // #5 — toast pra confirmar que o item realmente saiu do ar
+      if (newStatus === "rejeitado") {
+        try { (window as unknown as { sonner?: { toast: (msg: string) => void } }).sonner?.toast("Anúncio rejeitado — não aparece mais no site"); } catch { /* */ }
+      }
     }
+    setUpdating(null);
+  };
+
+  const handleDelete = async (n: Negocio & { _kind?: "negocio" | "galeria" }) => {
+    const tipo = (n as { tipo?: string }).tipo;
+    const isGaleria = n._kind === "galeria" || tipo === "galeria";
+    if (!window.confirm(
+      `Excluir permanentemente "${n.titulo}"?\n\n${isGaleria ? "Os espaços vinculados também serão removidos." : ""}\n\nEssa ação não pode ser desfeita.`
+    )) return;
+    setUpdating(n.id);
+    const ok = isGaleria ? await deleteGaleria(n.id) : await deleteNegocio(n.id);
+    if (ok) setNegocios((prev) => prev.filter((x) => x.id !== n.id));
     setUpdating(null);
   };
 
@@ -2136,6 +2289,14 @@ const AdminNegocios = () => {
                             <span className="xs:hidden sm:hidden">Vendido</span>
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDelete(negocio)}
+                          className="flex items-center justify-center gap-1 rounded-lg bg-destructive/10 border border-destructive/30 px-2 py-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/15 active:bg-destructive/20 active:scale-95 transition-all min-h-[40px] sm:min-h-0"
+                          title="Excluir permanentemente"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                          <span className="hidden xs:inline sm:inline">Excluir</span>
+                        </button>
                       </div>
                     </>
                   )}
