@@ -14,18 +14,27 @@ const ZONA_BAIRROS: Record<string, string[]> = {
 
 // Mapeia o nome amigável da categoria para todos os valores aceitos no banco
 // (cobre slugs antigos + nomes com acento atuais).
-const CATEGORIA_ALIASES: Record<string, string[]> = {
-  "Alimentação":         ["Alimentação", "alimentacao", "alimentação"],
-  "Saúde e Estética":    ["Saúde e Estética", "saude-beleza", "saude-estetica", "saude-e-estetica"],
-  "Serviços":            ["Serviços", "servicos", "serviços"],
-  "Varejo":              ["Varejo", "varejo"],
-  "Tecnologia":          ["Tecnologia", "tecnologia"],
-  "Educação":            ["Educação", "educacao", "educação"],
-  "Automotivo":          ["Automotivo", "automotivo"],
-  "Indústria":           ["Indústria", "industria", "indústria"],
-  "Imóveis Comerciais":  ["Imóveis Comerciais", "imoveis-comerciais", "imóveis-comerciais"],
-  "Outro":               ["Outro", "outro", "outros"],
-};
+const CATEGORIA_ALIAS_GROUPS: string[][] = [
+  ["Alimentação", "alimentacao", "alimentação"],
+  ["Saúde e Estética", "saude-beleza", "saude-estetica", "saude-e-estetica"],
+  ["Serviços", "servicos", "serviços"],
+  ["Varejo", "varejo"],
+  ["Tecnologia", "tecnologia"],
+  ["Educação", "educacao", "educação"],
+  ["Automotivo", "automotivo"],
+  ["Indústria", "industria", "indústria"],
+  ["Imóveis Comerciais", "imoveis-comerciais", "imóveis-comerciais", "Salões & Imóveis Comerciais", "saloes-e-imoveis-comerciais"],
+  ["Outro", "outro", "outros"],
+];
+
+// Permite buscar por QUALQUER um dos sinônimos — bidirecional.
+const CATEGORIA_ALIASES: Record<string, string[]> = (() => {
+  const map: Record<string, string[]> = {};
+  for (const group of CATEGORIA_ALIAS_GROUPS) {
+    for (const key of group) map[key] = group;
+  }
+  return map;
+})();
 
 export function adaptNegocio(n: NegocioSupabase): Listing {
   return {
@@ -131,7 +140,13 @@ export function useNegocios(filters?: {
         // (venda, venda-imovel, aluguel-imovel, franquia, galeria) — coexistem no banco.
         if (filters.tipo === "negocio") query = query.in("tipo", ["negocio", "venda"]);
         else if (filters.tipo === "imovel") query = query.in("tipo", ["imovel", "venda-imovel", "aluguel-imovel"]);
-        else if (filters.tipo === "salao") query = query.eq("tipo", "aluguel-imovel");
+        else if (filters.tipo === "salao") {
+          // "Salão Comercial" = qualquer imóvel pra LOCAÇÃO
+          // (formato antigo: tipo='aluguel-imovel'; formato novo: tipo='imovel' + descrição "Operação: Locação")
+          query = query.or(
+            `tipo.eq.aluguel-imovel,and(tipo.eq.imovel,descricao.ilike.%Locação%)`
+          );
+        }
         else if (filters.tipo === "galeria") query = query.eq("tipo", "galeria");
         else if (filters.tipo === "franquia") query = query.eq("tipo", "franquia");
       }
