@@ -1315,6 +1315,7 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
     const n = negocioAny as Negocio & { imagens?: string[] | null; imagem?: string };
     if (Array.isArray(n.imagens) && n.imagens.length > 0) return n.imagens.filter(Boolean);
     if (n.imagem) return [n.imagem];
+    if (n.foto_url) return [n.foto_url]; // fallback pro alias antigo em memória
     return [];
   })();
   const [photoUrls, setPhotoUrls] = useState<string[]>(initialUrls);
