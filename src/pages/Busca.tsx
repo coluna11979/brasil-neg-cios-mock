@@ -75,7 +75,18 @@ const Busca = () => {
     setBusca(query);
   }, [categoriaParam, tipoParam, precoParam, faturamentoParam, bairroParam, query]);
 
-  const faixa = faixasPreco.find((f) => f.label === preco);
+  // Quando filtro é por LOCAÇÃO (Salão Comercial ou Imóvel para alugar),
+  // mostramos faixas de aluguel mensal em vez de faixas de venda.
+  const isLocacao = tipo === "salao" || (tipo === "imovel" && /alug/i.test(query));
+  const FAIXAS_LOCACAO = [
+    { label: "Até R$ 1.000/mês", min: 0, max: 1000 },
+    { label: "R$ 1.000 - R$ 3.000/mês", min: 1000, max: 3000 },
+    { label: "R$ 3.000 - R$ 5.000/mês", min: 3000, max: 5000 },
+    { label: "R$ 5.000 - R$ 10.000/mês", min: 5000, max: 10000 },
+    { label: "Acima de R$ 10.000/mês", min: 10000, max: Infinity },
+  ];
+  const faixasAtivas = isLocacao ? FAIXAS_LOCACAO : faixasPreco;
+  const faixa = faixasAtivas.find((f) => f.label === preco);
   const faturamentoMin = parseInt(faturamento, 10) || 0;
 
   const { negocios: negociosRaw, loading } = useNegocios({
@@ -127,6 +138,15 @@ const Busca = () => {
       params.set(type, value);
     } else {
       params.delete(type);
+    }
+
+    // Trocar o tipo deve limpar o preço (venda ≠ locação têm faixas diferentes)
+    // e também o faturamento (não faz sentido pra imóvel/galeria).
+    if (type === "tipo") {
+      params.delete("preco");
+      params.delete("faturamento");
+      setPreco("");
+      setFaturamento("0");
     }
 
     setSearchParams(params);
@@ -238,20 +258,20 @@ const Busca = () => {
 
             <div>
               <label className="mb-2 block text-sm font-medium text-foreground">
-                Faixa de Preço
+                {isLocacao ? "Faixa de Aluguel" : "Faixa de Preço"}
               </label>
               <Select
                 value={preco || "all"}
                 onValueChange={(value) => handleFilterChange("preco", value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Qualquer valor" />
+                  <SelectValue placeholder={isLocacao ? "Qualquer aluguel" : "Qualquer valor"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Qualquer valor</SelectItem>
-                  {faixasPreco.map((faixa) => (
-                    <SelectItem key={faixa.label} value={faixa.label}>
-                      {faixa.label}
+                  <SelectItem value="all">{isLocacao ? "Qualquer aluguel" : "Qualquer valor"}</SelectItem>
+                  {faixasAtivas.map((f) => (
+                    <SelectItem key={f.label} value={f.label}>
+                      {f.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
