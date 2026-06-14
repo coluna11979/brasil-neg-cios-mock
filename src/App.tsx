@@ -12,6 +12,7 @@ import { BuyerProvider } from "@/contexts/BuyerContext";
 import BuyerAuthModal from "@/components/BuyerAuthModal";
 import { CompareProvider } from "@/contexts/CompareContext";
 import CompareBar from "@/components/CompareBar";
+import { FloatingAgentHost } from "@/agents-platform/components/FloatingAgentHost";
 
 const Index = lazy(() => import("./pages/Index"));
 const Busca = lazy(() => import("./pages/Busca"));
@@ -59,6 +60,17 @@ const AdminIntegracoes = lazy(() => import("./pages/admin/Integracoes"));
 const AdminAgentesIA = lazy(() => import("./pages/admin/AgentesIA"));
 const AdminSocialSelling = lazy(() => import("./pages/admin/SocialSelling"));
 
+// Plataforma de Agentes IA
+const AgentList = lazy(() => import("./agents-platform/pages/AgentList"));
+const AgentConfigPage = lazy(() => import("./agents-platform/pages/AgentConfigPage"));
+const AgentChatPage = lazy(() => import("./agents-platform/pages/AgentChatPage"));
+const AgentPlaygroundPage = lazy(() => import("./agents-platform/pages/AgentPlaygroundPage"));
+const AgentSkillsLibraryPage = lazy(() => import("./agents-platform/pages/AgentSkillsLibraryPage"));
+const AgentCredentialsPage = lazy(() => import("./agents-platform/pages/AgentCredentialsPage"));
+const AgentSessionsPage = lazy(() => import("./agents-platform/pages/AgentSessionsPage"));
+const AgentMetricsPage = lazy(() => import("./agents-platform/pages/AgentMetricsPage"));
+const AgentOrgChartPage = lazy(() => import("./agents-platform/pages/AgentOrgChartPage"));
+
 const queryClient = new QueryClient();
 
 const PageLoader = () => (
@@ -79,6 +91,7 @@ const App = () => (
               <BuyerAuthModal />
               <CompareBar />
               <GlobalCaptureWidgets />
+              <FloatingAgentHost />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -111,6 +124,21 @@ const App = () => (
                   <Route path="/admin/agentes-ia" element={<ProtectedRoute><AdminAgentesIA /></ProtectedRoute>} />
                   <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
                   <Route path="/admin/social-selling" element={<ProtectedRoute><AdminSocialSelling /></ProtectedRoute>} />
+
+                  {/* Plataforma de Agentes IA — rotas fixas ANTES de :slug */}
+                  <Route path="/agentes" element={<ProtectedRoute><AgentList /></ProtectedRoute>} />
+                  <Route path="/agentes/habilidades" element={<ProtectedRoute><AgentSkillsLibraryPage /></ProtectedRoute>} />
+                  <Route path="/agentes/credenciais" element={<ProtectedRoute><AgentCredentialsPage /></ProtectedRoute>} />
+                  <Route path="/agentes/organograma" element={<ProtectedRoute><AgentOrgChartPage /></ProtectedRoute>} />
+                  <Route path="/agentes/sessoes" element={<ProtectedRoute><AgentSessionsPage /></ProtectedRoute>} />
+                  <Route path="/agentes/metricas" element={<ProtectedRoute><AgentMetricsPage /></ProtectedRoute>} />
+                  <Route path="/agentes/playground" element={<ProtectedRoute><AgentPlaygroundPage /></ProtectedRoute>} />
+                  <Route path="/agentes/:slug" element={<ProtectedRoute><AgentConfigPage /></ProtectedRoute>} />
+                  <Route path="/agentes/:slug/config" element={<ProtectedRoute><AgentConfigPage /></ProtectedRoute>} />
+                  <Route path="/agentes/:slug/chat" element={<ProtectedRoute><AgentChatPage /></ProtectedRoute>} />
+                  <Route path="/agentes/:slug/playground" element={<ProtectedRoute><AgentPlaygroundPage /></ProtectedRoute>} />
+                  <Route path="/agentes/:slug/sessoes" element={<ProtectedRoute><AgentSessionsPage /></ProtectedRoute>} />
+                  <Route path="/agentes/:slug/metricas" element={<ProtectedRoute><AgentMetricsPage /></ProtectedRoute>} />
 
                   {/* Corretor — públicas */}
                   <Route path="/corretor/login" element={<CorretorLogin />} />

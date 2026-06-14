@@ -16,6 +16,7 @@ import {
   UserCheck as UserCheckIcon,
   Instagram,
   Sparkles,
+  Bot,
   Menu,
   X,
 } from "lucide-react";
@@ -35,6 +36,7 @@ const navItems = [
   { to: "/admin/social-selling", label: "Social Selling", icon: Instagram },
   { to: "/admin/integracoes", label: "Integrações", icon: Plug },
   { to: "/admin/agentes-ia", label: "Agentes IA", icon: Sparkles },
+  { to: "/agentes", label: "Plataforma de Agentes", icon: Bot },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ];
 
