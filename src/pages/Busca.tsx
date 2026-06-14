@@ -353,7 +353,7 @@ const Busca = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Qualquer bairro</SelectItem>
-                  {bairrosDisponiveis.map((b) => (
+                  {(bairrosDisponiveis.length > 0 ? bairrosDisponiveis : BAIRROS_SP).map((b) => (
                     <SelectItem key={b} value={b}>{b}</SelectItem>
                   ))}
                 </SelectContent>

@@ -1,25 +1,40 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { X, Gift, ArrowRight, Phone } from "lucide-react";
 import { addLead, isLeadCaptured } from "@/stores/leadStore";
+import { supabase } from "@/lib/supabase";
 
 const ExitIntentPopup = () => {
+  const location = useLocation();
   const [show, setShow] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  // Não mostra o popup pra quem está logado (admin/corretor têm sessão Supabase)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setIsStaff(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setIsStaff(!!session));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Em rotas de painel nunca mostra (mesmo que a sessão demore a carregar)
+  const isPainel = location.pathname.startsWith("/admin") || location.pathname.startsWith("/corretor");
+
   const handleMouseLeave = useCallback((e: MouseEvent) => {
     if (e.clientY <= 5) {
-      // Não mostra se o visitante já é lead (preencheu qualquer formulário antes)
-      if (isLeadCaptured()) return;
+      if (isStaff || isPainel) return;            // logado ou em painel
+      if (isLeadCaptured()) return;               // já virou lead
       if (sessionStorage.getItem("exit_popup_shown") === "true") return;
       sessionStorage.setItem("exit_popup_shown", "true");
       setShow(true);
     }
-  }, []);
+  }, [isStaff, isPainel]);
 
   useEffect(() => {
+    if (isStaff || isPainel) return; // nem registra o listener pra staff
     const timer = setTimeout(() => {
       document.addEventListener("mouseleave", handleMouseLeave);
     }, 5000);
@@ -27,7 +42,7 @@ const ExitIntentPopup = () => {
       clearTimeout(timer);
       document.removeEventListener("mouseleave", handleMouseLeave);
     };
-  }, [handleMouseLeave]);
+  }, [handleMouseLeave, isStaff, isPainel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
