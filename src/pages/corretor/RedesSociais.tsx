@@ -7,7 +7,7 @@ import { getAllNegocios, formatCurrency, type Negocio } from "@/stores/negocioSt
 import {
   Instagram, MessageCircle, Download, Copy, Check, Loader2,
   Sparkles, Search, Megaphone, RefreshCw, ChevronLeft,
-  Store, TrendingUp, Target, Package,
+  Store, TrendingUp, Target, Package, Film,
 } from "lucide-react";
 
 interface Profile {
@@ -84,8 +84,9 @@ function PostInstagram({ negocio, profile, divRef }: {
   negocio: Negocio; profile: Profile; divRef: React.RefObject<HTMLDivElement>;
 }) {
   const c = getCat(negocio.categoria);
-  const PHOTO_H = 148;
+  const PHOTO_H = 200; // foto maior (era 148) — visual cinema
   const TOTAL_H = 360;
+  const ehLocacao = isLocacao(negocio);
 
   return (
     <div ref={divRef} style={{
@@ -93,51 +94,60 @@ function PostInstagram({ negocio, profile, divRef }: {
       display: "flex", flexDirection: "column",
       fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box",
       position: "relative",
+      background: c.bg1,
     }}>
-      {/* ── PHOTO AREA ── */}
+      {/* ── HERO PHOTO ── */}
       <div style={{
         height: PHOTO_H, flexShrink: 0, position: "relative",
         background: `radial-gradient(ellipse at 70% 30%, ${c.bg2} 0%, ${c.photo} 100%)`,
         display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
       }}>
-        {/* Real photo background */}
+        {/* Real photo */}
         {negocio.foto_url && (
           <>
             <img src={negocio.foto_url} crossOrigin="anonymous"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.55) 100%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(0,0,0,0.40) 0%, rgba(0,0,0,0.10) 35%, rgba(0,0,0,0.45) 75%, ${c.bg1} 100%)` }} />
+            <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 75% 25%, ${c.accent}22 0%, transparent 60%)` }} />
           </>
         )}
 
-        {/* Placeholder circles (only when no photo) */}
+        {/* Placeholder */}
         {!negocio.foto_url && <>
-          <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: `${c.accent}18` }} />
-          <div style={{ position: "absolute", bottom: -20, left: -30, width: 120, height: 120, borderRadius: "50%", background: `${c.accent}10` }} />
-          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 200, height: 200, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}20 0%, transparent 70%)` }} />
-        </>}
-
-        {/* Top bar — só badges (operação + categoria) à direita; marca vai no rodapé */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", zIndex: 2 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-            <div style={{ background: c.accent, color: "#000", borderRadius: 20, padding: "3px 11px", fontSize: 9, fontWeight: 900, letterSpacing: 1, boxShadow: "0 2px 8px rgba(0,0,0,0.35)" }}>
-              {opLabel(negocio)}
-            </div>
-            <div style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${c.accent}60`, borderRadius: 20, padding: "2px 9px", fontSize: 7.5, color: c.light, letterSpacing: 0.3 }}>
-              {negocio.categoria}
-            </div>
-          </div>
-        </div>
-
-        {/* Category icon (only when no photo) */}
-        {!negocio.foto_url && (
-          <div style={{ fontSize: 58, filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))", zIndex: 1 }}>
+          <div style={{ position: "absolute", top: "45%", left: "50%", transform: "translate(-50%,-50%)", width: 200, height: 200, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}28 0%, transparent 70%)` }} />
+          <div style={{ fontSize: 72, filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.55))", zIndex: 1 }}>
             {getCat(negocio.categoria).icon}
           </div>
-        )}
+        </>}
 
-        {/* Bottom fade overlay */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 40, background: `linear-gradient(to bottom, transparent, ${c.bg1})`, zIndex: 2 }} />
+        {/* Selo VERIFICADO top-left */}
+        <div style={{ position: "absolute", top: 12, left: 14, zIndex: 3, display: "flex", alignItems: "center", gap: 5, background: "rgba(0,0,0,0.55)", border: `1px solid ${c.accent}80`, borderRadius: 20, padding: "3px 9px", backdropFilter: "blur(4px)" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: c.accent, boxShadow: `0 0 8px ${c.accent}` }} />
+          <span style={{ fontSize: 7.5, color: c.light, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>Verificado</span>
+        </div>
+
+        {/* Pílula OPERAÇÃO top-right (única, destaque) */}
+        <div style={{ position: "absolute", top: 12, right: 14, zIndex: 3, background: c.accent, color: "#001", borderRadius: 20, padding: "4px 13px", fontSize: 10, fontWeight: 900, letterSpacing: 1.5, boxShadow: `0 3px 12px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.15) inset` }}>
+          {opLabel(negocio)}
+        </div>
+
+        {/* Headline overlaid no rodapé da foto */}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "0 18px 14px", zIndex: 2 }}>
+          <div style={{ fontSize: 8.5, color: c.accent, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", marginBottom: 5, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>
+            {negocio.categoria}
+          </div>
+          <div style={{
+            fontSize: negocio.titulo.length > 32 ? 16 : negocio.titulo.length > 22 ? 19 : 22,
+            fontWeight: 900, color: "#fff", lineHeight: 1.05, letterSpacing: -0.3,
+            textShadow: "0 2px 14px rgba(0,0,0,0.85)",
+          }}>
+            {negocio.titulo}
+          </div>
+        </div>
       </div>
+
+      {/* Linha acento entre hero e info */}
+      <div style={{ height: 2, background: `linear-gradient(90deg, transparent 0%, ${c.accent} 40%, ${c.light} 70%, transparent 100%)`, opacity: 0.7, zIndex: 1 }} />
 
       {/* ── INFO AREA ── */}
       <div style={{
@@ -146,44 +156,43 @@ function PostInstagram({ negocio, profile, divRef }: {
         display: "flex", flexDirection: "column", justifyContent: "space-between",
       }}>
         <div>
-          <div style={{
-            fontSize: negocio.titulo.length > 32 ? 14 : negocio.titulo.length > 22 ? 16 : 18,
-            fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 8,
-          }}>
-            {negocio.titulo.toUpperCase()}
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-            {negocio.preco && (
-              <div style={{ background: `${c.accent}22`, border: `1px solid ${c.accent}50`, borderRadius: 6, padding: "3px 8px", fontSize: 10, color: c.accent, fontWeight: 700 }}>
-                💰 {formatCurrency(negocio.preco)}{isLocacao(negocio) ? "/mês" : ""}
+          {/* Card de PREÇO em destaque */}
+          {negocio.preco && (
+            <div style={{ background: `linear-gradient(135deg, ${c.accent}28 0%, ${c.accent}10 100%)`, border: `1px solid ${c.accent}55`, borderRadius: 9, padding: "7px 12px", marginBottom: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 7.5, color: c.accent, letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 700, marginBottom: 1 }}>{valueLabel(negocio)}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", letterSpacing: -0.3, lineHeight: 1 }}>
+                  {formatCurrency(negocio.preco)}
+                  {ehLocacao && <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.65)", letterSpacing: 0 }}> /mês</span>}
+                </div>
               </div>
-            )}
-            {negocio.area_m2 && (
-              <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: 6, padding: "3px 8px", fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
-                📐 {negocio.area_m2}m²
+              {/* Mini stats à direita */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                {negocio.area_m2 && (
+                  <span style={{ fontSize: 10, color: "#fff", fontWeight: 700, opacity: 0.85 }}>📐 {negocio.area_m2}m²</span>
+                )}
+                {!ehLocacao && negocio.faturamento_mensal && (
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>📈 {formatCurrency(negocio.faturamento_mensal)}/mês</span>
+                )}
               </div>
-            )}
-            {negocio.faturamento_mensal && !isLocacao(negocio) && (
-              <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: 6, padding: "3px 8px", fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
-                📈 {formatCurrency(negocio.faturamento_mensal)}/mês
-              </div>
-            )}
-            {localText(negocio) && (
-              <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px", fontSize: 9.5, color: "rgba(255,255,255,0.55)" }}>
-                📍 {localText(negocio)}
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+          {/* Localização */}
+          {localText(negocio) && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "3px 9px" }}>
+              <span style={{ fontSize: 9.5, color: "rgba(255,255,255,0.8)", fontWeight: 600 }}>📍 {localText(negocio)}</span>
+            </div>
+          )}
         </div>
 
         {/* Corretor strip */}
-        <div style={{ borderTop: `1px solid rgba(255,255,255,0.08)`, padding: "8px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ borderTop: `1px solid rgba(255,255,255,0.08)`, padding: "7px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${c.accent}`, flexShrink: 0, background: "#0a1228", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${c.accent}`, flexShrink: 0, background: "#0a1228", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {profile.foto_url
                 ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
                 : isInstitutional(profile.nome)
-                  ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "82%", height: "82%", objectFit: "contain" }} />
+                  ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.35)" }} />
                   : <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>
               }
             </div>
@@ -193,7 +202,7 @@ function PostInstagram({ negocio, profile, divRef }: {
             </div>
           </div>
           {profile.telefone && (
-            <div style={{ fontSize: 9, color: c.accent, fontWeight: 600 }}>{formatPhone(profile.telefone)}</div>
+            <div style={{ fontSize: 9, color: c.accent, fontWeight: 700, letterSpacing: 0.3 }}>{formatPhone(profile.telefone)}</div>
           )}
         </div>
       </div>
@@ -206,15 +215,18 @@ function StoryPost({ negocio, profile, divRef }: {
   negocio: Negocio; profile: Profile; divRef: React.RefObject<HTMLDivElement>;
 }) {
   const c = getCat(negocio.categoria);
-  const PHOTO_H = 200;
+  const PHOTO_H = 270; // foto domina a parte de cima (mais cinema, menos cramped)
+  const ehLocacao = isLocacao(negocio);
 
   return (
     <div ref={divRef} style={{
       width: 270, height: 480, borderRadius: 16, overflow: "hidden",
       display: "flex", flexDirection: "column",
       fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box",
+      position: "relative",
+      background: c.bg1,
     }}>
-      {/* ── PHOTO AREA ── */}
+      {/* ── HERO PHOTO ── */}
       <div style={{
         height: PHOTO_H, flexShrink: 0, position: "relative",
         background: `radial-gradient(ellipse at 65% 35%, ${c.bg2} 0%, ${c.photo} 100%)`,
@@ -225,103 +237,111 @@ function StoryPost({ negocio, profile, divRef }: {
           <>
             <img src={negocio.foto_url} crossOrigin="anonymous"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.65) 100%)" }} />
+            {/* Gradient overlay limpo (sem ghost text, sem fade duplo) */}
+            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, rgba(0,0,0,0.45) 70%, ${c.bg1} 100%)` }} />
+            {/* Tint sutil da categoria */}
+            <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 75% 25%, ${c.accent}22 0%, transparent 60%)` }} />
           </>
         )}
 
-        {/* Placeholder circles */}
+        {/* Placeholder quando não tem foto */}
         {!negocio.foto_url && <>
-          <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: `${c.accent}15` }} />
-          <div style={{ position: "absolute", bottom: -20, left: -30, width: 130, height: 130, borderRadius: "50%", background: `${c.accent}10` }} />
-          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 180, height: 180, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}25 0%, transparent 70%)` }} />
-        </>}
-
-        {/* Top bar — só badges (operação + categoria) à direita; marca vai no rodapé */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "12px 14px", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", zIndex: 2 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-            <div style={{ background: c.accent, color: "#000", borderRadius: 20, padding: "3px 12px", fontSize: 9.5, fontWeight: 900, letterSpacing: 1, boxShadow: "0 2px 8px rgba(0,0,0,0.35)" }}>
-              {opLabel(negocio)}
-            </div>
-            <div style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${c.accent}60`, borderRadius: 20, padding: "2px 10px", fontSize: 7.5, color: c.light, letterSpacing: 0.3 }}>
-              {negocio.categoria}
-            </div>
-          </div>
-        </div>
-
-        {/* Icon placeholder */}
-        {!negocio.foto_url && (
-          <div style={{ fontSize: 72, filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))", zIndex: 1 }}>
+          <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%,-50%)", width: 180, height: 180, borderRadius: "50%", background: `radial-gradient(circle, ${c.accent}30 0%, transparent 70%)` }} />
+          <div style={{ fontSize: 90, filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))", zIndex: 1 }}>
             {getCat(negocio.categoria).icon}
           </div>
-        )}
+        </>}
 
-        {/* Bottom fade */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 50, background: `linear-gradient(to bottom, transparent, ${c.bg1})`, zIndex: 2 }} />
+        {/* Selo "VERIFICADO" top-left */}
+        <div style={{ position: "absolute", top: 13, left: 14, zIndex: 3, display: "flex", alignItems: "center", gap: 5, background: "rgba(0,0,0,0.55)", border: `1px solid ${c.accent}80`, borderRadius: 20, padding: "3px 9px", backdropFilter: "blur(4px)" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: c.accent, boxShadow: `0 0 8px ${c.accent}` }} />
+          <span style={{ fontSize: 7.5, color: c.light, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>Verificado</span>
+        </div>
+
+        {/* Pílula de OPERAÇÃO top-right (única, em destaque) */}
+        <div style={{ position: "absolute", top: 13, right: 14, zIndex: 3, background: c.accent, color: "#001", borderRadius: 20, padding: "4px 12px", fontSize: 10, fontWeight: 900, letterSpacing: 1.5, boxShadow: `0 3px 12px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.15) inset` }}>
+          {opLabel(negocio)}
+        </div>
+
+        {/* Headline overlaid no rodapé da foto */}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "0 18px 14px", zIndex: 2 }}>
+          <div style={{ fontSize: 8, color: c.accent, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>
+            {negocio.categoria}
+          </div>
+          <div style={{
+            fontSize: negocio.titulo.length > 32 ? 17 : negocio.titulo.length > 22 ? 19 : 22,
+            fontWeight: 900, color: "#fff", lineHeight: 1.05, letterSpacing: -0.3,
+            textShadow: "0 2px 14px rgba(0,0,0,0.85)",
+          }}>
+            {negocio.titulo}
+          </div>
+        </div>
       </div>
+
+      {/* Linha acento entre hero e info */}
+      <div style={{ height: 2, background: `linear-gradient(90deg, transparent 0%, ${c.accent} 40%, ${c.light} 70%, transparent 100%)`, opacity: 0.7, zIndex: 1 }} />
 
       {/* ── INFO AREA ── */}
       <div style={{
         flex: 1, background: c.bg1,
-        padding: "10px 16px 14px",
+        padding: "12px 16px 12px",
         display: "flex", flexDirection: "column", justifyContent: "space-between",
+        position: "relative",
       }}>
         <div>
-          <div style={{ fontSize: 9.5, color: c.accent, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>
-            OPORTUNIDADE DE NEGÓCIO
-          </div>
-          <div style={{
-            fontSize: negocio.titulo.length > 28 ? 14 : 17,
-            fontWeight: 900, color: "#fff", lineHeight: 1.25, marginBottom: 10,
-          }}>
-            {negocio.titulo}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {negocio.preco && (
-              <div style={{ background: `${c.accent}20`, border: `1px solid ${c.accent}45`, borderRadius: 8, padding: "7px 12px" }}>
-                <div style={{ fontSize: 8, color: c.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 1 }}>{valueLabel(negocio)}</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{formatCurrency(negocio.preco)}{isLocacao(negocio) ? <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}> /mês</span> : null}</div>
+          {/* Card de PREÇO em destaque */}
+          {negocio.preco && (
+            <div style={{ background: `linear-gradient(135deg, ${c.accent}28 0%, ${c.accent}10 100%)`, border: `1px solid ${c.accent}55`, borderRadius: 10, padding: "9px 13px", marginBottom: 7 }}>
+              <div style={{ fontSize: 8, color: c.accent, letterSpacing: 1.3, textTransform: "uppercase", marginBottom: 2, fontWeight: 700 }}>{valueLabel(negocio)}</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: -0.5, lineHeight: 1 }}>
+                {formatCurrency(negocio.preco)}
+                {ehLocacao && <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)", letterSpacing: 0 }}> /mês</span>}
+              </div>
+            </div>
+          )}
+
+          {/* Mini-cards: Área · (Faturamento ou Local) — sempre 2 colunas iguais */}
+          <div style={{ display: "flex", gap: 5 }}>
+            {negocio.area_m2 && (
+              <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "6px 8px" }}>
+                <div style={{ fontSize: 7.5, color: "rgba(255,255,255,0.45)", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 1 }}>📐 Área</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>{negocio.area_m2}m²</div>
               </div>
             )}
-            <div style={{ display: "flex", gap: 5 }}>
-              {negocio.area_m2 && (
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 7, padding: "6px 8px", textAlign: "center" }}>
-                  <div style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", marginBottom: 1 }}>Área</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{negocio.area_m2}m²</div>
-                </div>
-              )}
-              {negocio.faturamento_mensal && !isLocacao(negocio) && (
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 7, padding: "6px 8px", textAlign: "center" }}>
-                  <div style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", marginBottom: 1 }}>Faturamento</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{formatCurrency(negocio.faturamento_mensal)}/mês</div>
-                </div>
-              )}
-              {localText(negocio) && (
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 7, padding: "6px 8px", textAlign: "center" }}>
-                  <div style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", marginBottom: 1 }}>Localização</div>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: "#fff" }}>{localText(negocio)}</div>
-                </div>
-              )}
-            </div>
+            {!ehLocacao && negocio.faturamento_mensal && (
+              <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "6px 8px" }}>
+                <div style={{ fontSize: 7.5, color: "rgba(255,255,255,0.45)", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 1 }}>📈 Faturamento</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{formatCurrency(negocio.faturamento_mensal)}/mês</div>
+              </div>
+            )}
+            {localText(negocio) && (
+              <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "6px 8px", minWidth: 0 }}>
+                <div style={{ fontSize: 7.5, color: "rgba(255,255,255,0.45)", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 1 }}>📍 Local</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{localText(negocio)}</div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* CTA + Corretor */}
+        {/* CTA + Corretor strip */}
         <div>
-          <div style={{ background: c.accent, borderRadius: 50, padding: "10px 0", textAlign: "center", fontSize: 12, fontWeight: 800, color: "#000", marginBottom: 8 }}>
+          {/* CTA pill */}
+          <div style={{ background: `linear-gradient(135deg, ${c.accent} 0%, ${c.light} 100%)`, borderRadius: 50, padding: "11px 0", textAlign: "center", fontSize: 13, fontWeight: 900, color: "#001", marginBottom: 8, letterSpacing: 0.3, boxShadow: `0 4px 14px ${c.accent}40` }}>
             {ctaLabel(negocio)}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 10px" }}>
-            <div style={{ width: 26, height: 26, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${c.accent}`, flexShrink: 0, background: "#0a1228", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {/* Corretor */}
+          <div style={{ display: "flex", alignItems: "center", gap: 9, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 9, padding: "7px 11px" }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", border: `1.5px solid ${c.accent}`, flexShrink: 0, background: "#0a1228", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {profile.foto_url
                 ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
                 : isInstitutional(profile.nome)
-                  ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "82%", height: "82%", objectFit: "contain" }} />
-                  : <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>
+                  ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.35)" }} />
+                  : <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>
               }
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 9.5, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getDisplayName(profile.nome)}</div>
-              {profile.telefone && <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.45)" }}>{formatPhone(profile.telefone)}</div>}
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getDisplayName(profile.nome)}</div>
+              {profile.telefone && <div style={{ fontSize: 9, color: c.accent, fontWeight: 600, letterSpacing: 0.3 }}>{formatPhone(profile.telefone)}</div>}
             </div>
           </div>
         </div>
@@ -331,79 +351,95 @@ function StoryPost({ negocio, profile, divRef }: {
 }
 
 // ─── Captação: Vendedor (360×360) ────────────────────────────────────────────
-function PostCaptacaoVendedor({ profile, bairro, divRef }: {
-  profile: Profile; bairro: string; divRef: React.RefObject<HTMLDivElement>;
+function PostCaptacaoVendedor({ profile, bairro, heroUrl, formato, divRef }: {
+  profile: Profile; bairro: string; heroUrl: string; formato: "post" | "story" | "reels" | "status"; divRef: React.RefObject<HTMLDivElement>;
 }) {
+  const isPortrait = formato === "story" || formato === "reels" || formato === "status";
+  const W = isPortrait ? 270 : 360;
+  const H = isPortrait ? 480 : 360;
+  const PHOTO_H = isPortrait ? 250 : 165;
+
   return (
     <div ref={divRef} style={{
-      width: 360, height: 360, borderRadius: 14, overflow: "hidden",
+      width: W, height: H, borderRadius: 14, overflow: "hidden",
       display: "flex", flexDirection: "column",
       fontFamily: "Arial, Helvetica, sans-serif",
-      background: "linear-gradient(145deg, #05140a 0%, #082010 40%, #0a2e18 100%)",
+      background: "linear-gradient(180deg, #03110a 0%, #061e10 60%, #082818 100%)",
       position: "relative", boxSizing: "border-box",
     }}>
-      {/* Background decorations */}
-      <div style={{ position: "absolute", top: -60, right: -60, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle, #22c55e18 0%, transparent 70%)" }} />
-      <div style={{ position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, #16a34a12 0%, transparent 70%)" }} />
-      <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%,-50%)", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, #22c55e08 0%, transparent 65%)" }} />
+      {/* ── HERO: foto + headline overlaid ── */}
+      <div style={{ height: PHOTO_H, position: "relative", flexShrink: 0, overflow: "hidden" }}>
+        <img src={heroUrl} crossOrigin="anonymous"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        {/* Dark gradient overlay for legibility */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(2,15,8,0.50) 0%, rgba(2,15,8,0.30) 30%, rgba(2,15,8,0.97) 100%)" }} />
+        {/* Subtle green tint top-right */}
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 75% 25%, rgba(34,197,94,0.22) 0%, transparent 60%)" }} />
 
-      {/* Top bar */}
-      <div style={{ position: "relative", zIndex: 2, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#000" }}>NA</div>
-          <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 8, letterSpacing: 2, textTransform: "uppercase" }}>NegociaAky</span>
+        {/* Selo de credibilidade top-left */}
+        <div style={{ position: "absolute", top: 14, left: 16, zIndex: 3, display: "flex", alignItems: "center", gap: 5, background: "rgba(0,0,0,0.55)", border: "1px solid rgba(34,197,94,0.45)", borderRadius: 20, padding: "3px 9px", backdropFilter: "blur(4px)" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 8px #4ade80" }} />
+          <span style={{ fontSize: 8, color: "#d1fae5", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Avaliação grátis</span>
         </div>
-        <div style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", borderRadius: 20, padding: "3px 10px", fontSize: 8, color: "#86efac", fontWeight: 700, letterSpacing: 0.5 }}>
-          CAPTAÇÃO
+
+        {/* Headline overlaid */}
+        <div style={{ position: "absolute", inset: 0, padding: isPortrait ? "22px 22px 24px" : "18px 20px", display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 2 }}>
+          <div style={{ fontSize: 8.5, color: "#4ade80", fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 7, textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+            Hora de virar a página
+          </div>
+          <div style={{ fontSize: isPortrait ? 30 : 25, fontWeight: 900, color: "#fff", lineHeight: 1.02, letterSpacing: -0.3, textShadow: "0 2px 14px rgba(0,0,0,0.9)" }}>
+            Seu negócio vale<br /><span style={{ background: "linear-gradient(90deg, #4ade80, #22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>mais</span> do que você pensa.
+          </div>
         </div>
       </div>
 
-      {/* Main content */}
-      <div style={{ flex: 1, position: "relative", zIndex: 2, padding: "8px 20px 0", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        {/* Big icon */}
-        <div style={{ fontSize: 42, marginBottom: 10, filter: "drop-shadow(0 4px 12px rgba(34,197,94,0.4))" }}>🏪</div>
+      {/* Background decorations no rodapé */}
+      <div style={{ position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, #16a34a18 0%, transparent 70%)", zIndex: 0 }} />
+      {/* Linha acento gold-on-green */}
+      <div style={{ position: "absolute", top: PHOTO_H - 1, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent 0%, #4ade80 30%, #22d3ee 70%, transparent 100%)", zIndex: 1, opacity: 0.65 }} />
 
-        {/* Headline */}
-        <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 6 }}>
-          Quer vender<br /><span style={{ color: "#4ade80" }}>seu negócio?</span>
-        </div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 14, lineHeight: 1.5 }}>
-          Intermediamos com segurança e sigilo total
+      {/* ── INFO AREA ── */}
+      <div style={{ flex: 1, position: "relative", zIndex: 2, padding: isPortrait ? "20px 22px 0" : "16px 18px 0", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+        {/* Tagline 3 verbos com underline accent */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: isPortrait ? 14 : 12, fontWeight: 800, color: "#fff", letterSpacing: 0.8, marginBottom: 10, textTransform: "uppercase" }}>
+          <span style={{ borderBottom: "2px solid #4ade80", paddingBottom: 1 }}>Avaliamos</span>
+          <span style={{ color: "#22c55e", fontWeight: 400 }}>—</span>
+          <span style={{ borderBottom: "2px solid #4ade80", paddingBottom: 1 }}>Vendemos</span>
+          <span style={{ color: "#22c55e", fontWeight: 400 }}>—</span>
+          <span style={{ borderBottom: "2px solid #4ade80", paddingBottom: 1 }}>Você lucra</span>
         </div>
 
-        {/* Value props */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          {[
-            "✅ Avaliação gratuita do negócio",
-            "✅ Base de compradores qualificados",
-            "✅ Processo 100% discreto",
-          ].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "7px 10px" }}>
-              <span style={{ fontSize: 9.5, color: "#d1fae5", fontWeight: 600 }}>{item}</span>
-            </div>
-          ))}
+        {/* Sub: 3 promessas concretas */}
+        <div style={{ fontSize: isPortrait ? 12 : 10.5, color: "rgba(255,255,255,0.78)", lineHeight: 1.5, marginBottom: 14, fontWeight: 500 }}>
+          <span style={{ color: "#86efac", fontWeight: 700 }}>Sigilo absoluto.</span>{" "}
+          <span style={{ color: "#86efac", fontWeight: 700 }}>Comprador qualificado.</span>{" "}
+          <span style={{ color: "#86efac", fontWeight: 700 }}>Você no controle.</span>
         </div>
 
         {/* Bairro badge */}
         {bairro && (
-          <div style={{ marginTop: 10, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, padding: "5px 10px", display: "inline-block" }}>
-            <span style={{ fontSize: 9, color: "#86efac", fontWeight: 700 }}>📍 Atendendo: {bairro}</span>
+          <div style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", borderRadius: 6, padding: "5px 11px", display: "inline-flex", alignSelf: "flex-start" }}>
+            <span style={{ fontSize: 10, color: "#86efac", fontWeight: 700 }}>📍 Atendendo em {bairro}</span>
           </div>
         )}
       </div>
 
       {/* Bottom: corretor */}
       <div style={{ position: "relative", zIndex: 2, padding: "10px 16px 14px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #22c55e", flexShrink: 0, background: "#14532d", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #22c55e", flexShrink: 0, background: "#06231a", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {profile.foto_url
             ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
-            : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>}
+            : isInstitutional(profile.nome)
+              ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.35)" }} />
+              : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{getDisplayName(profile.nome)}</div>
-          {profile.creci && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)" }}>CRECI {profile.creci}</div>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getDisplayName(profile.nome)}</div>
+          <div style={{ fontSize: 8, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {profile.telefone ? formatPhone(profile.telefone) : (profile.creci ? `CRECI ${profile.creci}` : getDisplayRole(profile.nome))}
+          </div>
         </div>
-        <div style={{ background: "#22c55e", borderRadius: 20, padding: "5px 12px", fontSize: 9, fontWeight: 800, color: "#000" }}>
+        <div style={{ background: "#22c55e", borderRadius: 20, padding: "6px 13px", fontSize: 9, fontWeight: 800, color: "#06231a", boxShadow: "0 2px 8px rgba(34,197,94,0.4)" }}>
           💬 Fale comigo
         </div>
       </div>
@@ -412,63 +448,69 @@ function PostCaptacaoVendedor({ profile, bairro, divRef }: {
 }
 
 // ─── Captação: Investidor (360×360) ─────────────────────────────────────────
-function PostCaptacaoInvestidor({ profile, bairro, divRef }: {
-  profile: Profile; bairro: string; divRef: React.RefObject<HTMLDivElement>;
+function PostCaptacaoInvestidor({ profile, bairro, heroUrl, formato, divRef }: {
+  profile: Profile; bairro: string; heroUrl: string; formato: "post" | "story" | "reels" | "status"; divRef: React.RefObject<HTMLDivElement>;
 }) {
+  const isPortrait = formato === "story" || formato === "reels" || formato === "status";
+  const W = isPortrait ? 270 : 360;
+  const H = isPortrait ? 480 : 360;
+  const PHOTO_H = isPortrait ? 250 : 165;
+
   return (
     <div ref={divRef} style={{
-      width: 360, height: 360, borderRadius: 14, overflow: "hidden",
+      width: W, height: H, borderRadius: 14, overflow: "hidden",
       display: "flex", flexDirection: "column",
       fontFamily: "Arial, Helvetica, sans-serif",
-      background: "linear-gradient(145deg, #030b1a 0%, #060f2a 40%, #091535 100%)",
+      background: "linear-gradient(180deg, #030b1a 0%, #060f2a 60%, #091535 100%)",
       position: "relative", boxSizing: "border-box",
     }}>
-      {/* Background decorations */}
-      <div style={{ position: "absolute", top: -50, right: -50, width: 210, height: 210, borderRadius: "50%", background: "radial-gradient(circle, #3b82f618 0%, transparent 70%)" }} />
-      <div style={{ position: "absolute", bottom: -40, left: -30, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, #1d4ed810 0%, transparent 70%)" }} />
-      <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%,-50%)", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, #6366f108 0%, transparent 65%)" }} />
+      {/* ── HERO: foto + headline overlaid ── */}
+      <div style={{ height: PHOTO_H, position: "relative", flexShrink: 0, overflow: "hidden" }}>
+        <img src={heroUrl} crossOrigin="anonymous"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(3,11,26,0.50) 0%, rgba(3,11,26,0.30) 30%, rgba(3,11,26,0.97) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 75% 25%, rgba(196,154,30,0.22) 0%, transparent 60%)" }} />
 
-      {/* Top bar */}
-      <div style={{ position: "relative", zIndex: 2, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: "#C49A1E", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#000" }}>NA</div>
-          <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 8, letterSpacing: 2, textTransform: "uppercase" }}>NegociaAky</span>
+        {/* Selo top-left */}
+        <div style={{ position: "absolute", top: 14, left: 16, zIndex: 3, display: "flex", alignItems: "center", gap: 5, background: "rgba(0,0,0,0.55)", border: "1px solid rgba(196,154,30,0.5)", borderRadius: 20, padding: "3px 9px", backdropFilter: "blur(4px)" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#fde047", boxShadow: "0 0 8px #fde047" }} />
+          <span style={{ fontSize: 8, color: "#fef3c7", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Curadoria</span>
         </div>
-        <div style={{ background: "rgba(196,154,30,0.15)", border: "1px solid rgba(196,154,30,0.4)", borderRadius: 20, padding: "3px 10px", fontSize: 8, color: "#fde68a", fontWeight: 700, letterSpacing: 0.5 }}>
-          OPORTUNIDADE
+
+        {/* Headline overlaid */}
+        <div style={{ position: "absolute", inset: 0, padding: isPortrait ? "22px 22px 24px" : "18px 20px", display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 2 }}>
+          <div style={{ fontSize: 8.5, color: "#fde68a", fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 7, textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+            Pra quem quer renda real
+          </div>
+          <div style={{ fontSize: isPortrait ? 30 : 25, fontWeight: 900, color: "#fff", lineHeight: 1.02, letterSpacing: -0.3, textShadow: "0 2px 14px rgba(0,0,0,0.9)" }}>
+            Compre um negócio<br />que <span style={{ background: "linear-gradient(90deg, #fde68a, #fbbf24)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>já dá lucro</span>.
+          </div>
         </div>
       </div>
 
-      {/* Main content */}
-      <div style={{ flex: 1, position: "relative", zIndex: 2, padding: "8px 20px 0", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        {/* Big icon */}
-        <div style={{ fontSize: 42, marginBottom: 10, filter: "drop-shadow(0 4px 12px rgba(196,154,30,0.4))" }}>📈</div>
+      <div style={{ position: "absolute", bottom: -40, left: -30, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, #C49A1E15 0%, transparent 70%)", zIndex: 0 }} />
+      {/* Linha acento */}
+      <div style={{ position: "absolute", top: PHOTO_H - 1, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent 0%, #C49A1E 30%, #fde68a 70%, transparent 100%)", zIndex: 1, opacity: 0.65 }} />
 
-        {/* Headline */}
-        <div style={{ fontSize: 21, fontWeight: 900, color: "#fff", lineHeight: 1.2, marginBottom: 6 }}>
-          Quer investir em<br /><span style={{ color: "#C49A1E" }}>um negócio lucrativo?</span>
-        </div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 14, lineHeight: 1.5 }}>
-          Negócios com ROI comprovado disponíveis agora
-        </div>
-
-        {/* Value props */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          {[
-            "🏆 Vários segmentos e ticket de entrada",
-            "📊 Dados financeiros verificados",
-            "🤝 Suporte completo na transação",
-          ].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "7px 10px" }}>
-              <span style={{ fontSize: 9.5, color: "#fef9c3", fontWeight: 600 }}>{item}</span>
-            </div>
-          ))}
+      {/* ── INFO AREA ── */}
+      <div style={{ flex: 1, position: "relative", zIndex: 2, padding: isPortrait ? "20px 22px 0" : "16px 18px 0", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: isPortrait ? 14 : 12, fontWeight: 800, color: "#fff", letterSpacing: 0.8, marginBottom: 10, textTransform: "uppercase" }}>
+          <span style={{ borderBottom: "2px solid #C49A1E", paddingBottom: 1 }}>Auditado</span>
+          <span style={{ color: "#C49A1E", fontWeight: 400 }}>—</span>
+          <span style={{ borderBottom: "2px solid #C49A1E", paddingBottom: 1 }}>Lucrativo</span>
+          <span style={{ color: "#C49A1E", fontWeight: 400 }}>—</span>
+          <span style={{ borderBottom: "2px solid #C49A1E", paddingBottom: 1 }}>Pronto</span>
         </div>
 
-        {/* Bairro badge */}
+        <div style={{ fontSize: isPortrait ? 12 : 10.5, color: "rgba(255,255,255,0.78)", lineHeight: 1.5, marginBottom: 14, fontWeight: 500 }}>
+          <span style={{ color: "#fde68a", fontWeight: 700 }}>Faturamento comprovado.</span>{" "}
+          <span style={{ color: "#fde68a", fontWeight: 700 }}>Operação rodando.</span>{" "}
+          <span style={{ color: "#fde68a", fontWeight: 700 }}>Chaves em 60 dias.</span>
+        </div>
+
         {bairro && (
-          <div style={{ marginTop: 10, background: "rgba(196,154,30,0.12)", border: "1px solid rgba(196,154,30,0.3)", borderRadius: 8, padding: "5px 10px", display: "inline-block" }}>
-            <span style={{ fontSize: 9, color: "#fde68a", fontWeight: 700 }}>📍 Região: {bairro}</span>
+          <div style={{ background: "rgba(196,154,30,0.15)", border: "1px solid rgba(196,154,30,0.4)", borderRadius: 6, padding: "5px 11px", display: "inline-flex", alignSelf: "flex-start" }}>
+            <span style={{ fontSize: 10, color: "#fde68a", fontWeight: 700 }}>📍 Foco em {bairro}</span>
           </div>
         )}
       </div>
@@ -478,13 +520,17 @@ function PostCaptacaoInvestidor({ profile, bairro, divRef }: {
         <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #C49A1E", flexShrink: 0, background: "#1c1208", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {profile.foto_url
             ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
-            : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>}
+            : isInstitutional(profile.nome)
+              ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.35)" }} />
+              : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{getDisplayName(profile.nome)}</div>
-          {profile.creci && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)" }}>CRECI {profile.creci}</div>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getDisplayName(profile.nome)}</div>
+          <div style={{ fontSize: 8, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {profile.telefone ? formatPhone(profile.telefone) : (profile.creci ? `CRECI ${profile.creci}` : getDisplayRole(profile.nome))}
+          </div>
         </div>
-        <div style={{ background: "#C49A1E", borderRadius: 20, padding: "5px 12px", fontSize: 9, fontWeight: 800, color: "#000" }}>
+        <div style={{ background: "#C49A1E", borderRadius: 20, padding: "6px 13px", fontSize: 9, fontWeight: 800, color: "#1c1208", boxShadow: "0 2px 8px rgba(196,154,30,0.4)" }}>
           💬 Fale comigo
         </div>
       </div>
@@ -492,15 +538,155 @@ function PostCaptacaoInvestidor({ profile, bairro, divRef }: {
   );
 }
 
+// ─── Captação: Proprietário de Imóvel (tema ciano/teal) ──────────────────────
+function PostCaptacaoProprietario({ profile, bairro, heroUrl, formato, divRef }: {
+  profile: Profile; bairro: string; heroUrl: string; formato: "post" | "story" | "reels" | "status"; divRef: React.RefObject<HTMLDivElement>;
+}) {
+  const isPortrait = formato === "story" || formato === "reels" || formato === "status";
+  const W = isPortrait ? 270 : 360;
+  const H = isPortrait ? 480 : 360;
+  const PHOTO_H = isPortrait ? 250 : 165;
+
+  return (
+    <div ref={divRef} style={{
+      width: W, height: H, borderRadius: 14, overflow: "hidden",
+      display: "flex", flexDirection: "column",
+      fontFamily: "Arial, Helvetica, sans-serif",
+      background: "linear-gradient(180deg, #031820 0%, #062a35 60%, #083a48 100%)",
+      position: "relative", boxSizing: "border-box",
+    }}>
+      {/* ── HERO: foto + headline overlaid ── */}
+      <div style={{ height: PHOTO_H, position: "relative", flexShrink: 0, overflow: "hidden" }}>
+        <img src={heroUrl} crossOrigin="anonymous"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(3,24,32,0.50) 0%, rgba(3,24,32,0.30) 30%, rgba(3,24,32,0.97) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 75% 25%, rgba(34,211,238,0.22) 0%, transparent 60%)" }} />
+
+        {/* Selo top-left */}
+        <div style={{ position: "absolute", top: 14, left: 16, zIndex: 3, display: "flex", alignItems: "center", gap: 5, background: "rgba(0,0,0,0.55)", border: "1px solid rgba(34,211,238,0.5)", borderRadius: 20, padding: "3px 9px", backdropFilter: "blur(4px)" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22d3ee", boxShadow: "0 0 8px #22d3ee" }} />
+          <span style={{ fontSize: 8, color: "#cffafe", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Vende ou Aluga</span>
+        </div>
+
+        {/* Headline overlaid */}
+        <div style={{ position: "absolute", inset: 0, padding: isPortrait ? "22px 22px 24px" : "18px 20px", display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 2 }}>
+          <div style={{ fontSize: 8.5, color: "#67e8f9", fontWeight: 800, letterSpacing: 2.5, textTransform: "uppercase", marginBottom: 7, textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+            Imóvel parado é custo
+          </div>
+          <div style={{ fontSize: isPortrait ? 30 : 25, fontWeight: 900, color: "#fff", lineHeight: 1.02, letterSpacing: -0.3, textShadow: "0 2px 14px rgba(0,0,0,0.9)" }}>
+            Vamos colocar seu<br />imóvel pra <span style={{ background: "linear-gradient(90deg, #67e8f9, #22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>render</span>.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ position: "absolute", bottom: -40, left: -30, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, #22d3ee15 0%, transparent 70%)", zIndex: 0 }} />
+      {/* Linha acento */}
+      <div style={{ position: "absolute", top: PHOTO_H - 1, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent 0%, #22d3ee 30%, #67e8f9 70%, transparent 100%)", zIndex: 1, opacity: 0.65 }} />
+
+      {/* ── INFO AREA ── */}
+      <div style={{ flex: 1, position: "relative", zIndex: 2, padding: isPortrait ? "20px 22px 0" : "16px 18px 0", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: isPortrait ? 14 : 12, fontWeight: 800, color: "#fff", letterSpacing: 0.8, marginBottom: 10, textTransform: "uppercase" }}>
+          <span style={{ borderBottom: "2px solid #22d3ee", paddingBottom: 1 }}>Vende</span>
+          <span style={{ color: "#22d3ee", fontWeight: 400 }}>—</span>
+          <span style={{ borderBottom: "2px solid #22d3ee", paddingBottom: 1 }}>Aluga</span>
+          <span style={{ color: "#22d3ee", fontWeight: 400 }}>—</span>
+          <span style={{ borderBottom: "2px solid #22d3ee", paddingBottom: 1 }}>Você decide</span>
+        </div>
+
+        <div style={{ fontSize: isPortrait ? 12 : 10.5, color: "rgba(255,255,255,0.78)", lineHeight: 1.5, marginBottom: 14, fontWeight: 500 }}>
+          <span style={{ color: "#67e8f9", fontWeight: 700 }}>Avaliação grátis.</span>{" "}
+          <span style={{ color: "#67e8f9", fontWeight: 700 }}>Divulgação completa.</span>{" "}
+          <span style={{ color: "#67e8f9", fontWeight: 700 }}>Inquilino ou comprador certo.</span>
+        </div>
+
+        {bairro && (
+          <div style={{ background: "rgba(34,211,238,0.15)", border: "1px solid rgba(34,211,238,0.4)", borderRadius: 6, padding: "5px 11px", display: "inline-flex", alignSelf: "flex-start" }}>
+            <span style={{ fontSize: 10, color: "#cffafe", fontWeight: 700 }}>📍 Atendendo em {bairro}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom: corretor */}
+      <div style={{ position: "relative", zIndex: 2, padding: "10px 16px 14px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", border: "2px solid #22d3ee", flexShrink: 0, background: "#062a35", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {profile.foto_url
+            ? <img src={profile.foto_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
+            : isInstitutional(profile.nome)
+              ? <img src="/logo-icon.png" alt="NegociaAky" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scale(1.35)" }} />
+              : <span style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>{getInitials(getDisplayName(profile.nome))}</span>}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getDisplayName(profile.nome)}</div>
+          <div style={{ fontSize: 8, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {profile.telefone ? formatPhone(profile.telefone) : (profile.creci ? `CRECI ${profile.creci}` : getDisplayRole(profile.nome))}
+          </div>
+        </div>
+        <div style={{ background: "#22d3ee", borderRadius: 20, padding: "6px 13px", fontSize: 9, fontWeight: 800, color: "#031820", boxShadow: "0 2px 8px rgba(34,211,238,0.4)" }}>
+          💬 Fale comigo
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Catálogo de imagens de fundo (hero) ──────────────────────────────────────
+// Imagens Unsplash curadas (alta qualidade, 800px). Cada chave = tipo de
+// estabelecimento ou cenário de negócio.
+export const HERO_BG_VENDEDOR: Record<string, { label: string; emoji: string; url: string }> = {
+  supermercado: { label: "Supermercado",   emoji: "🛒", url: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&q=85" },
+  hortifruti:   { label: "Hortifruti",     emoji: "🥬", url: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800&q=85" },
+  restaurante:  { label: "Restaurante",    emoji: "🍽️", url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=85" },
+  farmacia:     { label: "Farmácia",       emoji: "💊", url: "https://images.unsplash.com/photo-1576602976047-174e57a47881?w=800&q=85" },
+  oficina:      { label: "Oficina",        emoji: "🔧", url: "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?w=800&q=85" },
+  roupas:       { label: "Loja de Roupas", emoji: "👕", url: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&q=85" },
+  padaria:      { label: "Padaria",        emoji: "🥖", url: "https://images.unsplash.com/photo-1568254183919-78a4f43a2877?w=800&q=85" },
+  acougue:      { label: "Açougue",        emoji: "🥩", url: "https://images.unsplash.com/photo-1607275850923-cf3068fe1e72?w=800&q=85" },
+  salao:        { label: "Salão de Beleza",emoji: "💇", url: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=85" },
+  academia:     { label: "Academia",       emoji: "🏋️", url: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=85" },
+  petshop:      { label: "Pet Shop",       emoji: "🐶", url: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=800&q=85" },
+  loja:         { label: "Loja Comercial", emoji: "🏪", url: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=85" },
+};
+export const HERO_BG_PROPRIETARIO: Record<string, { label: string; emoji: string; url: string }> = {
+  sala_comercial: { label: "Sala Comercial",  emoji: "🏢", url: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=85" },
+  loja_vazia:     { label: "Loja Vazia",      emoji: "🏪", url: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&q=85" },
+  galpao:         { label: "Galpão",          emoji: "🏭", url: "https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&q=85" },
+  predio:         { label: "Prédio",          emoji: "🏬", url: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=85" },
+  escritorio:     { label: "Escritório",      emoji: "🖥️", url: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=85" },
+  salao_amplo:    { label: "Salão Amplo",     emoji: "🏟️", url: "https://images.unsplash.com/photo-1606293459308-1c70a31e7a93?w=800&q=85" },
+  vitrine:        { label: "Loja de Rua",     emoji: "🛍️", url: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&q=85" },
+  industrial:     { label: "Industrial",      emoji: "🏗️", url: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=85" },
+  andar_corp:     { label: "Andar Corporativo",emoji: "🌃", url: "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?w=800&q=85" },
+  esquina:        { label: "Ponto de Esquina",emoji: "🚦", url: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=85" },
+  para_chave:     { label: "Chave na Mão",    emoji: "🔑", url: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=85" },
+  garagem:        { label: "Box / Garagem",   emoji: "🅿️", url: "https://images.unsplash.com/photo-1611954058830-1bd7f5edc14e?w=800&q=85" },
+};
+export const HERO_BG_INVESTIDOR: Record<string, { label: string; emoji: string; url: string }> = {
+  reuniao:     { label: "Negociação",   emoji: "🤝", url: "https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&q=85" },
+  aperto_mao:  { label: "Aperto de Mão",emoji: "✋", url: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&q=85" },
+  assinatura:  { label: "Contrato",     emoji: "📝", url: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&q=85" },
+  dashboard:   { label: "Dashboard",    emoji: "📊", url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=85" },
+  crescimento: { label: "Crescimento",  emoji: "📈", url: "https://images.unsplash.com/photo-1460472178825-e5240623afd5?w=800&q=85" },
+  graficos:    { label: "Gráficos",     emoji: "📉", url: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=85" },
+  capital:     { label: "Capital",      emoji: "💼", url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=85" },
+  calculadora: { label: "Análise",      emoji: "🧮", url: "https://images.unsplash.com/photo-1554224311-beee460c201f?w=800&q=85" },
+  loja_lux:    { label: "Loja Premium", emoji: "🏬", url: "https://images.unsplash.com/photo-1481437156560-3205f6a55735?w=800&q=85" },
+  escritorio:  { label: "Escritório",   emoji: "🏢", url: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&q=85" },
+  skyline:     { label: "Centro Empresarial", emoji: "🏙️", url: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800&q=85" },
+  mesa_neg:    { label: "Mesa de Negócios",   emoji: "👔", url: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=85" },
+  franquia:    { label: "Franquia",     emoji: "🏆", url: "https://images.unsplash.com/photo-1556745753-b2904692b3cd?w=800&q=85" },
+  carteira:    { label: "Portfólio",    emoji: "📁", url: "https://images.unsplash.com/photo-1579621970795-87facc2f976d?w=800&q=85" },
+};
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 type Aba = "negocios" | "captacao";
-type TipoCaptacao = "vendedor" | "investidor";
-type Formato = "post" | "story" | "status";
+type TipoCaptacao = "vendedor" | "investidor" | "proprietario";
+type Formato = "post" | "story" | "reels" | "status";
 type GatilhoMental = "urgencia" | "escassez" | "fomo" | "ganancia" | "prova_social" | "curiosidade" | "autoridade" | "transformacao";
 
 const FORMATO_CONFIG: Record<Formato, { label: string; icon: React.ReactNode; desc: string; color: string }> = {
   post:   { label: "Post Instagram",  icon: <Instagram className="h-4 w-4" />,     desc: "1080×1080",     color: "from-pink-500 to-purple-600" },
   story:  { label: "Story Instagram", icon: <Instagram className="h-4 w-4" />,     desc: "1080×1920",     color: "from-violet-500 to-pink-500" },
+  reels:  { label: "Reels Capa",      icon: <Film className="h-4 w-4" />,          desc: "1080×1920",     color: "from-orange-500 to-rose-600" },
   status: { label: "Status WhatsApp", icon: <MessageCircle className="h-4 w-4" />, desc: "9:16 pessoal",  color: "from-green-500 to-emerald-600" },
 };
 
@@ -517,7 +703,7 @@ const GATILHOS: Record<GatilhoMental, { icon: string; label: string; desc: strin
 
 // ─── Expert copy builder ──────────────────────────────────────────────────────
 function buildCopyPrompt(params: {
-  contexto: "negocio_venda" | "imovel_locacao" | "captacao_vendedor" | "captacao_investidor";
+  contexto: "negocio_venda" | "imovel_locacao" | "captacao_vendedor" | "captacao_investidor" | "captacao_proprietario";
   formato: Formato;
   gatilho: GatilhoMental;
   dadosNegocio?: string;
@@ -534,17 +720,19 @@ function buildCopyPrompt(params: {
   };
 
   const audiencias: Record<typeof contexto, string> = {
-    negocio_venda:       "PÚBLICO-ALVO: Compradores e investidores que buscam adquirir um negócio lucrativo.",
-    imovel_locacao:      "PÚBLICO-ALVO: Empreendedores e empresas procurando um ponto comercial para ALUGAR e operar seu negócio.",
-    captacao_vendedor:   "PÚBLICO-ALVO: Donos de negócio do bairro que podem estar pensando em vender seu estabelecimento.",
-    captacao_investidor: "PÚBLICO-ALVO: Investidores e empreendedores que querem comprar um negócio pronto e lucrativo.",
+    negocio_venda:        "PÚBLICO-ALVO: Compradores e investidores que buscam adquirir um negócio lucrativo.",
+    imovel_locacao:       "PÚBLICO-ALVO: Empreendedores e empresas procurando um ponto comercial para ALUGAR e operar seu negócio.",
+    captacao_vendedor:    "PÚBLICO-ALVO: Donos de negócio do bairro que podem estar pensando em vender seu estabelecimento.",
+    captacao_investidor:  "PÚBLICO-ALVO: Investidores e empreendedores que querem comprar um negócio pronto e lucrativo.",
+    captacao_proprietario:"PÚBLICO-ALVO: Proprietários de imóveis comerciais (salas, lojas, galpões, prédios) parados ou com inquilino problemático, que querem VENDER ou ALUGAR seu imóvel com profissionalismo.",
   };
 
   const contextoCopy: Record<typeof contexto, string> = {
-    negocio_venda:       "OBJETIVO: Anunciar este negócio À VENDA e atrair compradores qualificados para entrar em contato com o corretor. NUNCA fale em 'comprar' como sinônimo de 'alugar'.",
-    imovel_locacao:      "OBJETIVO: Anunciar este imóvel/ponto comercial PARA LOCAÇÃO (aluguel) e atrair empresários interessados em alugar. NUNCA fale em 'comprar', 'venda' ou 'valor de aquisição' — é ALUGUEL MENSAL. Use termos como 'alugue agora', 'ponto para locação', 'aluguel acessível', 'localização estratégica'. OBRIGATÓRIO: cite explicitamente o TIPO DE IMÓVEL (salão, loja, sala comercial, galpão, etc — pegue do campo Tipo de imóvel ou Descrição) e a METRAGEM (m²) — esses dois dados são decisivos pro empresário escolher.",
-    captacao_vendedor:   "OBJETIVO: Fazer donos de negócio do bairro entrarem em contato com o corretor para AVALIAR e LISTAR seu negócio para venda.",
-    captacao_investidor: "OBJETIVO: Fazer investidores entrarem em contato com o corretor para CONHECER as oportunidades de negócios disponíveis.",
+    negocio_venda:        "OBJETIVO: Anunciar este negócio À VENDA e atrair compradores qualificados para entrar em contato com o corretor. NUNCA fale em 'comprar' como sinônimo de 'alugar'.",
+    imovel_locacao:       "OBJETIVO: Anunciar este imóvel/ponto comercial PARA LOCAÇÃO (aluguel) e atrair empresários interessados em alugar. NUNCA fale em 'comprar', 'venda' ou 'valor de aquisição' — é ALUGUEL MENSAL. Use termos como 'alugue agora', 'ponto para locação', 'aluguel acessível', 'localização estratégica'. OBRIGATÓRIO: cite explicitamente o TIPO DE IMÓVEL (salão, loja, sala comercial, galpão, etc — pegue do campo Tipo de imóvel ou Descrição) e a METRAGEM (m²) — esses dois dados são decisivos pro empresário escolher.",
+    captacao_vendedor:    "OBJETIVO: Fazer donos de negócio do bairro entrarem em contato com o corretor para AVALIAR e LISTAR seu negócio para venda.",
+    captacao_investidor:  "OBJETIVO: Fazer investidores entrarem em contato com o corretor para CONHECER as oportunidades de negócios disponíveis.",
+    captacao_proprietario:"OBJETIVO: Fazer DONOS DE IMÓVEL COMERCIAL (sala, loja, galpão, prédio) entrarem em contato com o corretor para anunciar seu imóvel — seja pra VENDER, seja pra ALUGAR. Foque na dor de ter imóvel parado virando custo (IPTU, condomínio, manutenção). Deixe claro que o corretor cuida da divulgação, qualificação do candidato (inquilino OU comprador) e fechamento. Termos chave: 'imóvel parado', 'colocar pra render', 'inquilino certo', 'comprador qualificado', 'sem dor de cabeça', 'avaliação gratuita'.",
   };
 
   const metodo = `
@@ -578,6 +766,62 @@ ${corretorInfo}`;
 
 const TODAS_CATS = Object.keys(CAT);
 
+// ─── Mocks por categoria ────────────────────────────────────────────────────
+// Quando uma categoria NÃO tem produto real cadastrado, usamos esses exemplos
+// pra deixar o corretor gerar arte de demonstração. Marcados com id mock-*.
+const mockBase = {
+  cidade: "São Paulo",
+  estado: "SP",
+  status: "ativo" as const,
+  proprietario_nome: "Exemplo",
+  proprietario_email: "exemplo@negociaaky.com.br",
+  proprietario_telefone: "",
+  criado_em: new Date().toISOString(),
+};
+const MOCK_NEGOCIOS_BY_CAT: Record<string, Negocio[]> = {
+  "Alimentação": [
+    { ...mockBase, id: "mock-alim-1", categoria: "Alimentação", titulo: "Restaurante Italiano · 12 anos", preco: 450000, faturamento_mensal: 85000, area_m2: 180, foto_url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=85", descricao: "Restaurante italiano consolidado com 12 anos de operação. Clientela fidelizada, cozinha equipada, ponto premiado. Lucro líquido médio mensal: R$ 22.000. Tipo de imóvel: Salão. Operação: Venda." },
+    { ...mockBase, id: "mock-alim-2", categoria: "Alimentação", titulo: "Padaria de Bairro Tradicional", preco: 320000, faturamento_mensal: 65000, area_m2: 120, foto_url: "https://images.unsplash.com/photo-1568254183919-78a4f43a2877?w=800&q=85", descricao: "Padaria com 25 anos de bairro, clientela fiel, produção própria. Operação: Venda." },
+  ],
+  "Saúde e Estética": [
+    { ...mockBase, id: "mock-saude-1", categoria: "Saúde e Estética", titulo: "Clínica de Estética Premium", preco: 280000, faturamento_mensal: 48000, area_m2: 110, foto_url: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=85", descricao: "Clínica completa com 4 cabines, recepção, equipamentos modernos. Carteira ativa de 600 clientes." },
+    { ...mockBase, id: "mock-saude-2", categoria: "Saúde e Estética", titulo: "Salão de Beleza · Bem Localizado", preco: 180000, faturamento_mensal: 32000, area_m2: 85, foto_url: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=85", descricao: "Salão com 6 cadeiras, recepção, depósito. Em ponto de alto fluxo." },
+  ],
+  "Serviços": [
+    { ...mockBase, id: "mock-serv-1", categoria: "Serviços", titulo: "Lavanderia Industrial", preco: 220000, faturamento_mensal: 38000, area_m2: 95, foto_url: "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?w=800&q=85", descricao: "Lavanderia atendendo hotéis e restaurantes. Maquinário industrial completo." },
+    { ...mockBase, id: "mock-serv-2", categoria: "Serviços", titulo: "Oficina Mecânica Multimarca", preco: 195000, faturamento_mensal: 42000, area_m2: 160, foto_url: "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?w=800&q=85", descricao: "Oficina com 4 elevadores, ferramentaria completa, carteira de clientes fixos." },
+  ],
+  "Varejo": [
+    { ...mockBase, id: "mock-var-1", categoria: "Varejo", titulo: "Loja de Roupas Femininas", preco: 165000, faturamento_mensal: 35000, area_m2: 80, foto_url: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800&q=85", descricao: "Loja em rua de comércio forte, estoque consignado, clientela fiel." },
+    { ...mockBase, id: "mock-var-2", categoria: "Varejo", titulo: "Papelaria + Bazar Completo", preco: 95000, faturamento_mensal: 22000, area_m2: 60, foto_url: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=85", descricao: "Papelaria com bazar, atende escolas da região." },
+  ],
+  "Tecnologia": [
+    { ...mockBase, id: "mock-tec-1", categoria: "Tecnologia", titulo: "Loja de Eletrônicos · Shopping", preco: 380000, faturamento_mensal: 58000, area_m2: 90, foto_url: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=85", descricao: "Loja em shopping de alto fluxo, marcas premium, equipe treinada." },
+    { ...mockBase, id: "mock-tec-2", categoria: "Tecnologia", titulo: "Assistência Técnica Autorizada", preco: 145000, faturamento_mensal: 28000, area_m2: 65, foto_url: "https://images.unsplash.com/photo-1581092335397-9583eb92d232?w=800&q=85", descricao: "AT autorizada Samsung/LG, 8 anos de mercado, contratos garantidos." },
+  ],
+  "Educação": [
+    { ...mockBase, id: "mock-edu-1", categoria: "Educação", titulo: "Escola de Idiomas Consolidada", preco: 320000, faturamento_mensal: 48000, area_m2: 220, foto_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=85", descricao: "Escola com 8 salas, 280 alunos ativos, professores próprios." },
+    { ...mockBase, id: "mock-edu-2", categoria: "Educação", titulo: "Curso Profissionalizante · 320 alunos", preco: 240000, faturamento_mensal: 38000, area_m2: 180, foto_url: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=85", descricao: "Cursos técnicos com certificação MEC. Estrutura completa." },
+  ],
+  "Automotivo": [
+    { ...mockBase, id: "mock-auto-1", categoria: "Automotivo", titulo: "Centro Automotivo Completo", preco: 520000, faturamento_mensal: 78000, area_m2: 380, foto_url: "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?w=800&q=85", descricao: "Mecânica + funilaria + pintura + estética. Alvará completo." },
+    { ...mockBase, id: "mock-auto-2", categoria: "Automotivo", titulo: "Estética Automotiva Premium", preco: 180000, faturamento_mensal: 32000, area_m2: 200, foto_url: "https://images.unsplash.com/photo-1605618826115-fb9e776cba5d?w=800&q=85", descricao: "Detalhes, vitrificação, polimento. Clientela de carros premium." },
+  ],
+  "Indústria": [
+    { ...mockBase, id: "mock-ind-1", categoria: "Indústria", titulo: "Fábrica de Móveis Planejados", preco: 950000, faturamento_mensal: 165000, area_m2: 850, foto_url: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=85", descricao: "Fábrica equipada com CNC, marcenaria completa. Carteira de lojistas." },
+    { ...mockBase, id: "mock-ind-2", categoria: "Indústria", titulo: "Distribuidora · Galpão 1200m²", preco: 1200000, faturamento_mensal: 280000, area_m2: 1200, foto_url: "https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&q=85", descricao: "Distribuidora com frota, contratos de fornecimento, equipe treinada." },
+  ],
+  "Imóveis Comerciais": [
+    { ...mockBase, id: "mock-imov-1", categoria: "Imóveis Comerciais", titulo: "Salão Comercial · Av. Movimentada", preco: 8500, area_m2: 250, foto_url: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&q=85", descricao: "Salão térreo com pé-direito alto, vitrine ampla. Tipo de imóvel: Salão. Operação: Locação.", badge_texto: "LOCAÇÃO" },
+    { ...mockBase, id: "mock-imov-2", categoria: "Imóveis Comerciais", titulo: "Sala Comercial · Centro", preco: 850000, area_m2: 95, foto_url: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=85", descricao: "Sala comercial em edifício moderno. Tipo de imóvel: Sala. Operação: Venda." },
+  ],
+  "Outro": [
+    { ...mockBase, id: "mock-out-1", categoria: "Outro", titulo: "Negócio Diferenciado · Nicho Lucrativo", preco: 280000, faturamento_mensal: 42000, area_m2: 100, foto_url: "https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&q=85", descricao: "Negócio único de nicho, baixa concorrência, margem alta." },
+  ],
+};
+// Marca um negócio como mock pra UI mostrar selo "EXEMPLO"
+const isMock = (n: Negocio) => typeof n.id === "string" && n.id.startsWith("mock-");
+
 const CorretorRedesSociais = () => {
   usePageTitle("Redes Sociais | Área do Corretor");
 
@@ -593,6 +837,33 @@ const CorretorRedesSociais = () => {
 
   // Captação
   const [tipoCaptacao, setTipoCaptacao] = useState<TipoCaptacao>("vendedor");
+  // Imagem de fundo (hero) das artes de captação — uma chave por tipo
+  const [heroBgVendedor, setHeroBgVendedor]         = useState<string>("supermercado");
+  const [heroBgInvestidor, setHeroBgInvestidor]     = useState<string>("reuniao");
+  const [heroBgProprietario, setHeroBgProprietario] = useState<string>("sala_comercial");
+  // Upload custom — quando setado, vira a chave "custom" e usa esse URL local
+  const [customBgVendedor, setCustomBgVendedor]         = useState<string>("");
+  const [customBgInvestidor, setCustomBgInvestidor]     = useState<string>("");
+  const [customBgProprietario, setCustomBgProprietario] = useState<string>("");
+  const customFileVendedorRef     = useRef<HTMLInputElement>(null);
+  const customFileInvestidorRef   = useRef<HTMLInputElement>(null);
+  const customFileProprietarioRef = useRef<HTMLInputElement>(null);
+
+  const handleCustomBgUpload = (e: React.ChangeEvent<HTMLInputElement>, tipo: TipoCaptacao) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (tipo === "vendedor")        { setCustomBgVendedor(url);     setHeroBgVendedor("custom"); }
+    else if (tipo === "investidor") { setCustomBgInvestidor(url);   setHeroBgInvestidor("custom"); }
+    else                            { setCustomBgProprietario(url); setHeroBgProprietario("custom"); }
+    if (e.target) e.target.value = "";
+  };
+
+  const resolveHeroUrl = (tipo: TipoCaptacao): string => {
+    if (tipo === "vendedor")    return heroBgVendedor    === "custom" ? customBgVendedor    : (HERO_BG_VENDEDOR[heroBgVendedor]?.url || "");
+    if (tipo === "investidor")  return heroBgInvestidor  === "custom" ? customBgInvestidor  : (HERO_BG_INVESTIDOR[heroBgInvestidor]?.url || "");
+    return heroBgProprietario === "custom" ? customBgProprietario : (HERO_BG_PROPRIETARIO[heroBgProprietario]?.url || "");
+  };
   const [bairro, setBairro]           = useState("");
   const [copyCaptacao, setCopyCaptacao] = useState("");
   const [generatingCopyCaptacao, setGeneratingCopyCaptacao] = useState(false);
@@ -600,6 +871,7 @@ const CorretorRedesSociais = () => {
   const [downloadingCaptacao, setDownloadingCaptacao] = useState(false);
   const captacaoVendedorRef = useRef<HTMLDivElement>(null);
   const captacaoInvestidorRef = useRef<HTMLDivElement>(null);
+  const captacaoProprietarioRef = useRef<HTMLDivElement>(null);
 
   // Seleção por categoria
   const [catSelecionada, setCatSelecionada] = useState<string | null>(null);
@@ -631,9 +903,13 @@ const CorretorRedesSociais = () => {
   }, []);
 
   // Negócios filtrados por categoria + busca (drill-in)
-  const negociosDaCat = catSelecionada
-    ? negocios.filter((n) => n.categoria === catSelecionada)
-    : negocios;
+  // Se a categoria não tem produto real, usa MOCK pra demonstração
+  const negociosDaCat = (() => {
+    if (!catSelecionada) return negocios;
+    const reais = negocios.filter((n) => n.categoria === catSelecionada);
+    if (reais.length > 0) return reais;
+    return MOCK_NEGOCIOS_BY_CAT[catSelecionada] || [];
+  })();
   const negociosFiltrados = negociosDaCat.filter((n) =>
     n.titulo.toLowerCase().includes(search.toLowerCase()) ||
     n.cidade.toLowerCase().includes(search.toLowerCase())
@@ -686,7 +962,9 @@ const CorretorRedesSociais = () => {
     setCopyCaptacao("");
     const corretorInfo = `Corretor: ${getDisplayName(profile.nome)}${profile.creci ? " · CRECI " + profile.creci : ""}${profile.telefone ? " · " + formatPhone(profile.telefone) : ""}`;
     const prompt = buildCopyPrompt({
-      contexto: tipoCaptacao === "vendedor" ? "captacao_vendedor" : "captacao_investidor",
+      contexto: tipoCaptacao === "vendedor" ? "captacao_vendedor"
+        : tipoCaptacao === "proprietario" ? "captacao_proprietario"
+        : "captacao_investidor",
       formato,
       gatilho,
       localInfo: bairro || undefined,
@@ -703,14 +981,18 @@ const CorretorRedesSociais = () => {
   };
 
   const handleDownloadCaptacao = async () => {
-    const ref = tipoCaptacao === "vendedor" ? captacaoVendedorRef : captacaoInvestidorRef;
+    const ref = tipoCaptacao === "vendedor" ? captacaoVendedorRef
+      : tipoCaptacao === "proprietario" ? captacaoProprietarioRef
+      : captacaoInvestidorRef;
     if (!ref.current) return;
     setDownloadingCaptacao(true);
     try {
       const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(ref.current, { scale: 3, useCORS: true, backgroundColor: null });
+      // post 360x360 com scale 3 = 1080x1080; story/status 270x480 com scale 4 = 1080x1920
+      const scale = formato === "post" ? 3 : 4;
+      const canvas = await html2canvas(ref.current, { scale, useCORS: true, backgroundColor: null });
       const link = document.createElement("a");
-      link.download = `captacao-${tipoCaptacao}-${Date.now()}.png`;
+      link.download = `captacao-${tipoCaptacao}-${formato}-${Date.now()}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } finally {
@@ -826,23 +1108,32 @@ const CorretorRedesSociais = () => {
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">1</div>
                   <p className="font-semibold text-foreground text-sm">Tipo de captação</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2.5">
                   <button
                     onClick={() => { setTipoCaptacao("vendedor"); setCopyCaptacao(""); }}
-                    className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all ${tipoCaptacao === "vendedor" ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-700 text-xl">🏪</div>
+                    className={`flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all ${tipoCaptacao === "vendedor" ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-700 text-lg">🏪</div>
                     <div>
-                      <p className="text-sm font-bold text-foreground">Captação Vendedor</p>
-                      <p className="text-xs text-muted-foreground leading-tight mt-0.5">Para donos de negócio que querem vender</p>
+                      <p className="text-xs font-bold text-foreground leading-tight">Vendedor</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Dono de negócio que quer vender</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => { setTipoCaptacao("proprietario"); setCopyCaptacao(""); }}
+                    className={`flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all ${tipoCaptacao === "proprietario" ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-teal-700 text-lg">🔑</div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground leading-tight">Proprietário</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Vender ou alugar imóvel comercial</p>
                     </div>
                   </button>
                   <button
                     onClick={() => { setTipoCaptacao("investidor"); setCopyCaptacao(""); }}
-                    className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all ${tipoCaptacao === "investidor" ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-700 text-xl">📈</div>
+                    className={`flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all ${tipoCaptacao === "investidor" ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border bg-muted/20 hover:bg-muted/40"}`}>
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-yellow-700 text-lg">📈</div>
                     <div>
-                      <p className="text-sm font-bold text-foreground">Captação Investidor</p>
-                      <p className="text-xs text-muted-foreground leading-tight mt-0.5">Para quem quer comprar um negócio</p>
+                      <p className="text-xs font-bold text-foreground leading-tight">Investidor</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Quem quer comprar um negócio</p>
                     </div>
                   </button>
                 </div>
@@ -864,10 +1155,128 @@ const CorretorRedesSociais = () => {
                 <p className="text-xs text-muted-foreground">Personaliza a arte e o copy para o seu território de atuação</p>
               </div>
 
-              {/* STEP 3: Formato */}
+              {/* STEP 3: Imagem de fundo */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">3</div>
+                    <p className="font-semibold text-foreground text-sm">Imagem de fundo</p>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    {tipoCaptacao === "vendedor" ? "12 comércios + upload"
+                      : tipoCaptacao === "proprietario" ? "12 tipos de imóvel + upload"
+                      : "14 cenários + upload"}
+                  </span>
+                </div>
+
+                {/* Hidden file inputs */}
+                <input ref={customFileVendedorRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => handleCustomBgUpload(e, "vendedor")} />
+                <input ref={customFileInvestidorRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => handleCustomBgUpload(e, "investidor")} />
+                <input ref={customFileProprietarioRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => handleCustomBgUpload(e, "proprietario")} />
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  {/* Tile "Personalizado" / upload — sempre primeiro */}
+                  {(() => {
+                    const customUrl = tipoCaptacao === "vendedor" ? customBgVendedor
+                      : tipoCaptacao === "proprietario" ? customBgProprietario : customBgInvestidor;
+                    const activeKey = tipoCaptacao === "vendedor" ? heroBgVendedor
+                      : tipoCaptacao === "proprietario" ? heroBgProprietario : heroBgInvestidor;
+                    const ativo = activeKey === "custom" && !!customUrl;
+                    const fileRef = tipoCaptacao === "vendedor" ? customFileVendedorRef
+                      : tipoCaptacao === "proprietario" ? customFileProprietarioRef : customFileInvestidorRef;
+                    const setBg = tipoCaptacao === "vendedor" ? setHeroBgVendedor
+                      : tipoCaptacao === "proprietario" ? setHeroBgProprietario : setHeroBgInvestidor;
+                    return (
+                      <button onClick={() => {
+                        if (customUrl) { setBg("custom"); } else { fileRef.current?.click(); }
+                      }} onDoubleClick={() => fileRef.current?.click()}
+                        className={`group relative flex flex-col items-stretch rounded-xl border-2 border-dashed overflow-hidden transition-all ${
+                          ativo
+                            ? "border-primary ring-2 ring-primary/30 bg-primary/5"
+                            : "border-border/60 hover:border-primary/60 hover:bg-primary/5 bg-muted/20"
+                        }`}>
+                        <div className="relative w-full aspect-square flex items-center justify-center">
+                          {customUrl ? (
+                            <>
+                              <img src={customUrl} alt="Personalizado" className="absolute inset-0 w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                              <span className="absolute top-1.5 right-1.5 rounded-full bg-primary text-white text-[9px] font-bold px-1.5 py-0.5">SUA</span>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                              <span className="text-[9px] font-semibold">Subir imagem</span>
+                            </div>
+                          )}
+                          {ativo && (
+                            <div className="absolute top-1.5 left-1.5 h-4 w-4 rounded-full bg-primary text-white flex items-center justify-center shadow-md">
+                              <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                            </div>
+                          )}
+                        </div>
+                        <span className={`text-[10px] font-semibold px-1 py-1.5 truncate text-center ${ativo ? "text-primary" : "text-foreground"}`}>
+                          {customUrl ? "Personalizada" : "Personalizado"}
+                        </span>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Tiles do banco */}
+                  {(tipoCaptacao === "vendedor"     ? Object.entries(HERO_BG_VENDEDOR)
+                   : tipoCaptacao === "proprietario" ? Object.entries(HERO_BG_PROPRIETARIO)
+                   : Object.entries(HERO_BG_INVESTIDOR)
+                  ).map(([key, cfg]) => {
+                    const ativo = tipoCaptacao === "vendedor" ? heroBgVendedor === key
+                      : tipoCaptacao === "proprietario" ? heroBgProprietario === key
+                      : heroBgInvestidor === key;
+                    const setBg = tipoCaptacao === "vendedor" ? setHeroBgVendedor
+                      : tipoCaptacao === "proprietario" ? setHeroBgProprietario
+                      : setHeroBgInvestidor;
+                    return (
+                      <button key={key} onClick={() => setBg(key)}
+                        className={`group relative flex flex-col items-stretch rounded-xl border overflow-hidden transition-all ${
+                          ativo ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-primary/50"
+                        }`}>
+                        <div className="relative w-full aspect-square bg-muted/30">
+                          <img src={cfg.url} alt={cfg.label} loading="lazy"
+                            className="absolute inset-0 w-full h-full object-cover opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
+                          <span className="absolute top-1.5 left-1.5 text-lg drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{cfg.emoji}</span>
+                          {ativo && (
+                            <div className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full bg-primary text-white flex items-center justify-center shadow-md">
+                              <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                            </div>
+                          )}
+                        </div>
+                        <span className={`text-[10px] font-semibold px-1 py-1.5 truncate text-center ${ativo ? "text-primary" : "text-foreground"}`}>{cfg.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  💡 Dica: use foto real do bairro pra dar mais autenticidade.
+                  {(tipoCaptacao === "vendedor" ? heroBgVendedor
+                    : tipoCaptacao === "proprietario" ? heroBgProprietario
+                    : heroBgInvestidor) === "custom" && (
+                    <button
+                      type="button"
+                      onClick={() => (tipoCaptacao === "vendedor" ? customFileVendedorRef
+                        : tipoCaptacao === "proprietario" ? customFileProprietarioRef
+                        : customFileInvestidorRef).current?.click()}
+                      className="ml-1 text-primary font-semibold hover:underline"
+                    >Trocar imagem</button>
+                  )}
+                </p>
+              </div>
+
+              {/* STEP 4: Formato */}
               <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">3</div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">4</div>
                   <p className="font-semibold text-foreground text-sm">Formato</p>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
@@ -882,10 +1291,10 @@ const CorretorRedesSociais = () => {
                 </div>
               </div>
 
-              {/* STEP 4: Copy com IA */}
+              {/* STEP 5: Copy com IA */}
               <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">4</div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0">5</div>
                   <p className="font-semibold text-foreground text-sm">Gatilho Mental + Copy com IA</p>
                 </div>
 
@@ -955,8 +1364,10 @@ const CorretorRedesSociais = () => {
                 </div>
                 <div className="flex justify-center">
                   {tipoCaptacao === "vendedor"
-                    ? <PostCaptacaoVendedor profile={profile} bairro={bairro} divRef={captacaoVendedorRef} />
-                    : <PostCaptacaoInvestidor profile={profile} bairro={bairro} divRef={captacaoInvestidorRef} />
+                    ? <PostCaptacaoVendedor profile={profile} bairro={bairro} heroUrl={resolveHeroUrl("vendedor")} formato={formato} divRef={captacaoVendedorRef} />
+                    : tipoCaptacao === "proprietario"
+                      ? <PostCaptacaoProprietario profile={profile} bairro={bairro} heroUrl={resolveHeroUrl("proprietario")} formato={formato} divRef={captacaoProprietarioRef} />
+                      : <PostCaptacaoInvestidor profile={profile} bairro={bairro} heroUrl={resolveHeroUrl("investidor")} formato={formato} divRef={captacaoInvestidorRef} />
                   }
                 </div>
                 <button onClick={handleDownloadCaptacao} disabled={downloadingCaptacao}
@@ -1062,6 +1473,7 @@ const CorretorRedesSociais = () => {
                   {TODAS_CATS.map((cat) => {
                     const c = getCat(cat);
                     const count = negocios.filter((n) => n.categoria === cat).length;
+                    const mockCount = (MOCK_NEGOCIOS_BY_CAT[cat] || []).length;
                     const hasProducts = count > 0;
                     return (
                       <button key={cat}
@@ -1069,7 +1481,7 @@ const CorretorRedesSociais = () => {
                         className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer ${
                           hasProducts
                             ? "border-border bg-muted/20 hover:bg-muted/50 hover:border-primary/30"
-                            : "border-border/40 bg-muted/10 hover:bg-muted/30 hover:border-border opacity-70"
+                            : "border-border/40 bg-muted/10 hover:bg-muted/30 hover:border-border"
                         }`}>
                         <div
                           style={{ background: `${c.accent}20`, border: `1px solid ${c.accent}40` }}
@@ -1079,7 +1491,11 @@ const CorretorRedesSociais = () => {
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-foreground truncate">{cat}</p>
                           <p className="text-xs text-muted-foreground">
-                            {hasProducts ? `${count} produto${count !== 1 ? "s" : ""}` : "sem produtos"}
+                            {hasProducts
+                              ? `${count} produto${count !== 1 ? "s" : ""}`
+                              : mockCount > 0
+                                ? <span className="text-violet-500 dark:text-violet-400 font-medium">{mockCount} exemplo{mockCount !== 1 ? "s" : ""}</span>
+                                : "sem produtos"}
                           </p>
                         </div>
                       </button>
@@ -1094,11 +1510,21 @@ const CorretorRedesSociais = () => {
                   {/* Badge da categoria */}
                   <div className="flex items-center gap-2 rounded-xl px-3 py-2 border border-border bg-muted/30">
                     <span className="text-xl">{getCat(catSelecionada).icon}</span>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">{catSelecionada}</p>
-                      <p className="text-xs text-muted-foreground">{negociosDaCat.length} negócio{negociosDaCat.length !== 1 ? "s" : ""} disponível{negociosDaCat.length !== 1 ? "is" : ""}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {negociosDaCat.length} negócio{negociosDaCat.length !== 1 ? "s" : ""}
+                        {negociosDaCat.length > 0 && isMock(negociosDaCat[0]) && (
+                          <span className="ml-1.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-violet-500/10 text-violet-600 dark:text-violet-400 text-[9px] font-bold tracking-wider uppercase">Exemplo</span>
+                        )}
+                      </p>
                     </div>
                   </div>
+                  {negociosDaCat.length > 0 && isMock(negociosDaCat[0]) && (
+                    <div className="rounded-lg bg-violet-500/8 border border-violet-500/20 px-3 py-2 text-[11px] text-violet-700 dark:text-violet-300 leading-relaxed">
+                      💡 Esta categoria não tem produtos cadastrados ainda. Estamos mostrando <strong>negócios de exemplo</strong> pra você testar o gerador de arte.
+                    </div>
+                  )}
 
                   {/* Negócio selecionado */}
                   {selected && (
@@ -1133,7 +1559,10 @@ const CorretorRedesSociais = () => {
                           <button key={n.id} onClick={() => handleSelectNegocio(n)}
                             className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors ${selected?.id === n.id ? "bg-primary/5" : ""}`}>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground text-xs truncate">{n.titulo}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-medium text-foreground text-xs truncate">{n.titulo}</p>
+                                {isMock(n) && <span className="shrink-0 rounded px-1 py-0.5 bg-violet-500/15 text-violet-600 dark:text-violet-400 text-[8px] font-bold tracking-wider uppercase">Exemplo</span>}
+                              </div>
                               <p className="text-xs text-muted-foreground">{n.cidade}, {n.estado}</p>
                             </div>
                             {n.preco && <span className="text-xs font-bold text-primary shrink-0">{formatCurrency(n.preco)}</span>}
