@@ -36,6 +36,7 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  UserCheck2,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import CompartilharBuscaModal from "@/components/CompartilharBuscaModal";
@@ -205,6 +206,20 @@ export const NovoNegocioModal = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  // Atribuição de corretor (apenas admin — quando corretorId não veio fixo)
+  const [corretores, setCorretores] = useState<{ id: string; nome: string }[]>([]);
+  const [selectedCorretor, setSelectedCorretor] = useState<string>(corretorId || "");
+  useEffect(() => {
+    if (corretorId) return; // corretor logado: já vem fixo, não precisa escolher
+    supabase
+      .from("profiles")
+      .select("id, nome")
+      .eq("role", "corretor")
+      .eq("ativo", true)
+      .order("nome")
+      .then(({ data }) => setCorretores((data as { id: string; nome: string }[]) || []));
+  }, [corretorId]);
+  const corretorFinal = corretorId || selectedCorretor || null;
   const MAX_FOTOS = 6;
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const fotoInputRef = useRef<HTMLInputElement>(null);
@@ -306,7 +321,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
           cidade: form.cidade,
           estado: form.estado,
           descricao: form.descricao,
-          corretor_id: corretorId || null,
+          corretor_id: corretorFinal,
         })
         .select()
         .single();
@@ -391,7 +406,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
         proprietario_telefone: form.proprietario_telefone || null,
         proprietario_email: form.proprietario_email,
         status: form.status,
-        corretor_id: corretorId || null,
+        corretor_id: corretorFinal,
         badge_texto: form.badge_texto.trim() || null,
         badge_cor: form.badge_cor,
         mostrar_preco_foto: form.mostrar_preco_foto,
@@ -1180,6 +1195,33 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
             </div>
           </div>
 
+          {/* Atribuir corretor (somente admin — corretorId vem fixo quando é o próprio corretor) */}
+          {!corretorId && (
+            <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+                <UserCheck2 className="h-4 w-4 text-primary" />
+                Atribuir a um corretor
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                O corretor escolhido verá este anúncio em "Meus Negócios" e poderá editá-lo.
+              </p>
+              <Select
+                value={selectedCorretor || "_none"}
+                onValueChange={(v) => setSelectedCorretor(v === "_none" ? "" : v)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Nenhum (sem corretor)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Nenhum (sem corretor)</SelectItem>
+                  {corretores.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Proprietário */}
           <div className="space-y-4">
             <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
@@ -1310,6 +1352,20 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Atribuição de corretor
+  const [corretores, setCorretores] = useState<{ id: string; nome: string }[]>([]);
+  const [selectedCorretor, setSelectedCorretor] = useState<string>(
+    (negocio as Negocio & { corretor_id?: string | null }).corretor_id ?? ""
+  );
+  useEffect(() => {
+    supabase
+      .from("profiles")
+      .select("id, nome")
+      .eq("role", "corretor")
+      .eq("ativo", true)
+      .order("nome")
+      .then(({ data }) => setCorretores((data as { id: string; nome: string }[]) || []));
+  }, []);
   const MAX_FOTOS_EDIT = 6;
   // URLs já salvas no banco + arquivos pendentes pra upload
   const initialUrls = (() => {
@@ -1418,10 +1474,11 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
       badge_cor: form.badge_cor,
       mostrar_preco_foto: form.mostrar_preco_foto,
       destaque: form.destaque,
+      corretor_id: selectedCorretor || null,
       // Persiste as URLs (1ª = capa)
       imagem: finalUrls[0] || null,
       imagens: finalUrls,
-    } as Partial<Negocio> & { imagem?: string | null; imagens?: string[] };
+    } as Partial<Negocio> & { imagem?: string | null; imagens?: string[]; corretor_id?: string | null };
 
     const ok = await updateNegocio(negocio.id, fields);
     setSaving(false);
@@ -1774,6 +1831,31 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Atribuir corretor */}
+          <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <h3 className="flex items-center gap-2 font-semibold text-foreground text-sm">
+              <UserCheck2 className="h-4 w-4 text-primary" />
+              Corretor responsável
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              O corretor escolhido vê este anúncio em "Meus Negócios" e pode editá-lo.
+            </p>
+            <Select
+              value={selectedCorretor || "_none"}
+              onValueChange={(v) => setSelectedCorretor(v === "_none" ? "" : v)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Nenhum (sem corretor)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">Nenhum (sem corretor)</SelectItem>
+                {corretores.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Proprietário */}
