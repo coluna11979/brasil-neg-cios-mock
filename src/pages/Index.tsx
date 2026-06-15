@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import usePageTitle from "@/hooks/usePageTitle";
-import { TrendingUp, MapPin, Store, Star, ShieldCheck, Users, Handshake } from "lucide-react";
+import { TrendingUp, MapPin, Store, Star, ShieldCheck, Users, Handshake, Building2, Megaphone, ArrowRight } from "lucide-react";
 import { Marquee } from "@/components/ui/3d-testimonials";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -171,14 +171,78 @@ const Index = () => {
           {/* Headline + Search */}
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="font-display text-3xl font-extrabold tracking-tight text-primary-foreground md:text-4xl lg:text-5xl">
-              Compre, Venda ou Alugue Negócios e Imóveis Comerciais em SP
+              Oportunidades comerciais verificadas em São Paulo
             </h1>
             <p className="mt-3 text-primary-foreground/70 text-sm md:text-base">
-              Negócios, salões comerciais, galerias e imóveis — oportunidades verificadas para investidores e empreendedores.
+              Compre, venda ou alugue negócios, pontos comerciais e imóveis prontos para empreender ou investir com mais segurança.
             </p>
             <div className="mt-6 mx-auto max-w-2xl">
               <SearchBar size="large" />
             </div>
+            <div className="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Button
+                asChild
+                size="lg"
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90 sm:w-auto font-semibold"
+              >
+                <Link to="/busca">Ver oportunidades</Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="w-full bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 sm:w-auto"
+              >
+                <Link to="/anunciar">Anunciar meu negócio</Link>
+              </Button>
+            </div>
+          </div>
+
+          {/* Segmentação por público */}
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                icon: Store,
+                titulo: "Comprar um negócio",
+                texto: "Encontre negócios em funcionamento, pontos comerciais e oportunidades verificadas em SP.",
+                cta: "Ver negócios disponíveis",
+                to: "/busca",
+              },
+              {
+                icon: Building2,
+                titulo: "Alugar ponto comercial",
+                texto: "Veja salões, lojas, galerias e imóveis comerciais para abrir ou expandir sua operação.",
+                cta: "Ver imóveis comerciais",
+                to: "/imoveis",
+              },
+              {
+                icon: Megaphone,
+                titulo: "Vender ou anunciar",
+                texto: "Anuncie seu negócio ou ponto comercial para compradores e investidores interessados.",
+                cta: "Quero anunciar",
+                to: "/anunciar",
+              },
+            ].map(({ icon: Icon, titulo, texto, cta, to }) => (
+              <Link
+                key={titulo}
+                to={to}
+                className="group flex flex-col rounded-xl border border-white/15 bg-white/10 backdrop-blur-sm p-5 transition-all hover:bg-white/15 hover:-translate-y-0.5"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-accent/20">
+                  <Icon className="h-5 w-5 text-accent" />
+                </div>
+                <h3 className="mt-4 font-display text-lg font-bold text-primary-foreground">
+                  {titulo}
+                </h3>
+                <p className="mt-1.5 text-sm text-primary-foreground/70 leading-relaxed">
+                  {texto}
+                </p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent group-hover:gap-2 transition-all">
+                  {cta}
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </Link>
+            ))}
           </div>
 
           {/* Featured category carousel */}
