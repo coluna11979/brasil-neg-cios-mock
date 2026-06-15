@@ -91,6 +91,31 @@ const CATEGORIAS = [
   "Outro",
 ];
 
+// Normaliza slugs antigos do banco para o nome amigável do dropdown
+const CATEGORIA_SLUG_MAP: Record<string, string> = {
+  "alimentacao": "Alimentação",
+  "saude-beleza": "Saúde e Estética",
+  "saude-estetica": "Saúde e Estética",
+  "saude-e-estetica": "Saúde e Estética",
+  "servicos": "Serviços",
+  "varejo": "Varejo",
+  "tecnologia": "Tecnologia",
+  "educacao": "Educação",
+  "automotivo": "Automotivo",
+  "industria": "Indústria",
+  "imoveis-comerciais": "Imóveis Comerciais",
+  "imóveis-comerciais": "Imóveis Comerciais",
+  "saloes-e-imoveis-comerciais": "Imóveis Comerciais",
+  "outro": "Outro",
+  "outros": "Outro",
+};
+
+function normalizeCategoria(raw: string | null | undefined): string {
+  if (!raw) return "";
+  if (CATEGORIAS.includes(raw)) return raw;
+  return CATEGORIA_SLUG_MAP[raw.toLowerCase()] ?? raw;
+}
+
 const ESTADOS = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
@@ -1353,7 +1378,7 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
   };
   const [form, setForm] = useState({
     titulo: negocio.titulo,
-    categoria: negocio.categoria,
+    categoria: normalizeCategoria(negocio.categoria),
     cidade: negocio.cidade,
     estado: negocio.estado,
     bairro: (negocio as Negocio & { bairro?: string | null }).bairro ?? "",
@@ -1444,7 +1469,6 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.titulo.trim()) e.titulo = "Título é obrigatório";
-    if (!form.categoria) e.categoria = "Selecione uma categoria";
     if (!form.cidade.trim()) e.cidade = "Cidade é obrigatória";
     if (!form.estado) e.estado = "Selecione o estado";
     if (!form.proprietario_nome.trim()) e.proprietario_nome = "Nome é obrigatório";
