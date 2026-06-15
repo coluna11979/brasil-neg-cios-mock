@@ -76,6 +76,7 @@ export interface NegocioSupabase {
   imagens: string[] | null;
   destaque: boolean;
   status: string;
+  codigo: number | null;
   proprietario_nome: string;
   proprietario_telefone: string;
   proprietario_email: string | null;
@@ -148,6 +149,14 @@ export function useNegocios(filters?: {
             `tipo.eq.aluguel-imovel,and(tipo.eq.imovel,descricao.ilike.%Locação%)`
           );
         }
+        else if (filters.tipo === "aluguel-imovel") {
+          // "Imóvel para Alugar" — formato novo (aluguel-imovel) + antigo (imovel c/ "Locação")
+          query = query.or(`tipo.eq.aluguel-imovel,and(tipo.eq.imovel,descricao.ilike.%Locação%)`);
+        }
+        else if (filters.tipo === "venda-imovel") {
+          // "Imóvel à Venda" — formato novo (venda-imovel) + antigo (imovel c/ "Venda")
+          query = query.or(`tipo.eq.venda-imovel,and(tipo.eq.imovel,descricao.ilike.%Venda%)`);
+        }
         else if (filters.tipo === "galeria") query = query.eq("tipo", "galeria");
         else if (filters.tipo === "franquia") query = query.eq("tipo", "franquia");
       }
@@ -171,9 +180,26 @@ export function useNegocios(filters?: {
         query = query.or(orParts.join(","));
       }
       if (filters?.busca) {
-        query = query.or(
-          `titulo.ilike.%${filters.busca}%,descricao.ilike.%${filters.busca}%`
-        );
+        // Busca por PALAVRAS, não pela frase inteira. Ignoramos conectivos e as
+        // palavras de intenção (alugar/locação/venda/comprar) — essas já são tratadas
+        // pelo filtro de Tipo. Assim "Salão para alugar" procura só por "salão".
+        const STOPWORDS = new Set([
+          "para","pra","pro","de","da","do","das","dos","o","a","os","as","em","no","na","nos","nas",
+          "com","e","um","uma","uns","umas","por","que","ao","aos",
+          // intenção (cobertas pelo filtro de Tipo):
+          "alugar","alugue","aluguel","alugo","aluga","locacao","locação","locar","alugado",
+          "venda","vender","vendo","vende","comprar","compra","compro","arrendar","arrendamento",
+        ]);
+        const sanitize = (s: string) => s.replace(/[(),"'`%]/g, "").trim();
+        const palavras = filters.busca
+          .toLowerCase()
+          .split(/\s+/)
+          .map(sanitize)
+          .filter((w) => w.length >= 2 && !STOPWORDS.has(w));
+        // Cada palavra significativa precisa aparecer no titulo OU na descricao (AND entre palavras).
+        for (const w of palavras) {
+          query = query.or(`titulo.ilike.%${w}%,descricao.ilike.%${w}%`);
+        }
       }
 
       const { data, error } = await query;

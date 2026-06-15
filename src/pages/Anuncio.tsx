@@ -271,6 +271,11 @@ Descrição: ${listing.descricao_completa || listing.descricao}`;
                 <h1 className="mt-4 font-display text-2xl font-bold text-foreground md:text-3xl">
                   {listing.titulo}
                 </h1>
+                {(listing as NegocioSupabase).codigo && (
+                  <span className="mt-1 inline-block rounded-md bg-muted border border-border px-2 py-0.5 text-xs font-mono text-muted-foreground">
+                    Ref. NEG-{String((listing as NegocioSupabase).codigo).padStart(4, "0")}
+                  </span>
+                )}
 
                 <div className="mt-3 flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-5 w-5" />
@@ -379,12 +384,21 @@ Descrição: ${listing.descricao_completa || listing.descricao}`;
                 )}
 
                 {/* Area */}
-                {listing.area_m2 && (
+                {(listing.area_m2 || (listing as typeof listing & { area_venda?: number | null }).area_venda || (listing as typeof listing & { area_estoque?: number | null }).area_estoque) && (
                   <div className="border-b border-border pb-4 mb-4">
                     <p className="text-sm text-muted-foreground">Área</p>
-                    <p className="mt-1 font-display text-xl font-bold text-foreground">
-                      {listing.area_m2} m²
-                    </p>
+                    {listing.area_m2 && (
+                      <p className="mt-1 font-display text-xl font-bold text-foreground">
+                        {listing.area_m2} m² <span className="text-sm font-normal text-muted-foreground">total</span>
+                      </p>
+                    )}
+                    {((listing as typeof listing & { area_venda?: number | null }).area_venda || (listing as typeof listing & { area_estoque?: number | null }).area_estoque) && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {(listing as typeof listing & { area_venda?: number | null }).area_venda ? `${(listing as typeof listing & { area_venda?: number | null }).area_venda} m² de venda` : ""}
+                        {(listing as typeof listing & { area_venda?: number | null }).area_venda && (listing as typeof listing & { area_estoque?: number | null }).area_estoque ? " · " : ""}
+                        {(listing as typeof listing & { area_estoque?: number | null }).area_estoque ? `${(listing as typeof listing & { area_estoque?: number | null }).area_estoque} m² de estoque` : ""}
+                      </p>
+                    )}
                   </div>
                 )}
 

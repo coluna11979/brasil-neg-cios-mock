@@ -25,6 +25,7 @@ export interface Negocio {
   badge_texto?: string | null;
   badge_cor?: "green" | "blue" | "red" | "amber" | "violet" | "slate" | null;
   mostrar_preco_foto?: boolean;
+  codigo?: number | null;
 }
 
 export async function getAllNegocios(): Promise<Negocio[]> {

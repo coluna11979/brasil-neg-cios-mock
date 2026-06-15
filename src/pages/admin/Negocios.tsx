@@ -135,6 +135,8 @@ const EMPTY_FORM = {
   preco: "",
   faturamento_mensal: "",
   area_m2: "",
+  area_venda: "",
+  area_estoque: "",
   descricao: "",
   proprietario_nome: "",
   proprietario_telefone: "",
@@ -401,6 +403,8 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
         preco: form.preco ? Number(form.preco) : (tipoAnuncio === "franquia" && franquiaExtra.investimento ? Number(franquiaExtra.investimento) : null),
         faturamento_mensal: form.faturamento_mensal ? Number(form.faturamento_mensal) : null,
         area_m2: form.area_m2 ? Number(form.area_m2) : null,
+        area_venda: form.area_venda ? Number(form.area_venda) : null,
+        area_estoque: form.area_estoque ? Number(form.area_estoque) : null,
         descricao: descricaoFinal,
         proprietario_nome: form.proprietario_nome,
         proprietario_telefone: form.proprietario_telefone || null,
@@ -856,7 +860,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
               )}
 
               <div>
-                <Label htmlFor="m-area">Área (m²)</Label>
+                <Label htmlFor="m-area">Área total (m²)</Label>
                 <div className="relative mt-1.5">
                   <Ruler className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -868,6 +872,23 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
                     placeholder="150"
                     className="pl-10"
                   />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="m-area-venda">Área de venda (m²)</Label>
+                <div className="relative mt-1.5">
+                  <Ruler className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="m-area-venda" name="area_venda" type="number" value={form.area_venda} onChange={handleChange} placeholder="ex: 500" className="pl-10" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="m-area-estoque">Área de estoque (m²)</Label>
+                <div className="relative mt-1.5">
+                  <Ruler className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="m-area-estoque" name="area_estoque" type="number" value={form.area_estoque} onChange={handleChange} placeholder="ex: 500" className="pl-10" />
                 </div>
               </div>
             </div>
@@ -1340,6 +1361,8 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
     preco: negocio.preco?.toString() ?? "",
     faturamento_mensal: negocio.faturamento_mensal?.toString() ?? "",
     area_m2: negocio.area_m2?.toString() ?? "",
+    area_venda: (negocio as Negocio & { area_venda?: number | null }).area_venda?.toString() ?? "",
+    area_estoque: (negocio as Negocio & { area_estoque?: number | null }).area_estoque?.toString() ?? "",
     descricao: negocio.descricao ?? "",
     proprietario_nome: negocio.proprietario_nome,
     proprietario_telefone: negocio.proprietario_telefone ?? "",
@@ -1426,7 +1449,8 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
     if (!form.cidade.trim()) e.cidade = "Cidade é obrigatória";
     if (!form.estado) e.estado = "Selecione o estado";
     if (!form.proprietario_nome.trim()) e.proprietario_nome = "Nome é obrigatório";
-    if (!form.proprietario_email.trim()) e.proprietario_email = "E-mail é obrigatório";
+    if (form.proprietario_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.proprietario_email))
+      e.proprietario_email = "E-mail inválido";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -1465,6 +1489,8 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
       preco: form.preco ? Number(form.preco) : undefined,
       faturamento_mensal: form.faturamento_mensal ? Number(form.faturamento_mensal) : undefined,
       area_m2: form.area_m2 ? Number(form.area_m2) : undefined,
+      area_venda: form.area_venda ? Number(form.area_venda) : null,
+      area_estoque: form.area_estoque ? Number(form.area_estoque) : null,
       descricao: form.descricao,
       proprietario_nome: form.proprietario_nome,
       proprietario_telefone: form.proprietario_telefone || undefined,
@@ -1758,10 +1784,26 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
                 {errors.categoria && <p className="mt-1 text-xs text-destructive">{errors.categoria}</p>}
               </div>
               <div>
-                <Label htmlFor="e-area">Área (m²)</Label>
+                <Label htmlFor="e-area">Área total (m²)</Label>
                 <div className="relative mt-1.5">
                   <Ruler className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input id="e-area" name="area_m2" type="number" value={form.area_m2} onChange={handleChange} placeholder="150" className="pl-10" />
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="e-area-venda">Área de venda (m²)</Label>
+                <div className="relative mt-1.5">
+                  <Ruler className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="e-area-venda" name="area_venda" type="number" value={form.area_venda} onChange={handleChange} placeholder="ex: 500" className="pl-10" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="e-area-estoque">Área de estoque (m²)</Label>
+                <div className="relative mt-1.5">
+                  <Ruler className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="e-area-estoque" name="area_estoque" type="number" value={form.area_estoque} onChange={handleChange} placeholder="ex: 500" className="pl-10" />
                 </div>
               </div>
             </div>
@@ -2197,9 +2239,16 @@ const AdminNegocios = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="font-display font-bold text-foreground leading-tight">
-                          {negocio.titulo}
-                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-display font-bold text-foreground leading-tight">
+                            {negocio.titulo}
+                          </h3>
+                          {negocio.codigo && (
+                            <span className="shrink-0 rounded-md bg-muted border border-border px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
+                              NEG-{String(negocio.codigo).padStart(4, "0")}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
                           <span className="text-base sm:text-sm text-muted-foreground">{negocio.categoria}</span>
                           <span className="flex items-center gap-1 text-base sm:text-sm text-muted-foreground">
