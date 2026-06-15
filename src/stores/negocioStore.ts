@@ -49,22 +49,32 @@ export async function getAllNegocios(): Promise<Negocio[]> {
 export async function updateNegocio(
   id: string,
   fields: Partial<Omit<Negocio, "id" | "criado_em" | "created_at">>
-): Promise<boolean> {
+): Promise<{ ok: boolean; error?: string }> {
   // foto_url é alias em memória — coluna real é `imagem`
   const { foto_url, ...rest } = fields;
   const dbFields: Record<string, unknown> = { ...rest };
   if (foto_url !== undefined) dbFields.imagem = foto_url;
 
-  const { error } = await supabase
+  // Remove undefineds (Supabase prefere não receber)
+  Object.keys(dbFields).forEach((k) => {
+    if (dbFields[k] === undefined) delete dbFields[k];
+  });
+
+  const { error, data } = await supabase
     .from("negocios")
     .update(dbFields)
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
   if (error) {
-    console.error("Erro ao atualizar negócio:", error);
-    return false;
+    console.error("[updateNegocio] erro:", error, "fields:", dbFields);
+    return { ok: false, error: error.message };
   }
-  return true;
+  if (!data || data.length === 0) {
+    console.warn("[updateNegocio] nenhuma linha atualizada — id provavelmente bloqueado por RLS:", id);
+    return { ok: false, error: "Nenhum registro foi atualizado (verifique permissões)." };
+  }
+  return { ok: true };
 }
 
 export async function updateNegocioStatus(

@@ -1529,11 +1529,11 @@ export const EditNegocioModal = ({ negocio, onClose, onSaved }: EditNegocioModal
       imagens: finalUrls,
     } as Partial<Negocio> & { imagem?: string | null; imagens?: string[]; corretor_id?: string | null };
 
-    const ok = await updateNegocio(negocio.id, fields);
+    const result = await updateNegocio(negocio.id, fields);
     setSaving(false);
 
-    if (!ok) {
-      setErrors({ submit: "Erro ao salvar. Tente novamente." });
+    if (!result.ok) {
+      setErrors({ submit: result.error || "Erro ao salvar. Tente novamente." });
       return;
     }
     onSaved({ ...negocio, ...fields } as Negocio);
