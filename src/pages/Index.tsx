@@ -157,7 +157,15 @@ const Index = () => {
   const { negocios, loading: loadingNegocios } = useNegocios();
   const { galerias, loading: loadingGalerias } = useGalerias();
   const featuredListings = negocios.filter((n) => n.destaque).map(adaptNegocio);
-  const recentListings = negocios.slice(0, 6).map(adaptNegocio);
+  // "Recentes" deve ser de fato os mais recentes — re-ordena ignorando o flag destaque
+  const recentListings = [...negocios]
+    .sort((a, b) => {
+      const da = new Date((a as { criado_em?: string }).criado_em ?? 0).getTime();
+      const db = new Date((b as { criado_em?: string }).criado_em ?? 0).getTime();
+      return db - da;
+    })
+    .slice(0, 8)
+    .map(adaptNegocio);
 
   return (
     <div className="flex min-h-screen flex-col">
