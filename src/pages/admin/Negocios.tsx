@@ -479,8 +479,7 @@ Escreva entre 3 e 5 frases destacando potencial, diferenciais e o perfil ideal d
     }
     if (s === 3) {
       if (!form.proprietario_nome.trim()) errs.proprietario_nome = "Nome obrigatório";
-      if (!form.proprietario_email.trim()) errs.proprietario_email = "E-mail obrigatório";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.proprietario_email))
+      if (form.proprietario_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.proprietario_email))
         errs.proprietario_email = "E-mail inválido";
     }
     setErrors((prev) => ({ ...prev, ...errs }));
