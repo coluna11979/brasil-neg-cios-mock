@@ -4,6 +4,7 @@ import { MessageCircle, Users, LogOut, UserCircle, Menu, X, Clock, Phone, Loader
 import { supabase } from "@/lib/supabase";
 import { logout } from "@/stores/authStore";
 import { LogoMark } from "@/components/Logo";
+import InstallPWAButton from "@/components/corretor/InstallPWAButton";
 
 const NAV = [
   { to: "/corretor/dashboard", label: "Início", icon: Home },
@@ -306,6 +307,9 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
               Voltar ao Admin
             </button>
           )}
+          <div className="mb-1">
+            <InstallPWAButton />
+          </div>
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -361,6 +365,7 @@ const CorretorLayout = ({ children }: { children: React.ReactNode }) => {
                 Voltar ao Admin
               </button>
             )}
+            <InstallPWAButton />
             <button
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted"
