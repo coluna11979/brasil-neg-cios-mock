@@ -110,3 +110,65 @@ export async function disconnectWhatsApp(): Promise<boolean> {
     return false;
   }
 }
+
+// ── Resend / Email Marketing ─────────────────────────────────────
+// As edge functions de email leem essas colunas em integration_settings (id=1).
+// Sem hardcoded: configurar aqui é a única fonte de credenciais.
+
+export interface EmailResendSettings {
+  resend_api_key: string;
+  resend_webhook_secret: string;
+  from_email: string;
+  from_name: string;
+  reply_to: string;
+  company_name: string;
+  company_address: string;
+  app_url: string;
+  email_active: boolean;
+  email_domain_verified: boolean;
+}
+
+const EMPTY_EMAIL: EmailResendSettings = {
+  resend_api_key: "",
+  resend_webhook_secret: "",
+  from_email: "",
+  from_name: "",
+  reply_to: "",
+  company_name: "",
+  company_address: "",
+  app_url: "",
+  email_active: false,
+  email_domain_verified: false,
+};
+
+export async function getEmailSettings(): Promise<EmailResendSettings> {
+  const { data, error } = await supabase
+    .from("integration_settings")
+    .select(
+      "resend_api_key, resend_webhook_secret, from_email, from_name, reply_to, " +
+      "company_name, company_address, app_url, email_active, email_domain_verified",
+    )
+    .eq("id", 1)
+    .maybeSingle();
+  if (error || !data) return { ...EMPTY_EMAIL };
+  return {
+    resend_api_key: data.resend_api_key ?? "",
+    resend_webhook_secret: data.resend_webhook_secret ?? "",
+    from_email: data.from_email ?? "",
+    from_name: data.from_name ?? "",
+    reply_to: data.reply_to ?? "",
+    company_name: data.company_name ?? "",
+    company_address: data.company_address ?? "",
+    app_url: data.app_url ?? "",
+    email_active: data.email_active ?? false,
+    email_domain_verified: data.email_domain_verified ?? false,
+  };
+}
+
+export async function saveEmailSettings(cfg: EmailResendSettings): Promise<boolean> {
+  const { error } = await supabase
+    .from("integration_settings")
+    .update({ ...cfg, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  return !error;
+}

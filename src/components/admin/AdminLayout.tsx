@@ -17,6 +17,7 @@ import {
   Instagram,
   Sparkles,
   Bot,
+  Mail,
   Menu,
   X,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const navItems = [
   { to: "/admin/materiais", label: "Materiais", icon: Package },
   { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
   { to: "/admin/social-selling", label: "Social Selling", icon: Instagram },
+  { to: "/admin/marketing", label: "Marketing", icon: Mail },
   { to: "/admin/integracoes", label: "Integrações", icon: Plug },
   { to: "/admin/agentes-ia", label: "Agentes IA", icon: Sparkles },
   { to: "/agentes", label: "Plataforma de Agentes", icon: Bot },
@@ -73,7 +75,9 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.to;
+            const isActive =
+              location.pathname === item.to ||
+              (item.to !== "/admin" && location.pathname.startsWith(item.to + "/"));
             return (
               <Link
                 key={item.to}

@@ -3,12 +3,13 @@ import usePageTitle from "@/hooks/usePageTitle";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   Plug, Save, Loader2, Check, MessageSquare, KeyRound, RefreshCw,
-  Wifi, WifiOff, QrCode, Smartphone, Eye, EyeOff, AlertCircle,
+  Wifi, WifiOff, QrCode, Smartphone, Eye, EyeOff, AlertCircle, Mail,
 } from "lucide-react";
 import {
   getIntegrationSettings, saveIntegrationSettings,
   getWhatsAppStatus, connectWhatsApp, disconnectWhatsApp,
-  type IntegrationSettings, type WhatsAppStatus,
+  getEmailSettings, saveEmailSettings,
+  type IntegrationSettings, type WhatsAppStatus, type EmailResendSettings,
 } from "@/lib/integrations";
 import { invalidateGoogleApiKeyCache } from "@/lib/anthropic";
 
@@ -31,6 +32,27 @@ const Integracoes = () => {
   const [connecting, setConnecting] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ── Email (Resend) ─────────────────────────────────────────────
+  const [emailCfg, setEmailCfg] = useState<EmailResendSettings>({
+    resend_api_key: "", resend_webhook_secret: "", from_email: "", from_name: "",
+    reply_to: "", company_name: "", company_address: "", app_url: "",
+    email_active: false, email_domain_verified: false,
+  });
+  const [loadingEmail, setLoadingEmail] = useState(true);
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [savedEmail, setSavedEmail] = useState(false);
+  const [showResendKey, setShowResendKey] = useState(false);
+  const [showResendSecret, setShowResendSecret] = useState(false);
+  const setEmailField = <K extends keyof EmailResendSettings>(k: K, v: EmailResendSettings[K]) =>
+    setEmailCfg((p) => ({ ...p, [k]: v }));
+
+  const handleSaveEmail = async () => {
+    setSavingEmail(true);
+    const ok = await saveEmailSettings(emailCfg);
+    setSavingEmail(false);
+    if (ok) { setSavedEmail(true); setTimeout(() => setSavedEmail(false), 2500); }
+  };
+
   const setField = (k: keyof IntegrationSettings, v: string) =>
     setCfg((p) => ({ ...p, [k]: v }));
 
@@ -47,6 +69,7 @@ const Integracoes = () => {
 
   useEffect(() => {
     getIntegrationSettings().then((c) => { setCfg(c); setLoadingCfg(false); });
+    getEmailSettings().then((c) => { setEmailCfg(c); setLoadingEmail(false); });
     refreshStatus();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -240,6 +263,85 @@ const Integracoes = () => {
 
                 <SecretField label="Google API Key (transcrição de áudio)" value={cfg.google_api_key}
                   onChange={(v) => setField("google_api_key", v)} show={showGoogle} onToggle={() => setShowGoogle((s) => !s)} />
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* ── Email (Resend) ──────────────────────────────────── */}
+        <section className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border bg-muted/30 flex items-center justify-between">
+            <h2 className="font-semibold text-sm text-foreground flex items-center gap-2">
+              <Mail className="h-4 w-4 text-primary" /> Email Marketing (Resend)
+            </h2>
+            <button
+              onClick={handleSaveEmail}
+              disabled={savingEmail || loadingEmail}
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {savingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : savedEmail ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+              {savedEmail ? "Salvo!" : "Salvar"}
+            </button>
+          </div>
+
+          <div className="p-5 space-y-4">
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700">
+                Pra ativar, você precisa: (1) criar conta no Resend, (2) verificar domínio, (3) gerar API key, (4) preencher abaixo e marcar "Ativar".
+                Domínio verificado é obrigatório pra não cair em spam.
+              </p>
+            </div>
+
+            {loadingEmail ? (
+              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+            ) : (
+              <>
+                <SecretField label="Resend API Key (re_...)" value={emailCfg.resend_api_key}
+                  onChange={(v) => setEmailField("resend_api_key", v)} show={showResendKey} onToggle={() => setShowResendKey((s) => !s)} />
+                <SecretField label="Resend Webhook Secret (whsec_...)" value={emailCfg.resend_webhook_secret}
+                  onChange={(v) => setEmailField("resend_webhook_secret", v)} show={showResendSecret} onToggle={() => setShowResendSecret((s) => !s)} />
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Field label="From email (precisa ser do domínio verificado)" value={emailCfg.from_email}
+                    onChange={(v) => setEmailField("from_email", v)} placeholder="contato@negociaaky.com.br" />
+                  <Field label="From name (exibido no inbox)" value={emailCfg.from_name}
+                    onChange={(v) => setEmailField("from_name", v)} placeholder="NegociaAky" />
+                </div>
+
+                <Field label="Reply-to (opcional)" value={emailCfg.reply_to}
+                  onChange={(v) => setEmailField("reply_to", v)} placeholder="suporte@negociaaky.com.br" />
+
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Field label="Nome da empresa" value={emailCfg.company_name}
+                    onChange={(v) => setEmailField("company_name", v)} placeholder="NegociaAky Mediação Imobiliária" />
+                  <Field label="App URL (pra link de descadastro)" value={emailCfg.app_url}
+                    onChange={(v) => setEmailField("app_url", v)} placeholder="https://negociaaky.com.br" />
+                </div>
+
+                <Field label="Endereço da empresa (footer LGPD)" value={emailCfg.company_address}
+                  onChange={(v) => setEmailField("company_address", v)} placeholder="Rua X, 123 — Cidade/UF" />
+
+                <div className="flex items-center gap-4 pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={emailCfg.email_active}
+                      onChange={(e) => setEmailField("email_active", e.target.checked)}
+                      className="h-4 w-4 rounded border-border" />
+                    <span className="text-sm font-medium">Ativar envio de email</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={emailCfg.email_domain_verified}
+                      onChange={(e) => setEmailField("email_domain_verified", e.target.checked)}
+                      className="h-4 w-4 rounded border-border" />
+                    <span className="text-sm text-muted-foreground">Domínio verificado no Resend</span>
+                  </label>
+                </div>
+
+                <div className="rounded-xl bg-muted/40 px-4 py-3 text-[11px] text-muted-foreground space-y-1">
+                  <p className="font-semibold text-foreground">URL do webhook Resend:</p>
+                  <code className="block break-all">https://ncqlkdbablgwthfaxgap.supabase.co/functions/v1/process-email-event</code>
+                  <p>Configure em Resend → Webhooks. Eventos: <code>email.sent</code>, <code>delivered</code>, <code>opened</code>, <code>clicked</code>, <code>bounced</code>, <code>complained</code>.</p>
+                </div>
               </>
             )}
           </div>
