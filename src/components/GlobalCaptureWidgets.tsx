@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import ExitIntentPopup from "./ExitIntentPopup";
 import TopNotificationBar from "./TopNotificationBar";
+import WhatsAppButton from "./WhatsAppButton";
 
 const GlobalCaptureWidgets = () => {
   const location = useLocation();
@@ -17,6 +18,7 @@ const GlobalCaptureWidgets = () => {
   return (
     <>
       <TopNotificationBar />
+      <WhatsAppButton />
       <ExitIntentPopup />
     </>
   );
