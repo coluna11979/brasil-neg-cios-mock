@@ -3,7 +3,11 @@ import { Link } from "react-router-dom";
 import usePageTitle from "@/hooks/usePageTitle";
 import { supabase } from "@/lib/supabase";
 import { sendWhatsAppMessage } from "@/lib/uazapi";
-import { ArrowLeft, CheckCircle, UserCheck, TrendingUp, Handshake, Wallet, Sparkles, Loader2, Clock, Inbox } from "lucide-react";
+import {
+  ArrowLeft, CheckCircle, UserCheck, TrendingUp, Handshake, Wallet,
+  Sparkles, Loader2, Clock, Inbox, Smartphone, MessageCircle, Bot,
+  Zap, BellRing, Target, Rocket, ArrowRight, X, Check,
+} from "lucide-react";
 import { callClaude } from "@/lib/anthropic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,12 +23,52 @@ import {
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FaithQuote from "@/components/FaithQuote";
+import InstallPWAButton from "@/components/corretor/InstallPWAButton";
 
-const BENEFICIOS = [
-  { icon: Wallet, titulo: "Comissão atrativa", desc: "Ganhe por cada negócio fechado na sua carteira." },
-  { icon: TrendingUp, titulo: "Carteira exclusiva", desc: "Acesso antecipado a novos anúncios na sua região." },
-  { icon: Handshake, titulo: "Suporte completo", desc: "Treinamento, ferramentas e suporte da plataforma." },
-  { icon: UserCheck, titulo: "Perfil verificado", desc: "Seu perfil aparece como corretor certificado NegociaAky." },
+const DIFERENCIAIS = [
+  {
+    icon: MessageCircle,
+    titulo: "Leads direto no seu WhatsApp",
+    desc: "Cada interessado cai no seu Zap em segundos. Sem planilha, sem login, sem fricção.",
+    cor: "from-emerald-500/15 to-emerald-500/0",
+    iconCor: "text-emerald-600",
+  },
+  {
+    icon: Smartphone,
+    titulo: "NegociaAky como app no celular",
+    desc: "Instala em 1 toque. Notificações push quando o lead chega. Funciona offline.",
+    cor: "from-primary/15 to-primary/0",
+    iconCor: "text-primary",
+  },
+  {
+    icon: Bot,
+    titulo: "IA atende 24h por você",
+    desc: "Nossa IA qualifica o lead antes de te entregar. Você recebe só quem tá pronto pra negociar.",
+    cor: "from-accent/15 to-accent/0",
+    iconCor: "text-accent-foreground",
+  },
+  {
+    icon: Target,
+    titulo: "Roteamento automático por região",
+    desc: "Cadastra seu bairro/CEP e os leads daquela área vêm pra você primeiro. Carteira protegida.",
+    cor: "from-violet-500/15 to-violet-500/0",
+    iconCor: "text-violet-600",
+  },
+];
+
+const COMPARATIVO = [
+  { label: "Recebimento de leads", sem: "Planilha + ligação manual", com: "WhatsApp em < 30s, com áudio do lead" },
+  { label: "Qualificação", sem: "Você liga e descobre que não tá pronto", com: "IA qualifica antes — só vem quem quer fechar" },
+  { label: "CRM", sem: "Anotação no caderno ou Excel", com: "Pipeline pronto, kanban, histórico salvo" },
+  { label: "App mobile", sem: "Site lento no navegador", com: "PWA instalado, push, abre offline" },
+  { label: "Carteira de imóveis", sem: "Você corre atrás", com: "Acesso antecipado ao que entra na sua região" },
+  { label: "Comissão", sem: "Dividida com 5 intermediários", com: "Direto com você. Pagamento na conta." },
+];
+
+const PASSOS = [
+  { num: "01", titulo: "Cadastra em 2 minutos", desc: "Preenche o form abaixo com WhatsApp, CRECI (opcional) e sua região." },
+  { num: "02", titulo: "Aprovação em até 24h", desc: "Nossa equipe valida e libera seu acesso ao painel." },
+  { num: "03", titulo: "Instala o app + recebe leads", desc: "Instala como app no celular, ativa push e os leads começam a chegar." },
 ];
 
 const SejaCorretor = () => {
@@ -41,7 +85,6 @@ const SejaCorretor = () => {
   const [iaLoading, setIaLoading] = useState(false);
   const [iaSugestoes, setIaSugestoes] = useState<string[]>([]);
 
-  // Máscara de WhatsApp BR — (11) 9 9999-9999
   const formatWhatsApp = (val: string) => {
     const d = val.replace(/\D/g, "").slice(0, 11);
     if (d.length <= 2)  return d;
@@ -50,7 +93,6 @@ const SejaCorretor = () => {
     return `(${d.slice(0, 2)}) ${d.slice(2, 3)} ${d.slice(3, 7)}-${d.slice(7)}`;
   };
 
-  // Máscara CEP — 00000-000
   const formatCep = (val: string) => {
     const d = val.replace(/\D/g, "").slice(0, 8);
     return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
@@ -108,10 +150,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
     e.preventDefault();
     if (!validate()) return;
 
-    // 1. Cria conta no Supabase Auth com senha aleatória forte que o corretor
-    //    NÃO precisa conhecer — após aprovação ele cria a senha real via link.
-    //    Importante: a senha NUNCA é enviada por WhatsApp/email para evitar
-    //    exposição em históricos de mensagens.
     const senhaInicial = crypto.randomUUID() + crypto.randomUUID();
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: form.email,
@@ -140,7 +178,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
 
     const userId = authData?.user?.id;
 
-    // 2. Salva perfil na tabela profiles com ativo = false
     if (userId) {
       await supabase.from("profiles").upsert({
         id: userId,
@@ -161,7 +198,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
         ativo: false,
       });
     } else {
-      // Se usuário já existia, busca pelo email e atualiza
       const { data: existing } = await supabase
         .from("profiles")
         .select("id")
@@ -186,7 +222,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
       }
     }
 
-    // 3. Alerta WhatsApp para o ADMIN
     const adminPhone = import.meta.env.VITE_ADMIN_PHONE;
     if (adminPhone) {
       await sendWhatsAppMessage(
@@ -203,10 +238,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
       ).catch(() => {});
     }
 
-    // 4. WhatsApp para o CORRETOR — apenas confirmação. O acesso só é
-    //    liberado após a aprovação do admin, e nesse momento ele recebe um
-    //    link único e seguro por e-mail para criar a própria senha.
-    //    Nada de senha em texto claro no histórico do WhatsApp!
     const telefoneCorretor = form.whatsapp.replace(/\D/g, "");
     if (telefoneCorretor.length >= 10) {
       await sendWhatsAppMessage(
@@ -229,13 +260,16 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
   const err = (field: string) =>
     errors[field] ? <p className="mt-1 text-xs text-destructive">{errors[field]}</p> : null;
 
+  const scrollToForm = () => {
+    document.getElementById("form-cadastro")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   if (enviado) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />
         <main className="flex flex-1 items-center justify-center py-16 px-4">
           <div className="mx-auto max-w-lg w-full">
-            {/* Card de sucesso com timeline dos próximos passos */}
             <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
               <div className="flex flex-col items-center text-center">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
@@ -250,7 +284,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                 </p>
               </div>
 
-              {/* Timeline / próximos passos */}
               <div className="mt-8 border-t border-border pt-6 space-y-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Próximos passos
@@ -286,13 +319,16 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
 
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <UserCheck className="h-4 w-4 text-primary" />
+                    <Smartphone className="h-4 w-4 text-primary" />
                   </div>
                   <div className="pt-0.5">
-                    <p className="text-sm font-semibold text-foreground">Acesse o painel</p>
+                    <p className="text-sm font-semibold text-foreground">Instale o app agora</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Após criar sua senha, você cai direto no seu painel de corretor.
+                      Adianta tempo: instala já no celular pra receber push quando aprovar.
                     </p>
+                    <div className="mt-3">
+                      <InstallPWAButton />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -306,7 +342,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                 </Button>
               </div>
 
-              {/* Frase do ecossistema */}
               <div className="mt-6 pt-6 border-t border-border">
                 <FaithQuote variant="muted" />
               </div>
@@ -322,50 +357,411 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
     <div className="flex min-h-screen flex-col">
       <Header />
 
-      <main className="flex-1 py-8">
-        <div className="container-app">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar para Home
-          </Link>
+      <main className="flex-1">
+        {/* ================= HERO ================= */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#0D1117] via-[#0a1628] to-[#0D1117] text-white">
+          {/* Background decor */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 20%, hsl(var(--primary) / 0.35), transparent 45%), radial-gradient(circle at 80% 60%, hsl(var(--accent) / 0.25), transparent 50%)",
+            }}
+          />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.05]" style={{
+            backgroundImage:
+              "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }} />
 
-          <div className="mt-8 mx-auto max-w-4xl">
-            {/* Hero */}
-            <div className="text-center mb-12">
-              <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-4">
-                Seja um Parceiro
+          <div className="container-app relative py-6 sm:py-8">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar para Home
+            </Link>
+          </div>
+
+          <div className="container-app relative pt-4 pb-16 sm:pt-8 sm:pb-24">
+            <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
+              {/* Coluna texto */}
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 backdrop-blur-sm">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  </span>
+                  <span className="text-xs font-medium text-white/80">
+                    Recrutamento aberto · São Paulo
+                  </span>
+                </div>
+
+                <h1 className="mt-5 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+                  Receba leads <span className="bg-gradient-to-r from-[#00E6FF] to-[#007BFF] bg-clip-text text-transparent">no seu WhatsApp</span>.
+                  <br />
+                  Instale como <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">app no celular</span>.
+                  <br />
+                  Deixe a <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">IA atender por você</span>.
+                </h1>
+
+                <p className="mt-5 max-w-xl text-base text-white/70 sm:text-lg">
+                  A NegociaAky é a plataforma de corretores de São Paulo que entrega lead qualificado,
+                  vira app no seu celular e tem IA atendendo seus interessados 24h.
+                  <span className="font-semibold text-white"> Você só fecha negócio.</span>
+                </p>
+
+                {/* Pills 3 angulos */}
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30">
+                    <MessageCircle className="h-3.5 w-3.5" /> Lead direto no Zap
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1.5 text-xs font-medium text-cyan-300 ring-1 ring-primary/40">
+                    <Smartphone className="h-3.5 w-3.5" /> App PWA no celular
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-300 ring-1 ring-violet-500/30">
+                    <Bot className="h-3.5 w-3.5" /> IA atende 24h
+                  </span>
+                </div>
+
+                {/* CTAs */}
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <Button
+                    size="lg"
+                    onClick={scrollToForm}
+                    className="bg-gradient-to-r from-[#007BFF] to-[#00E6FF] text-white font-semibold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:scale-[1.02]"
+                  >
+                    Quero ser corretor NegociaAky
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center gap-2 text-xs text-white/60">
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
+                    Cadastro grátis · aprovação em 24h
+                  </div>
+                </div>
+
+                {/* Numeros / prova social */}
+                <div className="mt-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-6">
+                  <div>
+                    <p className="font-display text-2xl font-bold text-white">+R$ 18M</p>
+                    <p className="text-xs text-white/60">em VGV negociado</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-2xl font-bold text-white">&lt; 30s</p>
+                    <p className="text-xs text-white/60">lead no seu Zap</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-2xl font-bold text-white">24h</p>
+                    <p className="text-xs text-white/60">IA atendendo</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Coluna mockup celular */}
+              <div className="relative mx-auto w-full max-w-sm lg:mx-0 lg:ml-auto">
+                <div className="relative">
+                  {/* Glow */}
+                  <div className="absolute -inset-6 rounded-[3rem] bg-gradient-to-br from-primary/30 via-accent/20 to-transparent blur-2xl" />
+
+                  {/* Phone frame */}
+                  <div className="relative rounded-[2.5rem] border-[10px] border-zinc-800 bg-zinc-900 shadow-2xl">
+                    {/* notch */}
+                    <div className="absolute left-1/2 top-0 z-10 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-zinc-800" />
+
+                    <div className="overflow-hidden rounded-[1.8rem] bg-gradient-to-br from-[#075E54] to-[#128C7E] p-3 pt-8">
+                      {/* WhatsApp header */}
+                      <div className="flex items-center gap-2 px-1 pb-3 text-white">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+                          NA
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold leading-tight">NegociaAky Bot</p>
+                          <p className="text-[10px] text-white/70">online · agora</p>
+                        </div>
+                        <BellRing className="h-4 w-4 text-white/80" />
+                      </div>
+
+                      {/* Chat bg */}
+                      <div
+                        className="space-y-2 rounded-xl p-3 min-h-[380px]"
+                        style={{
+                          background: "#e7ddd2",
+                          backgroundImage: "radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0)",
+                          backgroundSize: "16px 16px",
+                        }}
+                      >
+                        {/* lead message */}
+                        <div className="ml-auto max-w-[85%] rounded-lg rounded-tr-sm bg-[#dcf8c6] px-3 py-2 shadow-sm">
+                          <p className="text-[11px] font-semibold text-emerald-700">🔔 Lead Qualificado · Vila Madalena</p>
+                          <p className="mt-1 text-xs text-zinc-800">
+                            <strong>Marcelo S.</strong> tem interesse no salão da R. Aspicuelta.
+                            Orçamento: <strong>R$ 280k</strong>. Quer agendar visita esta semana.
+                          </p>
+                          <p className="mt-1 text-[10px] text-zinc-500">14:32 ✓✓</p>
+                        </div>
+
+                        {/* corretor reply */}
+                        <div className="max-w-[80%] rounded-lg rounded-tl-sm bg-white px-3 py-2 shadow-sm">
+                          <p className="text-xs text-zinc-800">Bora! Quinta às 15h serve?</p>
+                          <p className="mt-1 text-[10px] text-zinc-500">14:33</p>
+                        </div>
+
+                        {/* IA confirmando */}
+                        <div className="ml-auto max-w-[85%] rounded-lg rounded-tr-sm bg-[#dcf8c6] px-3 py-2 shadow-sm">
+                          <p className="text-[11px] font-semibold text-emerald-700">🤖 IA confirmou</p>
+                          <p className="mt-1 text-xs text-zinc-800">
+                            Marcelo confirmou quinta 15h. Endereço enviado. Te lembro 1h antes.
+                          </p>
+                          <p className="mt-1 text-[10px] text-zinc-500">14:33 ✓✓</p>
+                        </div>
+
+                        {/* Comissão preview */}
+                        <div className="ml-auto max-w-[85%] rounded-lg rounded-tr-sm bg-gradient-to-br from-amber-100 to-amber-50 px-3 py-2 shadow-sm border border-amber-200">
+                          <p className="text-[11px] font-semibold text-amber-700 flex items-center gap-1">
+                            <Wallet className="h-3 w-3" /> Comissão prevista
+                          </p>
+                          <p className="mt-1 font-display text-base font-bold text-amber-900">R$ 8.400</p>
+                          <p className="text-[10px] text-amber-700">3% sobre R$ 280k</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Floating badges */}
+                  <div className="absolute -left-4 top-16 hidden sm:flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 shadow-xl backdrop-blur">
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs font-semibold text-zinc-800">Lead em 12s</span>
+                  </div>
+                  <div className="absolute -right-4 bottom-24 hidden sm:flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 shadow-xl backdrop-blur">
+                    <Bot className="h-4 w-4 text-violet-500" />
+                    <span className="text-xs font-semibold text-zinc-800">IA respondeu</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Wave divider */}
+          <svg className="block w-full text-background" viewBox="0 0 1440 64" preserveAspectRatio="none" aria-hidden>
+            <path fill="currentColor" d="M0 32 Q360 0 720 32 T1440 32 V64 H0 Z" />
+          </svg>
+        </section>
+
+        {/* ================= DIFERENCIAIS ================= */}
+        <section className="py-16 sm:py-20">
+          <div className="container-app">
+            <div className="mx-auto max-w-2xl text-center">
+              <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary uppercase tracking-wide">
+                Por que NegociaAky
               </span>
-              <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">
-                Seja um Corretor NegociaAky
-              </h1>
-              <p className="mt-4 max-w-xl mx-auto text-muted-foreground">
-                Junte-se à nossa rede de corretores especializados em compra e venda de negócios em São Paulo.
-                Trabalhe com autonomia e ganhe comissões atrativas.
+              <h2 className="mt-4 font-display text-3xl font-bold text-foreground sm:text-4xl">
+                A combinação que nenhuma plataforma de corretor oferece junto
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Lead no Zap + app no celular + IA atendendo. Os 3 ângulos trabalhando ao mesmo tempo na sua carteira.
               </p>
             </div>
 
-            {/* Benefícios */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-12">
-              {BENEFICIOS.map((b) => {
-                const Icon = b.icon;
+            <div className="mt-12 grid gap-5 sm:grid-cols-2">
+              {DIFERENCIAIS.map((d) => {
+                const Icon = d.icon;
                 return (
-                  <div key={b.titulo} className="rounded-xl border border-border bg-card p-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 mb-3">
-                      <Icon className="h-5 w-5 text-primary" />
+                  <div
+                    key={d.titulo}
+                    className={`relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5`}
+                  >
+                    <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${d.cor}`} />
+                    <div className="relative">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-card shadow-sm ring-1 ring-border">
+                        <Icon className={`h-6 w-6 ${d.iconCor}`} />
+                      </div>
+                      <h3 className="mt-4 font-display text-lg font-bold text-foreground">{d.titulo}</h3>
+                      <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{d.desc}</p>
                     </div>
-                    <p className="font-semibold text-foreground">{b.titulo}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{b.desc}</p>
                   </div>
                 );
               })}
             </div>
+          </div>
+        </section>
 
-            {/* Formulário */}
+        {/* ================= PROVA DE VALOR / COMISSÃO ================= */}
+        <section className="py-16 sm:py-20 bg-muted/30">
+          <div className="container-app">
+            <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+              <div>
+                <span className="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 uppercase tracking-wide">
+                  Quanto você ganha
+                </span>
+                <h2 className="mt-4 font-display text-3xl font-bold text-foreground sm:text-4xl">
+                  Comissão direta. Sem intermediário comendo seu corte.
+                </h2>
+                <p className="mt-4 text-muted-foreground">
+                  Você fecha o negócio, a comissão cai na sua conta. Sem rateio entre 5 imobiliárias, sem desconto de "captação", sem zona cinzenta.
+                </p>
+
+                <ul className="mt-6 space-y-3">
+                  {[
+                    "3% sobre transações de negócios até R$ 500k",
+                    "5% sobre carteira exclusiva da sua região",
+                    "Bônus por captação de novos negócios na plataforma",
+                    "Pagamento via PIX em até 7 dias após o fechamento",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+                        <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                      </div>
+                      <span className="text-sm text-foreground">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Calc preview */}
+              <div className="relative">
+                <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/10 via-accent/5 to-transparent blur-2xl" />
+                <div className="relative rounded-2xl border border-border bg-card p-6 shadow-xl">
+                  <div className="flex items-center gap-2 border-b border-border pb-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100">
+                      <Wallet className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Simulação de Comissão</p>
+                      <p className="text-xs text-muted-foreground">Exemplo real Vila Mariana</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Venda da padaria</span>
+                      <span className="font-semibold text-foreground">R$ 320.000</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Sua comissão (3%)</span>
+                      <span className="font-bold text-emerald-600">R$ 9.600</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">+ Bônus captação</span>
+                      <span className="font-bold text-emerald-600">R$ 1.200</span>
+                    </div>
+                    <div className="border-t border-border pt-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-foreground">Total no PIX</span>
+                        <span className="font-display text-2xl font-bold text-emerald-600">R$ 10.800</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    💡 Corretores comprometidos fecham em média <strong>2,3 negócios/mês</strong> na plataforma.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= COMPARATIVO ================= */}
+        <section className="py-16 sm:py-20">
+          <div className="container-app">
+            <div className="mx-auto max-w-2xl text-center">
+              <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary uppercase tracking-wide">
+                Antes vs Agora
+              </span>
+              <h2 className="mt-4 font-display text-3xl font-bold text-foreground sm:text-4xl">
+                A diferença de trabalhar com NegociaAky
+              </h2>
+            </div>
+
+            <div className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr]">
+                <div className="hidden md:block border-b border-border bg-muted/40 px-6 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categoria</p>
+                </div>
+                <div className="border-b border-border bg-red-50/40 px-6 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-red-700 flex items-center gap-1.5">
+                    <X className="h-3.5 w-3.5" /> Sem NegociaAky
+                  </p>
+                </div>
+                <div className="border-b border-border bg-emerald-50/40 px-6 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 flex items-center gap-1.5">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} /> Com NegociaAky
+                  </p>
+                </div>
+
+                {COMPARATIVO.map((row, i) => (
+                  <div key={row.label} className={`contents`}>
+                    <div className={`hidden md:flex items-center px-6 py-4 ${i % 2 ? "bg-muted/20" : ""}`}>
+                      <p className="text-sm font-semibold text-foreground">{row.label}</p>
+                    </div>
+                    <div className={`px-6 py-4 ${i % 2 ? "bg-muted/20" : ""}`}>
+                      <p className="md:hidden text-xs font-semibold text-muted-foreground mb-1">{row.label}</p>
+                      <div className="flex items-start gap-2">
+                        <X className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                        <p className="text-sm text-muted-foreground">{row.sem}</p>
+                      </div>
+                    </div>
+                    <div className={`px-6 py-4 ${i % 2 ? "bg-muted/20" : ""}`}>
+                      <div className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" strokeWidth={3} />
+                        <p className="text-sm text-foreground font-medium">{row.com}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= COMO FUNCIONA ================= */}
+        <section className="py-16 sm:py-20 bg-gradient-to-b from-background to-muted/20">
+          <div className="container-app">
+            <div className="mx-auto max-w-2xl text-center">
+              <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary uppercase tracking-wide">
+                Em 3 passos
+              </span>
+              <h2 className="mt-4 font-display text-3xl font-bold text-foreground sm:text-4xl">
+                Do cadastro ao primeiro lead em &lt; 24h
+              </h2>
+            </div>
+
+            <div className="mx-auto mt-12 max-w-4xl">
+              <div className="grid gap-6 md:grid-cols-3">
+                {PASSOS.map((p, i) => (
+                  <div key={p.num} className="relative">
+                    {i < PASSOS.length - 1 && (
+                      <div className="absolute left-full top-10 z-0 hidden h-px w-full -translate-x-4 bg-gradient-to-r from-primary/40 to-transparent md:block" />
+                    )}
+                    <div className="relative rounded-2xl border border-border bg-card p-6 shadow-sm">
+                      <span className="font-display text-5xl font-bold text-primary/20">{p.num}</span>
+                      <h3 className="mt-2 font-display text-lg font-bold text-foreground">{p.titulo}</h3>
+                      <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================= FORMULÁRIO ================= */}
+        <section id="form-cadastro" className="py-16 sm:py-20 scroll-mt-20">
+          <div className="container-app">
             <div className="mx-auto max-w-xl">
-              {/* Banner para quem já é corretor */}
+              <div className="text-center mb-8">
+                <span className="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 uppercase tracking-wide">
+                  Cadastro grátis
+                </span>
+                <h2 className="mt-4 font-display text-3xl font-bold text-foreground sm:text-4xl">
+                  Comece hoje. Receba seu primeiro lead amanhã.
+                </h2>
+                <p className="mt-3 text-muted-foreground">
+                  Preenche em 2 minutos. Aprovamos em até 24h. Você instala o app e os leads começam a chegar no seu WhatsApp.
+                </p>
+              </div>
+
               <div className="mb-6 flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
                 <p className="text-sm text-muted-foreground">
                   Já é corretor cadastrado?
@@ -378,10 +774,10 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                 </Link>
               </div>
 
-              <div className="rounded-xl border border-border bg-card p-8">
-                <h2 className="font-display text-xl font-bold text-foreground mb-6">
+              <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-lg">
+                <h3 className="font-display text-xl font-bold text-foreground mb-6">
                   Cadastre-se como corretor
-                </h2>
+                </h3>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
@@ -477,7 +873,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                     </div>
                   </div>
 
-                  {/* Motivação e Objetivos */}
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
                     <p className="text-xs font-semibold text-primary uppercase tracking-wide">Motivações & Objetivos</p>
 
@@ -505,7 +900,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                       />
                     </div>
 
-                    {/* Checkbox de comprometimento */}
                     <label className={`flex items-start gap-3 cursor-pointer rounded-xl border-2 p-4 transition-all ${
                       form.comprometido
                         ? "border-green-500 bg-green-50"
@@ -539,7 +933,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                     </label>
                   </div>
 
-                  {/* Sobre você com IA */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <Label htmlFor="sobre">Sobre você (opcional)</Label>
@@ -557,7 +950,6 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                       placeholder="Conte um pouco sobre sua experiência, região de atuação em SP, etc."
                       value={form.sobre} onChange={(e) => setForm((p) => ({ ...p, sobre: e.target.value }))} />
 
-                    {/* Sugestões da IA */}
                     {iaSugestoes.length > 0 && (
                       <div className="mt-3 space-y-2">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Escolha uma sugestão para usar:</p>
@@ -576,14 +968,76 @@ Responda APENAS com as 3 descrições separadas por "---", sem numeração, sem 
                     )}
                   </div>
 
-                  <Button type="submit" className="w-full font-semibold" size="lg">
-                    Enviar Candidatura
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-[#007BFF] to-[#00E6FF] text-white font-semibold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all hover:scale-[1.01]"
+                    size="lg"
+                  >
+                    Quero ser corretor NegociaAky
+                    <Rocket className="ml-1 h-4 w-4" />
                   </Button>
+
+                  <p className="text-center text-xs text-muted-foreground">
+                    Cadastro 100% grátis · Sem mensalidade · Você só paga se vender
+                  </p>
                 </form>
               </div>
             </div>
           </div>
-        </div>
+        </section>
+
+        {/* ================= BOTTOM CTA ================= */}
+        <section className="py-16 sm:py-20 bg-gradient-to-br from-[#0D1117] via-[#0a1628] to-[#0D1117] text-white">
+          <div className="container-app">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="font-display text-3xl font-bold sm:text-4xl">
+                Conecta. Negocia. Realiza.
+              </h2>
+              <p className="mt-4 text-white/70">
+                A NegociaAky é onde corretor de verdade fecha mais negócio. Sem fricção, sem planilha, sem perder lead pra concorrência.
+              </p>
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button
+                  size="lg"
+                  onClick={scrollToForm}
+                  className="bg-gradient-to-r from-[#007BFF] to-[#00E6FF] text-white font-semibold shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all hover:scale-[1.02]"
+                >
+                  Cadastrar agora
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-white/30 bg-white/5 text-white hover:bg-white/10"
+                >
+                  <Link to="/corretor/login">
+                    Já sou corretor · Entrar
+                  </Link>
+                </Button>
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/60">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                  Cadastro em 2 min
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                  Aprovação em 24h
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                  Sem mensalidade
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                  Pagamento via PIX
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <Footer />

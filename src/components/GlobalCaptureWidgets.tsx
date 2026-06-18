@@ -1,7 +1,6 @@
 import { useLocation } from "react-router-dom";
 import ExitIntentPopup from "./ExitIntentPopup";
 import TopNotificationBar from "./TopNotificationBar";
-import AIChatbot from "./AIChatbot";
 
 const GlobalCaptureWidgets = () => {
   const location = useLocation();
@@ -18,7 +17,6 @@ const GlobalCaptureWidgets = () => {
   return (
     <>
       <TopNotificationBar />
-      <AIChatbot />
       <ExitIntentPopup />
     </>
   );

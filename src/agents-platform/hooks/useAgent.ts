@@ -329,7 +329,7 @@ export function useAgent(slug: string, channel: string = 'chat_web') {
           agent_slug: config.slug,
           channel,
           session_id: activeSessionId,
-          message: trimmed,
+          message: trimmed || (attachments && attachments.length ? '[imagem]' : ''),
           attachments: attachments || [],
           user_id: userId,
         }),

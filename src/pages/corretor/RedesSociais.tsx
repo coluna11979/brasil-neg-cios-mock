@@ -51,13 +51,24 @@ function getDisplayRole(name: string) {
   return "Corretor de Negócios";
 }
 // Detecta se o negócio é locação/aluguel (vs venda).
-// Olha badge_texto, descrição (campo "Operação: Locação") e título.
+// Olha badge_texto, descrição e título — cobre verbos (alugar/alugue),
+// substantivos (aluguel/locação) e campo "Operação: ...".
 function isLocacao(n: Negocio): boolean {
   const badge = (n.badge_texto || "").toUpperCase();
-  if (badge.includes("LOCAÇÃO") || badge.includes("LOCACAO") || badge.includes("ALUGUEL")) return true;
+  if (badge.includes("LOCAÇÃO") || badge.includes("LOCACAO") || badge.includes("ALUGUEL") || badge.includes("ALUGA")) return true;
   const txt = `${n.descricao || ""} ${n.titulo || ""}`.toLowerCase();
+  // Campo explícito do formulário
   if (txt.includes("operação: locação") || txt.includes("operacao: locacao")) return true;
-  if (txt.includes("operação: venda e locação")) return true;
+  if (txt.includes("operação: venda e locação") || txt.includes("operacao: venda e locacao")) return true;
+  // Palavras-chave de locação no texto (verbos, substantivos, expressões)
+  const keywords = [
+    "para alugar", "pra alugar", "aluga-se", "aluga se",
+    "para locação", "para locacao", "pra locação", "pra locacao",
+    "para locar", "pra locar",
+    "aluguel mensal", "valor do aluguel", "para aluguel", "pra aluguel",
+    "disponível para locação", "disponivel para locacao",
+  ];
+  if (keywords.some((k) => txt.includes(k))) return true;
   return false;
 }
 // Mantém o bairro como o corretor cadastrou (inclui sub-localização tipo "Jardim Ângela - Menininha").

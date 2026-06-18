@@ -341,7 +341,7 @@ $$;
 -- A Rita é o agente com slug 'cadastrador' (visto no URL /agentes/cadastrador/playground)
 
 WITH rita AS (
-  SELECT id FROM public.agents WHERE slug = 'cadastrador' LIMIT 1
+  SELECT id FROM public.agents_registry WHERE slug = 'cadastrador' LIMIT 1
 )
 -- Tool 1: editar_negocio
 INSERT INTO public.agents_tools (
@@ -398,7 +398,7 @@ ON CONFLICT DO NOTHING;
 
 -- Tool 2: anexar_foto_negocio
 WITH rita AS (
-  SELECT id FROM public.agents WHERE slug = 'cadastrador' LIMIT 1
+  SELECT id FROM public.agents_registry WHERE slug = 'cadastrador' LIMIT 1
 )
 INSERT INTO public.agents_tools (
   agent_id, name, description, parameters_schema, action_type, action_config, usage_mode, is_active
@@ -449,7 +449,7 @@ SELECT
   t.action_config->>'function' AS sql_function,
   t.is_active
 FROM public.agents_tools t
-JOIN public.agents a ON a.id = t.agent_id
+JOIN public.agents_registry a ON a.id = t.agent_id
 WHERE a.slug = 'cadastrador'
 ORDER BY t.name;
 
