@@ -18,6 +18,7 @@ import {
   Sparkles,
   Bot,
   Mail,
+  Phone,
   Menu,
   X,
 } from "lucide-react";
@@ -35,7 +36,8 @@ const navItems = [
   { to: "/admin/materiais", label: "Materiais", icon: Package },
   { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
   { to: "/admin/social-selling", label: "Social Selling", icon: Instagram },
-  { to: "/admin/marketing", label: "Marketing", icon: Mail },
+  { to: "/admin/marketing", label: "Email Marketing", icon: Mail },
+  { to: "/admin/marketing/whatsapp", label: "WhatsApp Mkt", icon: Phone },
   { to: "/admin/integracoes", label: "Integrações", icon: Plug },
   { to: "/admin/agentes-ia", label: "Agentes IA", icon: Sparkles },
   { to: "/agentes", label: "Plataforma de Agentes", icon: Bot },

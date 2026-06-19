@@ -3,6 +3,7 @@ import { Plus, MessageSquare, Loader2, Trash2, Send, Users } from "lucide-react"
 import AdminLayout from "@/components/admin/AdminLayout";
 import usePageTitle from "@/hooks/usePageTitle";
 import { useWhatsappCampaigns, useDeleteWhatsappCampaign } from "@/hooks/useWhatsappMarketing";
+import { WaSubNav } from "./WhatsappDashboard";
 import { toast } from "sonner";
 
 export default function WhatsappCampanhas() {
@@ -40,6 +41,8 @@ export default function WhatsappCampanhas() {
             <Plus className="h-4 w-4" /> Nova campanha
           </Link>
         </div>
+
+        <WaSubNav />
 
         <div className="rounded-2xl border border-border bg-card overflow-hidden">
           {isLoading ? (

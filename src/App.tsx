@@ -69,6 +69,7 @@ const MarketingCampanhaNova = lazy(() => import("./pages/admin/marketing/Campanh
 const MarketingCampanhaDetail = lazy(() => import("./pages/admin/marketing/CampanhaDetail"));
 
 // Marketing — WhatsApp
+const WhatsappDashboard = lazy(() => import("./pages/admin/marketing/WhatsappDashboard"));
 const WhatsappCampanhas = lazy(() => import("./pages/admin/marketing/WhatsappCampanhas"));
 const WhatsappCampanhaNova = lazy(() => import("./pages/admin/marketing/WhatsappCampanhaNova"));
 const WhatsappCampanhaDetail = lazy(() => import("./pages/admin/marketing/WhatsappCampanhaDetail"));
@@ -148,7 +149,8 @@ const App = () => (
                   <Route path="/admin/marketing/campanhas/:id" element={<ProtectedRoute><MarketingCampanhaDetail /></ProtectedRoute>} />
 
                   {/* Marketing — WhatsApp */}
-                  <Route path="/admin/marketing/whatsapp" element={<ProtectedRoute><WhatsappCampanhas /></ProtectedRoute>} />
+                  <Route path="/admin/marketing/whatsapp" element={<ProtectedRoute><WhatsappDashboard /></ProtectedRoute>} />
+                  <Route path="/admin/marketing/whatsapp/campanhas" element={<ProtectedRoute><WhatsappCampanhas /></ProtectedRoute>} />
                   <Route path="/admin/marketing/whatsapp/nova" element={<ProtectedRoute><WhatsappCampanhaNova /></ProtectedRoute>} />
                   <Route path="/admin/marketing/whatsapp/:id" element={<ProtectedRoute><WhatsappCampanhaDetail /></ProtectedRoute>} />
 
