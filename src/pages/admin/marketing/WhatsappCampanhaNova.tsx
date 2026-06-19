@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Save, Loader2, Users, RefreshCw, MessageSquare,
   Search, X, Filter, UserPlus, Phone, Hash, Tag, Globe, CheckCircle2,
+  ChevronRight, ChevronLeft, CheckSquare,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import usePageTitle from "@/hooks/usePageTitle";
@@ -55,6 +56,14 @@ export default function WhatsappCampanhaNova() {
   const [loadingCount, setLoadingCount] = useState(false);
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [origemCounts, setOrigemCounts] = useState<Record<string, number>>({});
+
+  // Drill-down state for "Selecionar leads"
+  type PickerStep = "choose" | "list";
+  type PickerSource = { type: "status"; value: string; label: string } | { type: "origem"; value: string; label: string } | { type: "todos"; value: ""; label: string };
+  const [pickerStep, setPickerStep] = useState<PickerStep>("choose");
+  const [pickerSource, setPickerSource] = useState<PickerSource | null>(null);
+  const [pickerLeads, setPickerLeads] = useState<LeadOption[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
 
   const buildFilters = () => {
     if (audienceMode === "especificos" && selectedLeads.length > 0) {
@@ -134,6 +143,33 @@ export default function WhatsappCampanhaNova() {
   const toggle = (arr: string[], v: string) =>
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
   const insertVar = (v: string) => setMessage((m) => m + v);
+
+  const openPickerCategory = async (source: PickerSource) => {
+    setPickerSource(source);
+    setPickerStep("list");
+    setPickerLoading(true);
+    try {
+      let query = supabase.from("leads").select("id, nome, telefone").not("telefone", "is", null).neq("telefone", "");
+      if (source.type === "status") query = query.eq("status", source.value);
+      else if (source.type === "origem") query = query.eq("origem", source.value);
+      const { data } = await query.order("nome", { ascending: true }).limit(200);
+      setPickerLeads((data || []) as LeadOption[]);
+    } finally {
+      setPickerLoading(false);
+    }
+  };
+
+  const selectAllPicker = () => {
+    const toAdd = pickerLeads.filter((l) => !isSelected(l.id));
+    if (toAdd.length) setSelectedLeads((prev) => [...prev, ...toAdd]);
+  };
+
+  const deselectAllPicker = () => {
+    const ids = new Set(pickerLeads.map((l) => l.id));
+    setSelectedLeads((prev) => prev.filter((l) => !ids.has(l.id)));
+  };
+
+  const pickerSelectedCount = pickerLeads.filter((l) => isSelected(l.id)).length;
 
   const handleSave = async () => {
     if (!name.trim() || !message.trim()) { toast.error("Nome e mensagem são obrigatórios"); return; }
@@ -463,61 +499,204 @@ export default function WhatsappCampanhaNova() {
                   </div>
                 )}
 
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar por nome ou telefone..."
-                    className="w-full rounded-xl border border-border bg-background pl-10 pr-10 py-3 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-500/10 transition-all"
-                  />
-                  {searching && <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-green-500" />}
-                </div>
+                {/* STEP 1: Escolher categoria */}
+                {pickerStep === "choose" && (
+                  <div className="space-y-4">
+                    {/* Busca rápida */}
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Busca rápida por nome ou telefone..."
+                        className="w-full rounded-xl border border-border bg-background pl-10 pr-10 py-3 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-500/10 transition-all"
+                      />
+                      {searching && <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-green-500" />}
+                    </div>
 
-                {/* Results */}
-                {search.trim() && searchResults.length === 0 && !searching && (
-                  <div className="rounded-xl border border-dashed border-border p-6 text-center">
-                    <Search className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground">Nenhum lead encontrado para "{search}"</p>
-                  </div>
-                )}
-                {searchResults.length > 0 && (
-                  <div className="rounded-xl border border-border overflow-hidden max-h-72 overflow-y-auto shadow-sm">
-                    {searchResults.map((lead, i) => {
-                      const selected = isSelected(lead.id);
-                      return (
-                        <button key={lead.id} type="button" onClick={() => toggleLead(lead)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
-                            i > 0 ? "border-t border-border" : ""
-                          } ${selected
-                            ? "bg-green-50"
-                            : "hover:bg-muted/50"
-                          }`}>
-                          <div className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold shrink-0 ${
-                            selected ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
-                          }`}>
-                            {selected ? <CheckCircle2 className="h-4 w-4" /> : (lead.nome || "?")[0].toUpperCase()}
+                    {/* Search results inline */}
+                    {search.trim() && searchResults.length === 0 && !searching && (
+                      <div className="rounded-xl border border-dashed border-border p-4 text-center">
+                        <p className="text-xs text-muted-foreground">Nenhum lead para "{search}"</p>
+                      </div>
+                    )}
+                    {searchResults.length > 0 && (
+                      <div className="rounded-xl border border-border overflow-hidden max-h-56 overflow-y-auto shadow-sm">
+                        {searchResults.map((lead, i) => {
+                          const selected = isSelected(lead.id);
+                          return (
+                            <button key={lead.id} type="button" onClick={() => toggleLead(lead)}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all ${
+                                i > 0 ? "border-t border-border" : ""
+                              } ${selected ? "bg-green-50" : "hover:bg-muted/50"}`}>
+                              <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold shrink-0 ${
+                                selected ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {selected ? <CheckCircle2 className="h-3.5 w-3.5" /> : (lead.nome || "?")[0].toUpperCase()}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className={`text-sm font-medium truncate ${selected ? "text-green-700" : ""}`}>{lead.nome || "—"}</p>
+                                <p className="text-[11px] text-muted-foreground">{lead.telefone}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Categorias — só aparece quando não está buscando */}
+                    {!search.trim() && (
+                      <>
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ou selecione por categoria</span>
+                          <div className="flex-1 h-px bg-border" />
+                        </div>
+
+                        {/* Todos */}
+                        <button type="button"
+                          onClick={() => openPickerCategory({ type: "todos", value: "", label: "Todos os leads" })}
+                          className="w-full flex items-center gap-3 rounded-xl border-2 border-border px-4 py-3.5 hover:border-green-400 hover:bg-green-50/30 transition-all group">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors">
+                            <Users className="h-5 w-5" />
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className={`text-sm font-medium truncate ${selected ? "text-green-700" : "text-foreground"}`}>
-                              {lead.nome || "—"}
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Phone className="h-3 w-3" /> {lead.telefone}
-                            </p>
+                          <div className="flex-1 text-left">
+                            <p className="text-sm font-semibold text-foreground">Todos os leads</p>
+                            <p className="text-[11px] text-muted-foreground">{Object.values(statusCounts).reduce((a, b) => a + b, 0)} leads com telefone</p>
                           </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-green-500 transition-colors" />
                         </button>
-                      );
-                    })}
+
+                        {/* Por Status */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Por status</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {STATUS_OPTS.map((o) => {
+                              const cnt = statusCounts[o.value] || 0;
+                              return (
+                                <button key={o.value} type="button"
+                                  onClick={() => cnt > 0 && openPickerCategory({ type: "status", value: o.value, label: o.label })}
+                                  disabled={cnt === 0}
+                                  className={`flex items-center gap-3 rounded-xl border-2 border-border px-3.5 py-3 transition-all group ${
+                                    cnt > 0 ? "hover:border-green-400 hover:bg-green-50/30 cursor-pointer" : "opacity-40 cursor-not-allowed"
+                                  }`}>
+                                  <span className={`h-3 w-3 rounded-full ${o.color} shrink-0`} />
+                                  <span className="flex-1 text-left text-sm font-medium text-foreground">{o.label}</span>
+                                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground tabular-nums">{cnt}</span>
+                                  {cnt > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-green-500 transition-colors" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Por Origem */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Por origem</span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {ORIGEM_OPTS.map((o) => {
+                              const cnt = origemCounts[o.value] || 0;
+                              return (
+                                <button key={o.value} type="button"
+                                  onClick={() => cnt > 0 && openPickerCategory({ type: "origem", value: o.value, label: o.label })}
+                                  disabled={cnt === 0}
+                                  className={`flex items-center gap-2 rounded-xl border-2 border-border px-3 py-2.5 transition-all group ${
+                                    cnt > 0 ? "hover:border-green-400 hover:bg-green-50/30 cursor-pointer" : "opacity-40 cursor-not-allowed"
+                                  }`}>
+                                  <span className="text-sm">{o.icon}</span>
+                                  <span className="flex-1 text-left text-xs font-medium text-foreground">{o.label}</span>
+                                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground tabular-nums">{cnt}</span>
+                                  {cnt > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-green-500 transition-colors" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
-                {selectedLeads.length === 0 && !search.trim() && (
-                  <div className="rounded-xl bg-muted/50 border border-dashed border-border p-6 text-center">
-                    <UserPlus className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                {/* STEP 2: Lista de leads da categoria */}
+                {pickerStep === "list" && pickerSource && (
+                  <div className="space-y-3">
+                    {/* Voltar + título */}
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={() => { setPickerStep("choose"); setPickerLeads([]); }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card hover:bg-muted transition-colors">
+                        <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground">{pickerSource.label}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {pickerLoading ? "Carregando..." : `${pickerLeads.length} leads — ${pickerSelectedCount} selecionados`}
+                        </p>
+                      </div>
+                      {!pickerLoading && pickerLeads.length > 0 && (
+                        <div className="flex gap-1.5">
+                          <button type="button" onClick={selectAllPicker}
+                            className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-[11px] font-semibold text-green-700 hover:bg-green-100 transition-colors">
+                            <CheckSquare className="h-3 w-3" /> Todos
+                          </button>
+                          {pickerSelectedCount > 0 && (
+                            <button type="button" onClick={deselectAllPicker}
+                              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-red-500 hover:border-red-200 transition-colors">
+                              <X className="h-3 w-3" /> Limpar
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Lista */}
+                    {pickerLoading ? (
+                      <div className="flex justify-center py-10">
+                        <Loader2 className="h-6 w-6 animate-spin text-green-500" />
+                      </div>
+                    ) : pickerLeads.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-border p-6 text-center">
+                        <p className="text-xs text-muted-foreground">Nenhum lead nesta categoria.</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-border overflow-hidden max-h-80 overflow-y-auto shadow-sm">
+                        {pickerLeads.map((lead, i) => {
+                          const selected = isSelected(lead.id);
+                          return (
+                            <button key={lead.id} type="button" onClick={() => toggleLead(lead)}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all ${
+                                i > 0 ? "border-t border-border" : ""
+                              } ${selected ? "bg-green-50" : "hover:bg-muted/50"}`}>
+                              <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold shrink-0 transition-colors ${
+                                selected ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {selected ? <CheckCircle2 className="h-3.5 w-3.5" /> : (lead.nome || "?")[0].toUpperCase()}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className={`text-sm font-medium truncate ${selected ? "text-green-700" : "text-foreground"}`}>
+                                  {lead.nome || "—"}
+                                </p>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground shrink-0 flex items-center gap-1">
+                                <Phone className="h-3 w-3" /> {lead.telefone}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {selectedLeads.length === 0 && pickerStep === "choose" && !search.trim() && (
+                  <div className="rounded-xl bg-muted/50 border border-dashed border-border p-4 text-center">
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">Busque e selecione</span> os leads que vão receber a mensagem.
+                      Escolha uma categoria acima ou busque diretamente para selecionar leads.
                     </p>
                   </div>
                 )}
