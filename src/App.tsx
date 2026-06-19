@@ -60,13 +60,18 @@ const AdminIntegracoes = lazy(() => import("./pages/admin/Integracoes"));
 const AdminAgentesIA = lazy(() => import("./pages/admin/AgentesIA"));
 const AdminSocialSelling = lazy(() => import("./pages/admin/SocialSelling"));
 
-// Marketing
+// Marketing — Email
 const MarketingDashboard = lazy(() => import("./pages/admin/marketing/Dashboard"));
 const MarketingTemplates = lazy(() => import("./pages/admin/marketing/Templates"));
 const MarketingTemplateEditor = lazy(() => import("./pages/admin/marketing/TemplateEditor"));
 const MarketingCampanhas = lazy(() => import("./pages/admin/marketing/Campanhas"));
 const MarketingCampanhaNova = lazy(() => import("./pages/admin/marketing/CampanhaNova"));
 const MarketingCampanhaDetail = lazy(() => import("./pages/admin/marketing/CampanhaDetail"));
+
+// Marketing — WhatsApp
+const WhatsappCampanhas = lazy(() => import("./pages/admin/marketing/WhatsappCampanhas"));
+const WhatsappCampanhaNova = lazy(() => import("./pages/admin/marketing/WhatsappCampanhaNova"));
+const WhatsappCampanhaDetail = lazy(() => import("./pages/admin/marketing/WhatsappCampanhaDetail"));
 
 // Plataforma de Agentes IA
 const AgentList = lazy(() => import("./agents-platform/pages/AgentList"));
@@ -133,7 +138,7 @@ const App = () => (
                   <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
                   <Route path="/admin/social-selling" element={<ProtectedRoute><AdminSocialSelling /></ProtectedRoute>} />
 
-                  {/* Marketing */}
+                  {/* Marketing — Email */}
                   <Route path="/admin/marketing" element={<ProtectedRoute><MarketingDashboard /></ProtectedRoute>} />
                   <Route path="/admin/marketing/templates" element={<ProtectedRoute><MarketingTemplates /></ProtectedRoute>} />
                   <Route path="/admin/marketing/templates/novo" element={<ProtectedRoute><MarketingTemplateEditor /></ProtectedRoute>} />
@@ -141,6 +146,11 @@ const App = () => (
                   <Route path="/admin/marketing/campanhas" element={<ProtectedRoute><MarketingCampanhas /></ProtectedRoute>} />
                   <Route path="/admin/marketing/campanhas/nova" element={<ProtectedRoute><MarketingCampanhaNova /></ProtectedRoute>} />
                   <Route path="/admin/marketing/campanhas/:id" element={<ProtectedRoute><MarketingCampanhaDetail /></ProtectedRoute>} />
+
+                  {/* Marketing — WhatsApp */}
+                  <Route path="/admin/marketing/whatsapp" element={<ProtectedRoute><WhatsappCampanhas /></ProtectedRoute>} />
+                  <Route path="/admin/marketing/whatsapp/nova" element={<ProtectedRoute><WhatsappCampanhaNova /></ProtectedRoute>} />
+                  <Route path="/admin/marketing/whatsapp/:id" element={<ProtectedRoute><WhatsappCampanhaDetail /></ProtectedRoute>} />
 
                   {/* Plataforma de Agentes IA — rotas fixas ANTES de :slug */}
                   <Route path="/agentes" element={<ProtectedRoute><AgentList /></ProtectedRoute>} />

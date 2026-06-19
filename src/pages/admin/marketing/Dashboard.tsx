@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Mail, Send, MousePointerClick, AlertTriangle, Plus, FileText,
-  BarChart3, Zap, CheckCircle2, Eye, Sparkles, Clock,
+  BarChart3, Zap, CheckCircle2, Eye, Sparkles, Clock, MessageSquare,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import usePageTitle from "@/hooks/usePageTitle";
@@ -313,6 +313,35 @@ export default function MarketingDashboard() {
             </div>
           )}
         </Section>
+
+        {/* WhatsApp */}
+        <section className="rounded-2xl border border-green-200 bg-green-50/40 p-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500">
+                <MessageSquare className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-sm text-foreground">WhatsApp Marketing</h2>
+                <p className="text-xs text-muted-foreground">Disparos em massa via UAZapi</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Link
+                to="/admin/marketing/whatsapp"
+                className="flex items-center gap-2 rounded-xl border border-green-300 bg-white px-3 py-2 text-xs font-medium text-green-700 hover:bg-green-50"
+              >
+                Ver campanhas
+              </Link>
+              <Link
+                to="/admin/marketing/whatsapp/nova"
+                className="flex items-center gap-2 rounded-xl bg-green-500 px-3 py-2 text-xs font-semibold text-white hover:bg-green-600"
+              >
+                <Plus className="h-3.5 w-3.5" /> Nova campanha
+              </Link>
+            </div>
+          </div>
+        </section>
 
         {/* Templates */}
         <Section
