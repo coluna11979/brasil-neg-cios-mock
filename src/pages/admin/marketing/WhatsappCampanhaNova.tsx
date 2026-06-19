@@ -53,6 +53,8 @@ export default function WhatsappCampanhaNova() {
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [audCount, setAudCount] = useState<number | null>(null);
   const [loadingCount, setLoadingCount] = useState(false);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+  const [origemCounts, setOrigemCounts] = useState<Record<string, number>>({});
 
   const buildFilters = () => {
     if (audienceMode === "especificos" && selectedLeads.length > 0) {
@@ -77,6 +79,27 @@ export default function WhatsappCampanhaNova() {
   };
 
   useEffect(() => { refreshCount(); }, [statuses, origens, tagsInput, selectedLeads, audienceMode]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("leads")
+        .select("status, origem")
+        .not("telefone", "is", null)
+        .neq("telefone", "");
+      if (!data) return;
+      const sc: Record<string, number> = {};
+      const oc: Record<string, number> = {};
+      for (const row of data) {
+        const s = row.status || "novo";
+        sc[s] = (sc[s] || 0) + 1;
+        const o = row.origem || "";
+        if (o) oc[o] = (oc[o] || 0) + 1;
+      }
+      setStatusCounts(sc);
+      setOrigemCounts(oc);
+    })();
+  }, []);
 
   useEffect(() => {
     if (audienceMode !== "especificos") return;
@@ -335,6 +358,7 @@ export default function WhatsappCampanhaNova() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {STATUS_OPTS.map((o) => {
                       const active = statuses.includes(o.value);
+                      const cnt = statusCounts[o.value] || 0;
                       return (
                         <button key={o.value} type="button" onClick={() => setStatuses(toggle(statuses, o.value))}
                           className={`flex items-center gap-2.5 rounded-xl border-2 px-3.5 py-2.5 text-xs font-medium transition-all ${
@@ -343,8 +367,10 @@ export default function WhatsappCampanhaNova() {
                               : "border-border bg-card text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground"
                           }`}>
                           <span className={`h-2.5 w-2.5 rounded-full ${active ? "bg-green-500" : o.color} shrink-0`} />
-                          {o.label}
-                          {active && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                          <span className="flex-1 text-left">{o.label}</span>
+                          <span className={`min-w-[20px] text-center rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                            active ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                          }`}>{cnt}</span>
                         </button>
                       );
                     })}
@@ -360,6 +386,7 @@ export default function WhatsappCampanhaNova() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {ORIGEM_OPTS.map((o) => {
                       const active = origens.includes(o.value);
+                      const cnt = origemCounts[o.value] || 0;
                       return (
                         <button key={o.value} type="button" onClick={() => setOrigens(toggle(origens, o.value))}
                           className={`flex items-center gap-2 rounded-xl border-2 px-3.5 py-2.5 text-xs font-medium transition-all ${
@@ -368,8 +395,10 @@ export default function WhatsappCampanhaNova() {
                               : "border-border bg-card text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground"
                           }`}>
                           <span className="text-sm">{o.icon}</span>
-                          {o.label}
-                          {active && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 ml-auto" />}
+                          <span className="flex-1 text-left">{o.label}</span>
+                          <span className={`min-w-[20px] text-center rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                            active ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+                          }`}>{cnt}</span>
                         </button>
                       );
                     })}
