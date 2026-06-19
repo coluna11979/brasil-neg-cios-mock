@@ -28,12 +28,32 @@ const ORIGEM_OPTS = [
 ];
 const VARS = ["{{nome}}", "{{primeiro_nome}}", "{{telefone}}"];
 
+const ORIGEM_LABEL: Record<string, string> = Object.fromEntries(ORIGEM_OPTS.map((o) => [o.value, o.label]));
+const ORIGEM_ICON: Record<string, string> = Object.fromEntries(ORIGEM_OPTS.map((o) => [o.value, o.icon]));
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUS_OPTS.map((o) => [o.value, o.label]));
+const STATUS_COLOR: Record<string, string> = Object.fromEntries(STATUS_OPTS.map((o) => [o.value, o.color]));
+
+function leadSubtitle(lead: LeadOption): string {
+  const parts: string[] = [];
+  if (lead.origem) {
+    const lbl = ORIGEM_LABEL[lead.origem] || lead.origem;
+    if (lead.negocio_titulo) parts.push(`${lbl}: ${lead.negocio_titulo}`);
+    else if (lead.galeria_nome) parts.push(`${lbl}: ${lead.galeria_nome}`);
+    else parts.push(lbl);
+  }
+  return parts.join(" · ") || "";
+}
+
 type AudienceMode = "filtros" | "especificos";
 
 interface LeadOption {
   id: string;
   nome: string | null;
   telefone: string;
+  origem?: string | null;
+  status?: string | null;
+  negocio_titulo?: string | null;
+  galeria_nome?: string | null;
 }
 
 export default function WhatsappCampanhaNova() {
@@ -119,7 +139,7 @@ export default function WhatsappCampanhaNova() {
       try {
         const { data } = await supabase
           .from("leads")
-          .select("id, nome, telefone")
+          .select("id, nome, telefone, origem, status, negocio_titulo, galeria_nome")
           .or(`nome.ilike.%${search}%,telefone.ilike.%${search}%`)
           .not("telefone", "is", null)
           .neq("telefone", "")
@@ -149,7 +169,7 @@ export default function WhatsappCampanhaNova() {
     setPickerStep("list");
     setPickerLoading(true);
     try {
-      let query = supabase.from("leads").select("id, nome, telefone").not("telefone", "is", null).neq("telefone", "");
+      let query = supabase.from("leads").select("id, nome, telefone, origem, status, negocio_titulo, galeria_nome").not("telefone", "is", null).neq("telefone", "");
       if (source.type === "status") query = query.eq("status", source.value);
       else if (source.type === "origem") query = query.eq("origem", source.value);
       const { data } = await query.order("nome", { ascending: true }).limit(200);
@@ -524,6 +544,7 @@ export default function WhatsappCampanhaNova() {
                       <div className="rounded-xl border border-border overflow-hidden max-h-56 overflow-y-auto shadow-sm">
                         {searchResults.map((lead, i) => {
                           const selected = isSelected(lead.id);
+                          const sub = leadSubtitle(lead);
                           return (
                             <button key={lead.id} type="button" onClick={() => toggleLead(lead)}
                               className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all ${
@@ -536,7 +557,10 @@ export default function WhatsappCampanhaNova() {
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className={`text-sm font-medium truncate ${selected ? "text-green-700" : ""}`}>{lead.nome || "—"}</p>
-                                <p className="text-[11px] text-muted-foreground">{lead.telefone}</p>
+                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                  <span>{lead.telefone}</span>
+                                  {sub && <><span className="text-border">·</span><span className="truncate">{lead.origem && ORIGEM_ICON[lead.origem] ? `${ORIGEM_ICON[lead.origem]} ` : ""}{sub}</span></>}
+                                </div>
                               </div>
                             </button>
                           );
@@ -666,6 +690,9 @@ export default function WhatsappCampanhaNova() {
                       <div className="rounded-xl border border-border overflow-hidden max-h-80 overflow-y-auto shadow-sm">
                         {pickerLeads.map((lead, i) => {
                           const selected = isSelected(lead.id);
+                          const sub = leadSubtitle(lead);
+                          const sColor = lead.status ? (STATUS_COLOR[lead.status] || "bg-gray-400") : "";
+                          const sLabel = lead.status ? (STATUS_LABEL[lead.status] || lead.status) : "";
                           return (
                             <button key={lead.id} type="button" onClick={() => toggleLead(lead)}
                               className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all ${
@@ -680,6 +707,16 @@ export default function WhatsappCampanhaNova() {
                                 <p className={`text-sm font-medium truncate ${selected ? "text-green-700" : "text-foreground"}`}>
                                   {lead.nome || "—"}
                                 </p>
+                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
+                                  {sub && <span className="truncate max-w-[140px]">{lead.origem && ORIGEM_ICON[lead.origem] ? `${ORIGEM_ICON[lead.origem]} ` : ""}{sub}</span>}
+                                  {sub && sLabel && <span className="text-border">·</span>}
+                                  {sLabel && (
+                                    <span className="flex items-center gap-1">
+                                      <span className={`h-1.5 w-1.5 rounded-full ${sColor} shrink-0`} />
+                                      {sLabel}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <p className="text-[11px] text-muted-foreground shrink-0 flex items-center gap-1">
                                 <Phone className="h-3 w-3" /> {lead.telefone}
