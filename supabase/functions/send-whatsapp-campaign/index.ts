@@ -63,7 +63,18 @@ Deno.serve(async (req: Request) => {
     }
 
     if (test_phone) {
-      const vars = { nome: "Teste", primeiro_nome: "Teste", telefone: test_phone };
+      // Busca lead pelo telefone para usar dados reais nas variáveis
+      const { data: leadByPhone } = await supabase
+        .from("leads")
+        .select("nome, telefone")
+        .eq("telefone", test_phone)
+        .maybeSingle();
+      const nomeReal = leadByPhone?.nome || "Fulano";
+      const vars = {
+        nome: nomeReal,
+        primeiro_nome: nomeReal.split(" ")[0],
+        telefone: test_phone,
+      };
       await sendWpp(test_phone, substituteVars(campaign.message, vars));
       return new Response(JSON.stringify({ success: true, test: true, sent_to: test_phone }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
