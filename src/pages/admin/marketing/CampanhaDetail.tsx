@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Send, Loader2, Users, Mail, Eye, MousePointerClick, AlertTriangle, RefreshCw, Save } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Users, Mail, Eye, MousePointerClick, AlertTriangle, RefreshCw, Save, Plus, Trash2, UserPlus, UserMinus } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import usePageTitle from "@/hooks/usePageTitle";
 import {
@@ -8,6 +8,7 @@ import {
   populateCampaignLeads, sendCampaign, sendTestEmail,
   useEmailTemplates,
 } from "@/hooks/useEmailMarketing";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export default function CampanhaDetail() {
@@ -24,6 +25,9 @@ export default function CampanhaDetail() {
   const [sending, setSending] = useState(false);
   const [testing, setTesting] = useState(false);
   const [populating, setPopulating] = useState(false);
+  const [addEmail, setAddEmail] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
 
   // Pre-fill HTML when campaign loads
   if (c && html === "" && c.html_content) setHtml(c.html_content);
@@ -40,6 +44,34 @@ export default function CampanhaDetail() {
     } finally {
       setPopulating(false);
     }
+  };
+
+  const handleAddRecipient = async () => {
+    const email = addEmail.trim().toLowerCase();
+    if (!email || !id) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Email inválido"); return; }
+    if (leads.some((l) => l.email.toLowerCase() === email)) { toast.error("Já está na lista"); return; }
+    setAdding(true);
+    try {
+      const { error } = await supabase.from("email_campaign_leads").insert({ campaign_id: id, email, status: "pending" });
+      if (error) throw error;
+      toast.success(`${email} adicionado`);
+      setAddEmail("");
+      await Promise.all([refetchLeads(), refetch()]);
+    } catch (e: any) { toast.error(e.message || "Erro ao adicionar"); }
+    finally { setAdding(false); }
+  };
+
+  const handleRemoveRecipient = async (leadId: string, email: string) => {
+    if (!confirm(`Remover ${email} da campanha?`)) return;
+    setRemoving(leadId);
+    try {
+      const { error } = await supabase.from("email_campaign_leads").delete().eq("id", leadId);
+      if (error) throw error;
+      toast.success(`${email} removido`);
+      await Promise.all([refetchLeads(), refetch()]);
+    } catch (e: any) { toast.error(e.message || "Erro ao remover"); }
+    finally { setRemoving(null); }
   };
 
   const handleSaveHtml = async () => {
@@ -215,9 +247,38 @@ export default function CampanhaDetail() {
 
         {/* Destinatários */}
         <section className="rounded-2xl border border-border bg-card overflow-hidden">
-          <div className="px-5 py-3 border-b border-border bg-muted/30">
+          <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
             <h2 className="font-semibold text-sm">Destinatários ({leads.length})</h2>
           </div>
+
+          {/* Adicionar destinatário */}
+          {canSend && (
+            <div className="px-5 py-3 border-b border-border bg-card">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="email"
+                    value={addEmail}
+                    onChange={(e) => setAddEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddRecipient()}
+                    placeholder="Adicionar email manualmente..."
+                    className="w-full rounded-xl border border-border bg-background pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#BAA05E]/60 focus:ring-2 focus:ring-[#BAA05E]/10 transition-all"
+                  />
+                </div>
+                <button
+                  onClick={handleAddRecipient}
+                  disabled={adding || !addEmail.trim()}
+                  className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-all disabled:opacity-40"
+                  style={{ backgroundColor: "#BAA05E" }}
+                >
+                  {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Incluir
+                </button>
+              </div>
+            </div>
+          )}
+
           {leads.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
               Nenhum destinatário ainda. Clique em "Recalcular audiência" pra popular.
@@ -230,16 +291,29 @@ export default function CampanhaDetail() {
                     <th className="text-left px-4 py-2 font-medium">Email</th>
                     <th className="text-left px-4 py-2 font-medium">Status</th>
                     <th className="text-left px-4 py-2 font-medium">Enviado</th>
+                    {canSend && <th className="text-right px-4 py-2 font-medium w-16"></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {leads.slice(0, 200).map((l) => (
-                    <tr key={l.id} className="border-t border-border">
+                    <tr key={l.id} className="border-t border-border group hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-2 truncate max-w-xs">{l.email}</td>
                       <td className="px-4 py-2"><SendStatus s={l.status} /></td>
                       <td className="px-4 py-2 text-muted-foreground">
                         {l.sent_at ? new Date(l.sent_at).toLocaleString("pt-BR") : "—"}
                       </td>
+                      {canSend && (
+                        <td className="px-4 py-2 text-right">
+                          <button
+                            onClick={() => handleRemoveRecipient(l.id, l.email)}
+                            disabled={removing === l.id}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
+                            title="Remover da campanha"
+                          >
+                            {removing === l.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
