@@ -8,7 +8,9 @@ import {
 import AdminLayout from "@/components/admin/AdminLayout";
 import usePageTitle from "@/hooks/usePageTitle";
 import { useEmailTemplate, useSaveTemplate, sendTestEmail } from "@/hooks/useEmailMarketing";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { Upload } from "lucide-react";
 
 /* ── Constantes ─────────────────────────────────────────── */
 
@@ -459,11 +461,7 @@ function BlockEditor({ block, selected, onSelect, onUpdate, onRemove, onMoveUp, 
             </>
           )}
           {block.type === "image" && (
-            <>
-              <Field label="URL da imagem" value={block.src || ""} onChange={(v) => onUpdate({ src: v })} placeholder="https://exemplo.com/imagem.jpg" />
-              <Field label="Texto alt" value={block.alt || ""} onChange={(v) => onUpdate({ alt: v })} placeholder="Descrição da imagem" />
-              <Field label="Link ao clicar (opcional)" value={block.href || ""} onChange={(v) => onUpdate({ href: v })} placeholder="https://negociaaky.com.br" />
-            </>
+            <ImageBlockEditor block={block} onUpdate={onUpdate} />
           )}
           {block.type === "button" && (
             <>
@@ -511,6 +509,56 @@ function BlockEditor({ block, selected, onSelect, onUpdate, onRemove, onMoveUp, 
           {block.type === "spacer" && `↕ ${block.height || 24}px`}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── ImageBlockEditor ───────────────────────────────────── */
+
+function ImageBlockEditor({ block, onUpdate }: { block: Block; onUpdate: (u: Partial<Block>) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Tamanho máximo: 5 MB"); return; }
+
+    setUploading(true);
+    const ext = file.name.split(".").pop() || "png";
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage.from("email-assets").upload(path, file, { contentType: file.type });
+    if (error) { toast.error("Erro no upload: " + error.message); setUploading(false); return; }
+
+    const { data } = supabase.storage.from("email-assets").getPublicUrl(path);
+    onUpdate({ src: data.publicUrl });
+    toast.success("Imagem enviada!");
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-3">
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+      <button
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#BAA05E]/40 py-4 text-sm font-medium transition-all hover:bg-[#BAA05E]/5 disabled:opacity-50"
+        style={{ color: WARM }}
+      >
+        {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</> : <><Upload className="h-4 w-4" /> Subir imagem do computador</>}
+      </button>
+
+      {block.src && (
+        <div className="rounded-xl border border-border/60 p-2 bg-muted/20">
+          <img src={block.src} alt={block.alt || ""} className="max-h-40 mx-auto rounded-lg object-contain" />
+        </div>
+      )}
+
+      <Field label="URL da imagem" value={block.src || ""} onChange={(v) => onUpdate({ src: v })} placeholder="https://exemplo.com/imagem.jpg" />
+      <Field label="Texto alt" value={block.alt || ""} onChange={(v) => onUpdate({ alt: v })} placeholder="Descrição da imagem" />
+      <Field label="Link ao clicar (opcional)" value={block.href || ""} onChange={(v) => onUpdate({ href: v })} placeholder="https://negociaaky.com.br" />
     </div>
   );
 }
