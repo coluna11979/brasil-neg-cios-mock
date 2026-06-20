@@ -89,6 +89,33 @@ export interface EmailCampaignLead {
   created_at: string;
 }
 
+export interface EmailAutomation {
+  id: string;
+  name: string;
+  description: string | null;
+  trigger_event: string;
+  trigger_filter: any | null;
+  flow_json: FlowNode[];
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FlowNodeType =
+  | "trigger" | "send_email" | "send_whatsapp" | "wait"
+  | "condition" | "update_field" | "add_tag" | "create_task" | "end";
+
+export interface FlowNode {
+  id: string;
+  type: FlowNodeType;
+  label?: string;
+  config?: Record<string, any>;
+  next?: string | null;
+  next_true?: string | null;
+  next_false?: string | null;
+}
+
 export interface EmailSend {
   id: string;
   campaign_id: string | null;

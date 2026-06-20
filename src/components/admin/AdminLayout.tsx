@@ -37,6 +37,7 @@ const navItems = [
   { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
   { to: "/admin/social-selling", label: "Social Selling", icon: Instagram },
   { to: "/admin/marketing", label: "Email Marketing", icon: Mail },
+  { to: "/admin/marketing/automacoes", label: "Automações", icon: Sparkles },
   { to: "/admin/marketing/whatsapp", label: "WhatsApp Mkt", icon: Phone },
   { to: "/admin/integracoes", label: "Integrações", icon: Plug },
   { to: "/admin/agentes-ia", label: "Agentes IA", icon: Sparkles },

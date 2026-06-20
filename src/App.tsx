@@ -68,6 +68,10 @@ const MarketingCampanhas = lazy(() => import("./pages/admin/marketing/Campanhas"
 const MarketingCampanhaNova = lazy(() => import("./pages/admin/marketing/CampanhaNova"));
 const MarketingCampanhaDetail = lazy(() => import("./pages/admin/marketing/CampanhaDetail"));
 
+// Marketing — Automações
+const MarketingAutomacoes = lazy(() => import("./pages/admin/marketing/Automacoes"));
+const MarketingAutomacaoEditor = lazy(() => import("./pages/admin/marketing/AutomacaoEditor"));
+
 // Marketing — WhatsApp
 const WhatsappDashboard = lazy(() => import("./pages/admin/marketing/WhatsappDashboard"));
 const WhatsappCampanhas = lazy(() => import("./pages/admin/marketing/WhatsappCampanhas"));
@@ -147,6 +151,11 @@ const App = () => (
                   <Route path="/admin/marketing/campanhas" element={<ProtectedRoute><MarketingCampanhas /></ProtectedRoute>} />
                   <Route path="/admin/marketing/campanhas/nova" element={<ProtectedRoute><MarketingCampanhaNova /></ProtectedRoute>} />
                   <Route path="/admin/marketing/campanhas/:id" element={<ProtectedRoute><MarketingCampanhaDetail /></ProtectedRoute>} />
+
+                  {/* Marketing — Automações */}
+                  <Route path="/admin/marketing/automacoes" element={<ProtectedRoute><MarketingAutomacoes /></ProtectedRoute>} />
+                  <Route path="/admin/marketing/automacoes/nova" element={<ProtectedRoute><MarketingAutomacaoEditor /></ProtectedRoute>} />
+                  <Route path="/admin/marketing/automacoes/:id" element={<ProtectedRoute><MarketingAutomacaoEditor /></ProtectedRoute>} />
 
                   {/* Marketing — WhatsApp */}
                   <Route path="/admin/marketing/whatsapp" element={<ProtectedRoute><WhatsappDashboard /></ProtectedRoute>} />

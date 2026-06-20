@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type {
   EmailTemplate, EmailCampaign, EmailCampaignLead, EmailAudienceFilters,
+  EmailAutomation,
 } from "@/types/email.types";
 
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -166,6 +167,92 @@ export function useDeleteCampaign() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["email_campaigns"] }),
+  });
+}
+
+// ── Automações ─────────────────────────────────────────────
+
+export function useEmailAutomations() {
+  return useQuery({
+    queryKey: ["email_automations"],
+    queryFn: async (): Promise<EmailAutomation[]> => {
+      const { data, error } = await supabase
+        .from("email_automations")
+        .select("*")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as EmailAutomation[];
+    },
+  });
+}
+
+export function useEmailAutomation(id: string | undefined) {
+  return useQuery({
+    queryKey: ["email_automation", id],
+    enabled: !!id,
+    queryFn: async (): Promise<EmailAutomation | null> => {
+      const { data, error } = await supabase
+        .from("email_automations")
+        .select("*")
+        .eq("id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as EmailAutomation) || null;
+    },
+  });
+}
+
+export function useSaveAutomation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (a: Partial<EmailAutomation> & { id?: string }) => {
+      if (a.id) {
+        const { data, error } = await supabase
+          .from("email_automations")
+          .update({ ...a, updated_at: new Date().toISOString() })
+          .eq("id", a.id)
+          .select("*")
+          .single();
+        if (error) throw error;
+        return data;
+      }
+      const { data, error } = await supabase
+        .from("email_automations")
+        .insert(a)
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ["email_automations"] });
+      if (data?.id) qc.invalidateQueries({ queryKey: ["email_automation", data.id] });
+    },
+  });
+}
+
+export function useDeleteAutomation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("email_automations").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["email_automations"] }),
+  });
+}
+
+export function useToggleAutomation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase
+        .from("email_automations")
+        .update({ is_active, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["email_automations"] }),
   });
 }
 
