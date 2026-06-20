@@ -207,40 +207,74 @@ export default function CampanhaDetail() {
           </section>
         )}
 
-        {/* HTML (editor inline simples) */}
+        {/* Conteúdo do email */}
         <section className="rounded-2xl border border-border bg-card overflow-hidden">
           <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-            <h2 className="font-semibold text-sm">HTML do email {usedTpl && <span className="text-xs text-muted-foreground">(baseado em: {usedTpl.name})</span>}</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowHtml((s) => !s)}
-                className="text-xs text-primary hover:underline"
-              >
-                {showHtml ? "Esconder" : "Editar"}
-              </button>
+            <div>
+              <h2 className="font-semibold text-sm">Conteúdo do email</h2>
+              {usedTpl && <p className="text-[11px] text-muted-foreground mt-0.5">Baseado no template: {usedTpl.name}</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              {c.html_content && (
+                <button onClick={() => setShowHtml((s) => !s)}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all">
+                  {showHtml ? "Fechar código" : "Ver/editar HTML"}
+                </button>
+              )}
               {showHtml && (
-                <button
-                  onClick={handleSaveHtml}
-                  disabled={save.isPending}
-                  className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline disabled:opacity-50"
-                >
+                <button onClick={handleSaveHtml} disabled={save.isPending}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white transition-all disabled:opacity-50"
+                  style={{ backgroundColor: "#BAA05E" }}>
                   {save.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
                   Salvar
                 </button>
               )}
             </div>
           </div>
-          {showHtml ? (
-            <textarea
-              value={html}
-              onChange={(e) => setHtml(e.target.value)}
+
+          {!c.html_content && !showHtml ? (
+            <div className="p-8 text-center space-y-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl mx-auto" style={{ background: "#BAA05E15" }}>
+                <Mail className="h-6 w-6" style={{ color: "#BAA05E" }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Nenhum conteúdo definido</p>
+                <p className="text-xs text-muted-foreground mt-1">Escolha uma opção para adicionar o conteúdo do email</p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                {usedTpl ? (
+                  <Link to={`/admin/marketing/templates/${usedTpl.id}`} target="_blank"
+                    className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all"
+                    style={{ backgroundColor: "#BAA05E" }}>
+                    <Eye className="h-4 w-4" /> Editar template visual
+                  </Link>
+                ) : (
+                  <Link to="/admin/marketing/templates" target="_blank"
+                    className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all"
+                    style={{ backgroundColor: "#BAA05E" }}>
+                    <Eye className="h-4 w-4" /> Escolher template
+                  </Link>
+                )}
+                <button onClick={() => setShowHtml(true)}
+                  className="flex items-center gap-2 rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all">
+                  Colar HTML manualmente
+                </button>
+              </div>
+            </div>
+          ) : showHtml ? (
+            <textarea value={html} onChange={(e) => setHtml(e.target.value)}
               className="w-full font-mono text-xs p-4 border-0 outline-none resize-y bg-card"
-              style={{ minHeight: 320 }}
-              spellCheck={false}
-            />
+              style={{ minHeight: 320 }} spellCheck={false}
+              placeholder="Cole aqui o HTML do email..." />
           ) : (
-            <div className="p-5 text-xs text-muted-foreground">
-              {c.html_content ? `${c.html_content.length} caracteres salvos` : "Nenhum HTML — defina antes de disparar"}
+            <div className="p-4">
+              <div className="rounded-xl border border-border overflow-hidden bg-white">
+                <iframe srcDoc={c.html_content} title="Prévia do email"
+                  className="w-full border-0" style={{ height: 480, pointerEvents: "none" }} />
+              </div>
+              <p className="text-center text-[10px] text-muted-foreground mt-2">
+                Prévia do email · {c.html_content.length.toLocaleString("pt-BR")} caracteres
+              </p>
             </div>
           )}
         </section>
