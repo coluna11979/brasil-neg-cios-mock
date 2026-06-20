@@ -73,40 +73,93 @@ function blocksToHtml(blocks: Block[], meta: { preheader?: string }): string {
     const align = b.align || "left";
     switch (b.type) {
       case "text":
-        return `<p style="font-size:15px;color:#52525b;line-height:1.7;margin:0 0 16px;text-align:${align};">${b.content || ""}</p>`;
+        return `<tr><td style="padding:0 0 16px;font-size:15px;color:#52525b;line-height:1.7;text-align:${align};">${(b.content || "").replace(/\n/g, "<br/>")}</td></tr>`;
       case "title": {
         const tag = `h${b.level || 1}`;
-        const sizes: Record<number, string> = { 1: "24px", 2: "20px", 3: "16px" };
-        return `<${tag} style="font-size:${sizes[b.level || 1]};font-weight:700;color:#18181b;margin:0 0 12px;text-align:${align};">${b.content || ""}</${tag}>`;
+        const sizes: Record<number, string> = { 1: "26px", 2: "21px", 3: "17px" };
+        return `<tr><td style="padding:0 0 12px;"><${tag} style="font-size:${sizes[b.level || 1]};font-weight:700;color:#18181b;margin:0;text-align:${align};">${b.content || ""}</${tag}></td></tr>`;
       }
-      case "image":
+      case "image": {
         const img = `<img src="${b.src || ""}" alt="${b.alt || ""}" style="max-width:100%;height:auto;border-radius:8px;display:block;${align === "center" ? "margin:0 auto;" : ""}" />`;
-        return b.href ? `<a href="${b.href}" style="display:block;text-align:${align};margin:0 0 16px;">${img}</a>` : `<div style="text-align:${align};margin:0 0 16px;">${img}</div>`;
+        const wrapped = b.href ? `<a href="${b.href}" style="display:block;text-align:${align};">${img}</a>` : `<div style="text-align:${align};">${img}</div>`;
+        return `<tr><td style="padding:0 0 16px;">${wrapped}</td></tr>`;
+      }
       case "button":
-        return `<div style="text-align:${align};margin:24px 0;"><a href="${b.href || "#"}" style="display:inline-block;background:${b.bgColor || WARM};color:${b.color || "#fff"};font-size:15px;font-weight:600;padding:14px 36px;border-radius:10px;text-decoration:none;">${b.label || "Botão"}</a></div>`;
+        return `<tr><td style="padding:16px 0 16px;text-align:${align};"><a href="${b.href || "#"}" style="display:inline-block;background:${b.bgColor || WARM};color:${b.color || "#fff"};font-size:15px;font-weight:600;padding:14px 36px;border-radius:10px;text-decoration:none;mso-padding-alt:0;text-align:center;">${b.label || "Botão"}</a></td></tr>`;
       case "divider":
-        return `<hr style="border:0;border-top:1px solid #e4e4e7;margin:24px 0;" />`;
+        return `<tr><td style="padding:12px 0;"><hr style="border:0;border-top:1px solid #e4e4e7;margin:0;" /></td></tr>`;
       case "spacer":
-        return `<div style="height:${b.height || 24}px;"></div>`;
+        return `<tr><td style="height:${b.height || 24}px;font-size:0;line-height:0;">&nbsp;</td></tr>`;
       default: return "";
     }
-  }).join("\n    ");
+  }).join("\n          ");
 
   const preheaderHtml = meta.preheader
-    ? `<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#f4f4f5;">${meta.preheader}</div>`
+    ? `<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#f4f4f5;">${meta.preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>`
     : "";
 
   return `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="color-scheme" content="light"/>
+<meta name="supported-color-schemes" content="light"/>
+<title>NegociaAky</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Segoe UI',Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f5f3ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   ${preheaderHtml}
-  <div style="max-width:600px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);padding:36px 32px;">
-    ${inner}
-  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ee;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#BAA05E 0%,#9A8340 100%);padding:28px 32px;border-radius:16px 16px 0 0;text-align:center;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="text-align:center;">
+                  <span style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">Negocia<span style="font-weight:400;">Aky</span></span>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:center;padding-top:4px;">
+                  <span style="font-size:11px;color:rgba(255,255,255,0.75);letter-spacing:1.5px;text-transform:uppercase;">Conecte · Negocie · Realize</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="background:#ffffff;padding:36px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              ${inner}
+            </table>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="background:#faf8f0;padding:24px 32px;border-radius:0 0 16px 16px;border-top:2px solid #BAA05E20;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="text-align:center;padding-bottom:12px;">
+                  <span style="font-size:14px;font-weight:700;color:#BAA05E;">NegociaAky</span>
+                  <span style="font-size:12px;color:#a1a1aa;"> · Seu negócio dos sonhos está aqui</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="text-align:center;font-size:11px;color:#a1a1aa;line-height:1.6;">
+                  <a href="https://negociaaky.com.br" style="color:#BAA05E;text-decoration:none;font-weight:500;">negociaaky.com.br</a>
+                  &nbsp;·&nbsp;
+                  <a href="{{unsubscribe_url}}" style="color:#a1a1aa;text-decoration:underline;">Descadastrar</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
 </body>
 </html>`;
 }
