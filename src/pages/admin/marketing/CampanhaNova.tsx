@@ -262,83 +262,151 @@ export default function CampanhaNova() {
                 )}
 
                 {step === 3 && (
-                  <div className="space-y-6">
-                    {/* Contador */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: `${WARM}15` }}>
-                          <Users className="h-5 w-5" style={{ color: WARM }} />
+                  <div className="space-y-5">
+                    {/* Audience counter card */}
+                    <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-[#BAA05E]/5 to-transparent p-5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm" style={{ background: `linear-gradient(135deg, ${WARM}, #9A8340)` }}>
+                            <Users className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-3xl font-extrabold text-foreground tabular-nums leading-none">
+                              {loadingCount ? <Loader2 className="h-6 w-6 animate-spin inline text-muted-foreground" /> : audCount ?? 0}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {(audCount ?? 0) === 1 ? "lead vai receber" : "leads vão receber"}
+                            </p>
+                          </div>
                         </div>
+                        <button onClick={refreshCount}
+                          className="flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-[#BAA05E]/40 hover:bg-[#BAA05E]/5 transition-all">
+                          <RefreshCw className={`h-3.5 w-3.5 ${loadingCount ? "animate-spin" : ""}`} /> Atualizar
+                        </button>
+                      </div>
+                      {activeFilterCount > 0 && (
+                        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/40">
+                          <span className="text-[11px] text-muted-foreground">Filtros ativos:</span>
+                          {statuses.map((s) => (
+                            <span key={s} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white" style={{ backgroundColor: WARM }}>
+                              {STATUS_OPTS.find((o) => o.value === s)?.label || s}
+                              <button onClick={() => setStatuses(statuses.filter((x) => x !== s))} className="ml-0.5 opacity-70 hover:opacity-100">&times;</button>
+                            </span>
+                          ))}
+                          {origens.map((o) => (
+                            <span key={o} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white" style={{ backgroundColor: WARM }}>
+                              {ORIGEM_OPTS.find((opt) => opt.value === o)?.label || o}
+                              <button onClick={() => setOrigens(origens.filter((x) => x !== o))} className="ml-0.5 opacity-70 hover:opacity-100">&times;</button>
+                            </span>
+                          ))}
+                          {tagsInput.trim() && (
+                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white" style={{ backgroundColor: WARM }}>
+                              Tags: {tagsInput.split(",").length}
+                              <button onClick={() => setTagsInput("")} className="ml-0.5 opacity-70 hover:opacity-100">&times;</button>
+                            </span>
+                          )}
+                          <button onClick={() => { setStatuses([]); setOrigens([]); setTagsInput(""); }}
+                            className="ml-auto text-[11px] text-muted-foreground hover:text-red-500 transition-colors">
+                            Limpar tudo
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Filter sections */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Status card */}
+                      <div className="rounded-2xl border border-border/60 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status do lead</p>
+                          {statuses.length > 0 && (
+                            <button onClick={() => setStatuses([])} className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors">Limpar</button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {STATUS_OPTS.map((o) => {
+                            const on = statuses.includes(o.value);
+                            const cnt = statusCounts[o.value] || 0;
+                            return (
+                              <button key={o.value} type="button" onClick={() => setStatuses(toggle(statuses, o.value))}
+                                className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-medium border transition-all ${
+                                  on ? "border-[#BAA05E] bg-[#BAA05E]/10 text-foreground shadow-sm" : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                                }`}>
+                                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: o.dot }} />
+                                {o.label}
+                                {cnt > 0 && (
+                                  <span className={`rounded-md px-1.5 py-px text-[10px] font-bold ${
+                                    on ? "text-white" : "bg-muted text-muted-foreground"
+                                  }`} style={on ? { backgroundColor: WARM } : undefined}>{cnt}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Origem card */}
+                      <div className="rounded-2xl border border-border/60 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Origem do lead</p>
+                          {origens.length > 0 && (
+                            <button onClick={() => setOrigens([])} className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors">Limpar</button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {ORIGEM_OPTS.map((o) => {
+                            const on = origens.includes(o.value);
+                            const cnt = origemCounts[o.value] || 0;
+                            return (
+                              <button key={o.value} type="button" onClick={() => setOrigens(toggle(origens, o.value))}
+                                className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-medium border transition-all ${
+                                  on ? "border-[#BAA05E] bg-[#BAA05E]/10 text-foreground shadow-sm" : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                                }`}>
+                                {o.label}
+                                {cnt > 0 && (
+                                  <span className={`rounded-md px-1.5 py-px text-[10px] font-bold ${
+                                    on ? "text-white" : "bg-muted text-muted-foreground"
+                                  }`} style={on ? { backgroundColor: WARM } : undefined}>{cnt}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tags card */}
+                    <div className="rounded-2xl border border-border/60 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-lg font-bold text-foreground tabular-nums">
-                            {loadingCount ? <Loader2 className="h-4 w-4 animate-spin inline text-muted-foreground" /> : audCount ?? 0}{" "}
-                            <span className="text-sm font-medium text-muted-foreground">leads</span>
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {activeFilterCount > 0 ? `${activeFilterCount} filtro${activeFilterCount > 1 ? "s" : ""} ativo${activeFilterCount > 1 ? "s" : ""}` : "Sem filtros — todos com email"}
-                          </p>
+                          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tags</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">Filtre por tags dos leads. Separe por vírgula.</p>
                         </div>
+                        {tagsInput.trim() && (
+                          <button onClick={() => setTagsInput("")} className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors">Limpar</button>
+                        )}
                       </div>
-                      <button onClick={refreshCount}
-                        className="flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors">
-                        <RefreshCw className={`h-3 w-3 ${loadingCount ? "animate-spin" : ""}`} /> Recalcular
-                      </button>
-                    </div>
-
-                    <hr className="border-border/60" />
-
-                    {/* Status */}
-                    <div className="space-y-3">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
-                      <div className="flex flex-wrap gap-2">
-                        {STATUS_OPTS.map((o) => {
-                          const on = statuses.includes(o.value);
-                          const cnt = statusCounts[o.value] || 0;
-                          return (
-                            <button key={o.value} type="button" onClick={() => setStatuses(toggle(statuses, o.value))}
-                              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium border transition-all ${
-                                on ? "border-[#BAA05E] bg-[#BAA05E]/8 text-foreground" : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
-                              }`}>
-                              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: o.dot }} />
-                              {o.label}
-                              <span className={`rounded-full px-1.5 py-px text-[10px] font-bold ${
-                                on ? "text-white" : "bg-muted text-muted-foreground"
-                              }`} style={on ? { backgroundColor: WARM } : undefined}>{cnt}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Origem */}
-                    <div className="space-y-3">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Origem</p>
-                      <div className="flex flex-wrap gap-2">
-                        {ORIGEM_OPTS.map((o) => {
-                          const on = origens.includes(o.value);
-                          const cnt = origemCounts[o.value] || 0;
-                          return (
-                            <button key={o.value} type="button" onClick={() => setOrigens(toggle(origens, o.value))}
-                              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium border transition-all ${
-                                on ? "border-[#BAA05E] bg-[#BAA05E]/8 text-foreground" : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
-                              }`}>
-                              {o.label}
-                              <span className={`rounded-full px-1.5 py-px text-[10px] font-bold ${
-                                on ? "text-white" : "bg-muted text-muted-foreground"
-                              }`} style={on ? { backgroundColor: WARM } : undefined}>{cnt}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tags</p>
                       <input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)}
-                        placeholder="vip, newsletter, quente" className={inputCls} />
-                      <p className="text-[11px] text-muted-foreground">Separadas por vírgula. Vazio = ignora tags.</p>
+                        placeholder="Ex: vip, newsletter, quente" className={inputCls} />
+                      {tagsInput.trim() && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {tagsInput.split(",").map((t) => t.trim()).filter(Boolean).map((tag, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium border border-[#BAA05E]/30 bg-[#BAA05E]/5" style={{ color: WARM }}>
+                              #{tag}
+                              <button onClick={() => setTagsInput(tagsInput.split(",").map((t) => t.trim()).filter((t) => t !== tag).join(", "))}
+                                className="opacity-50 hover:opacity-100">&times;</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
+
+                    {/* No filter hint */}
+                    {activeFilterCount === 0 && (
+                      <p className="text-center text-xs text-muted-foreground py-2 border border-dashed border-border/60 rounded-xl">
+                        Nenhum filtro selecionado — a campanha será enviada para <strong className="text-foreground">todos os leads com email</strong>
+                      </p>
+                    )}
                   </div>
                 )}
 
