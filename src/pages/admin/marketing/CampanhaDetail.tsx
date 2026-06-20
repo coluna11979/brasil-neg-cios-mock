@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Send, Loader2, Users, Mail, Eye, MousePointerClick, AlertTriangle, RefreshCw, Save, Plus, Trash2, UserPlus, UserMinus } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Users, Mail, Eye, MousePointerClick, AlertTriangle, RefreshCw, Save, Plus, Trash2, UserPlus, UserMinus, FileText, Zap, Image, Type, CheckCircle2 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import usePageTitle from "@/hooks/usePageTitle";
 import {
@@ -28,6 +28,12 @@ export default function CampanhaDetail() {
   const [addEmail, setAddEmail] = useState("");
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [contentMode, setContentMode] = useState<"choose" | "templates" | "quick" | "html">("choose");
+  const [qTitle, setQTitle] = useState("");
+  const [qText, setQText] = useState("");
+  const [qImage, setQImage] = useState("");
+  const [qBtnLabel, setQBtnLabel] = useState("Saiba mais →");
+  const [qBtnLink, setQBtnLink] = useState("https://negociaaky.com.br");
 
   // Pre-fill HTML when campaign loads
   if (c && html === "" && c.html_content) setHtml(c.html_content);
@@ -72,6 +78,57 @@ export default function CampanhaDetail() {
       await Promise.all([refetchLeads(), refetch()]);
     } catch (e: any) { toast.error(e.message || "Erro ao remover"); }
     finally { setRemoving(null); }
+  };
+
+  const handlePickTemplate = async (tplId: string) => {
+    const tpl = templates.find((t) => t.id === tplId);
+    if (!tpl?.html_content || !id) return;
+    try {
+      await save.mutateAsync({ id, html_content: tpl.html_content, template_id: tplId });
+      setHtml(tpl.html_content);
+      setContentMode("choose");
+      toast.success(`Template "${tpl.name}" aplicado`);
+      await refetch();
+    } catch (e: any) { toast.error(e.message || "Erro ao aplicar template"); }
+  };
+
+  const buildQuickHtml = () => {
+    const W = "#BAA05E";
+    const parts: string[] = [];
+    if (qTitle.trim()) parts.push(`<tr><td style="padding:0 0 12px;"><h1 style="font-size:26px;font-weight:700;color:#18181b;margin:0;text-align:center;">${qTitle}</h1></td></tr>`);
+    if (qText.trim()) parts.push(`<tr><td style="padding:0 0 16px;font-size:15px;color:#52525b;line-height:1.7;text-align:left;">${qText.replace(/\n/g, "<br/>")}</td></tr>`);
+    if (qImage.trim()) parts.push(`<tr><td style="padding:0 0 16px;"><img src="${qImage}" alt="Imagem" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto;" /></td></tr>`);
+    if (qBtnLabel.trim() && qBtnLink.trim()) parts.push(`<tr><td style="padding:16px 0;text-align:center;"><a href="${qBtnLink}" style="display:inline-block;background:${W};color:#fff;font-size:15px;font-weight:600;padding:14px 36px;border-radius:10px;text-decoration:none;">${qBtnLabel}</a></td></tr>`);
+    return `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#f5f3ee;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ee;">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+<tr><td style="background:linear-gradient(135deg,${W} 0%,#9A8340 100%);padding:28px 32px;border-radius:16px 16px 0 0;text-align:center;">
+<span style="font-size:26px;font-weight:800;color:#fff;letter-spacing:-0.5px;">Negocia<span style="font-weight:400;">Aky</span></span><br/>
+<span style="font-size:11px;color:rgba(255,255,255,0.75);letter-spacing:1.5px;text-transform:uppercase;">Conecte · Negocie · Realize</span>
+</td></tr>
+<tr><td style="background:#fff;padding:36px 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${parts.join("\n")}</table>
+</td></tr>
+<tr><td style="background:#faf8f0;padding:24px 32px;border-radius:0 0 16px 16px;border-top:2px solid ${W}20;text-align:center;font-size:11px;color:#a1a1aa;line-height:1.6;">
+<span style="font-size:14px;font-weight:700;color:${W};">NegociaAky</span> · Seu negócio dos sonhos está aqui<br/>
+<a href="https://negociaaky.com.br" style="color:${W};text-decoration:none;font-weight:500;">negociaaky.com.br</a> · <a href="{{unsubscribe_url}}" style="color:#a1a1aa;text-decoration:underline;">Descadastrar</a>
+</td></tr>
+</table></td></tr></table></body></html>`;
+  };
+
+  const handleSaveQuick = async () => {
+    if (!id) return;
+    const quickHtml = buildQuickHtml();
+    try {
+      await save.mutateAsync({ id, html_content: quickHtml });
+      setHtml(quickHtml);
+      setContentMode("choose");
+      toast.success("Email rápido salvo!");
+      await refetch();
+    } catch (e: any) { toast.error(e.message || "Erro ao salvar"); }
   };
 
   const handleSaveHtml = async () => {
@@ -233,33 +290,136 @@ export default function CampanhaDetail() {
           </div>
 
           {!c.html_content && !showHtml ? (
-            <div className="p-8 text-center space-y-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl mx-auto" style={{ background: "#BAA05E15" }}>
-                <Mail className="h-6 w-6" style={{ color: "#BAA05E" }} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Nenhum conteúdo definido</p>
-                <p className="text-xs text-muted-foreground mt-1">Escolha uma opção para adicionar o conteúdo do email</p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                {usedTpl ? (
-                  <Link to={`/admin/marketing/templates/${usedTpl.id}`} target="_blank"
-                    className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all"
+            <div className="p-5">
+              {contentMode === "choose" && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button onClick={() => setContentMode("templates")}
+                    className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border/60 p-6 text-center hover:border-[#BAA05E]/40 hover:bg-[#BAA05E]/3 transition-all group">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#BAA05E]/10 group-hover:bg-[#BAA05E]/20 transition-colors">
+                      <FileText className="h-5 w-5" style={{ color: "#BAA05E" }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Usar template</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Escolha um template pronto</p>
+                    </div>
+                  </button>
+                  <button onClick={() => setContentMode("quick")}
+                    className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border/60 p-6 text-center hover:border-[#BAA05E]/40 hover:bg-[#BAA05E]/3 transition-all group">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#BAA05E]/10 group-hover:bg-[#BAA05E]/20 transition-colors">
+                      <Zap className="h-5 w-5" style={{ color: "#BAA05E" }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Email rápido</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Crie direto aqui em 1 minuto</p>
+                    </div>
+                  </button>
+                  <button onClick={() => { setContentMode("html"); setShowHtml(true); }}
+                    className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border/60 p-6 text-center hover:border-[#BAA05E]/40 hover:bg-[#BAA05E]/3 transition-all group">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted group-hover:bg-muted/80 transition-colors">
+                      <Type className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Colar HTML</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Cole código HTML pronto</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+
+              {contentMode === "templates" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-foreground">Escolha um template</p>
+                    <button onClick={() => setContentMode("choose")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">← Voltar</button>
+                  </div>
+                  {templates.length === 0 ? (
+                    <div className="text-center py-8 space-y-3">
+                      <p className="text-sm text-muted-foreground">Nenhum template criado ainda</p>
+                      <Link to="/admin/marketing/templates/novo" target="_blank"
+                        className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium border border-[#BAA05E]/30 hover:bg-[#BAA05E]/5 transition-all" style={{ color: "#BAA05E" }}>
+                        <Plus className="h-4 w-4" /> Criar template
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {templates.map((t) => (
+                        <button key={t.id} onClick={() => handlePickTemplate(t.id)}
+                          disabled={save.isPending}
+                          className="flex items-start gap-3 rounded-xl border border-border p-4 text-left hover:border-[#BAA05E]/40 hover:bg-[#BAA05E]/3 transition-all disabled:opacity-50">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0" style={{ background: "#BAA05E15" }}>
+                            <Mail className="h-4 w-4" style={{ color: "#BAA05E" }} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-foreground truncate">{t.name}</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{t.category || "geral"} · {t.html_content ? `${(t.html_content.length / 1024).toFixed(1)}KB` : "sem HTML"}</p>
+                          </div>
+                          {t.html_content && <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {contentMode === "quick" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-foreground">Email rápido</p>
+                    <button onClick={() => setContentMode("choose")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">← Voltar</button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground -mt-2">Preencha os campos — o email será gerado com header e footer da NegociaAky automaticamente.</p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-muted-foreground">Título (opcional)</label>
+                      <input value={qTitle} onChange={(e) => setQTitle(e.target.value)} placeholder="Ex: Oportunidade imperdível!"
+                        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-[#BAA05E]/60 focus:ring-2 focus:ring-[#BAA05E]/10 transition-all" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-muted-foreground">Texto do email</label>
+                      <textarea value={qText} onChange={(e) => setQText(e.target.value)} rows={4} placeholder="Olá {{primeiro_nome}}, temos uma novidade..."
+                        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-[#BAA05E]/60 focus:ring-2 focus:ring-[#BAA05E]/10 transition-all resize-y" />
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="text-[10px] text-muted-foreground mr-1">Variáveis:</span>
+                        {["nome","primeiro_nome","email","empresa"].map((v) => (
+                          <button key={v} onClick={() => setQText((t) => t + `{{${v}}}`)}
+                            className="px-2 py-0.5 rounded-md border border-[#BAA05E]/30 bg-[#BAA05E]/5 text-[10px] font-medium hover:bg-[#BAA05E]/15 transition-all" style={{ color: "#BAA05E" }}>
+                            {`{{${v}}}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-muted-foreground">URL da imagem (opcional)</label>
+                      <input value={qImage} onChange={(e) => setQImage(e.target.value)} placeholder="https://... (cole a URL de uma imagem)"
+                        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-[#BAA05E]/60 focus:ring-2 focus:ring-[#BAA05E]/10 transition-all" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-muted-foreground">Texto do botão</label>
+                        <input value={qBtnLabel} onChange={(e) => setQBtnLabel(e.target.value)} placeholder="Clique aqui →"
+                          className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-[#BAA05E]/60 focus:ring-2 focus:ring-[#BAA05E]/10 transition-all" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-muted-foreground">Link do botão</label>
+                        <input value={qBtnLink} onChange={(e) => setQBtnLink(e.target.value)} placeholder="https://negociaaky.com.br"
+                          className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-[#BAA05E]/60 focus:ring-2 focus:ring-[#BAA05E]/10 transition-all" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Preview */}
+                  {(qTitle.trim() || qText.trim()) && (
+                    <div className="rounded-xl border border-border overflow-hidden bg-white">
+                      <iframe srcDoc={buildQuickHtml()} title="Prévia" className="w-full border-0" style={{ height: 400, pointerEvents: "none" }} />
+                    </div>
+                  )}
+                  <button onClick={handleSaveQuick} disabled={save.isPending || (!qTitle.trim() && !qText.trim())}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all disabled:opacity-40"
                     style={{ backgroundColor: "#BAA05E" }}>
-                    <Eye className="h-4 w-4" /> Editar template visual
-                  </Link>
-                ) : (
-                  <Link to="/admin/marketing/templates" target="_blank"
-                    className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all"
-                    style={{ backgroundColor: "#BAA05E" }}>
-                    <Eye className="h-4 w-4" /> Escolher template
-                  </Link>
-                )}
-                <button onClick={() => setShowHtml(true)}
-                  className="flex items-center gap-2 rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-all">
-                  Colar HTML manualmente
-                </button>
-              </div>
+                    {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    Usar este email
+                  </button>
+                </div>
+              )}
             </div>
           ) : showHtml ? (
             <textarea value={html} onChange={(e) => setHtml(e.target.value)}
