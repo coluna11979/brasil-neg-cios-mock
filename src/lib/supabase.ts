@@ -7,7 +7,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: (url, init) => fetch(url, { ...init, cache: "no-store" }) },
+});
 
 // ⚡ Listener GLOBAL registrado IMEDIATAMENTE após createClient().
 // O createClient() dispara PASSWORD_RECOVERY de forma ASSÍNCRONA (microtask)
