@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, Save, Loader2, Plus, Trash2, Zap, Mail, MessageSquare,
-  Clock, GitBranch, Tag, FileText, CheckCircle2, Power, ChevronDown,
+  Clock, GitBranch, Tag, FileText, CheckCircle2, Power, ChevronDown, X,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import usePageTitle from "@/hooks/usePageTitle";
@@ -10,29 +10,27 @@ import { useEmailAutomation, useSaveAutomation, useEmailTemplates } from "@/hook
 import { toast } from "sonner";
 import type { FlowNode, FlowNodeType } from "@/types/email.types";
 
-/* ── Constantes ─────────────────────────────────────────── */
-
 const WARM = "#BAA05E";
 const uid = () => crypto.randomUUID();
 
 const TRIGGER_OPTS = [
-  { value: "lead_created", label: "Novo lead cadastrado" },
-  { value: "lead_status_changed", label: "Status do lead mudou" },
-  { value: "tag_added", label: "Tag adicionada ao lead" },
-  { value: "form_submitted", label: "Formulário preenchido" },
-  { value: "manual", label: "Disparo manual" },
+  { value: "lead_created", label: "Novo lead cadastrado", icon: "⚡" },
+  { value: "lead_status_changed", label: "Status do lead mudou", icon: "🔄" },
+  { value: "tag_added", label: "Tag adicionada ao lead", icon: "🏷️" },
+  { value: "form_submitted", label: "Formulário preenchido", icon: "📋" },
+  { value: "manual", label: "Disparo manual", icon: "👆" },
 ];
 
-type StepDef = { type: FlowNodeType; label: string; icon: any; color: string; desc: string };
+type StepDef = { type: FlowNodeType; label: string; icon: any; color: string; bg: string };
 
 const STEP_PALETTE: StepDef[] = [
-  { type: "send_email", label: "Enviar Email", icon: Mail, color: "#3b82f6", desc: "Dispara um email pro lead" },
-  { type: "send_whatsapp", label: "Enviar WhatsApp", icon: MessageSquare, color: "#22c55e", desc: "Envia mensagem WhatsApp" },
-  { type: "wait", label: "Esperar", icon: Clock, color: "#f59e0b", desc: "Aguarda X dias/horas" },
-  { type: "condition", label: "Condição", icon: GitBranch, color: "#8b5cf6", desc: "Se/senão baseado em critério" },
-  { type: "update_field", label: "Atualizar Campo", icon: FileText, color: "#06b6d4", desc: "Muda campo do lead" },
-  { type: "add_tag", label: "Adicionar Tag", icon: Tag, color: "#ec4899", desc: "Adiciona tag ao lead" },
-  { type: "end", label: "Fim", icon: CheckCircle2, color: "#6b7280", desc: "Encerra o fluxo" },
+  { type: "send_email", label: "Enviar Email", icon: Mail, color: "#3b82f6", bg: "#eff6ff" },
+  { type: "send_whatsapp", label: "Enviar WhatsApp", icon: MessageSquare, color: "#22c55e", bg: "#f0fdf4" },
+  { type: "wait", label: "Esperar", icon: Clock, color: "#f59e0b", bg: "#fffbeb" },
+  { type: "condition", label: "Condição", icon: GitBranch, color: "#8b5cf6", bg: "#f5f3ff" },
+  { type: "update_field", label: "Atualizar Campo", icon: FileText, color: "#06b6d4", bg: "#ecfeff" },
+  { type: "add_tag", label: "Adicionar Tag", icon: Tag, color: "#ec4899", bg: "#fdf2f8" },
+  { type: "end", label: "Fim do Fluxo", icon: CheckCircle2, color: "#6b7280", bg: "#f9fafb" },
 ];
 
 function getStepDef(type: FlowNodeType): StepDef {
@@ -53,7 +51,18 @@ function defaultNode(type: FlowNodeType): FlowNode {
   }
 }
 
-/* ── Componente principal ───────────────────────────────── */
+function nodePreview(node: FlowNode): string {
+  switch (node.type) {
+    case "send_email": return node.config?.subject || "Selecionar template...";
+    case "send_whatsapp": return node.config?.message?.slice(0, 40) || "Definir mensagem...";
+    case "wait": return `${node.config?.amount || 1} ${node.config?.unit === "hours" ? "hora(s)" : "dia(s)"}`;
+    case "condition": return `${node.config?.field || "?"} ${node.config?.operator || "="} ${node.config?.value || "?"}`;
+    case "update_field": return `${node.config?.field || "campo"} → ${node.config?.value || "valor"}`;
+    case "add_tag": return node.config?.tag || "Definir tag...";
+    case "end": return "Encerra o fluxo";
+    default: return "";
+  }
+}
 
 export default function AutomacaoEditor() {
   const { id } = useParams<{ id: string }>();
@@ -71,8 +80,8 @@ export default function AutomacaoEditor() {
   const [triggerFilter, setTriggerFilter] = useState<Record<string, any>>({});
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [isActive, setIsActive] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const [showPalette, setShowPalette] = useState<number | null>(null);
+  const [editingNode, setEditingNode] = useState<string | null>(null);
+  const [addAt, setAddAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (auto) {
@@ -86,12 +95,10 @@ export default function AutomacaoEditor() {
   }, [auto]);
 
   const addNodeAt = useCallback((index: number, type: FlowNodeType) => {
-    setNodes((prev) => {
-      const next = [...prev];
-      next.splice(index, 0, defaultNode(type));
-      return next;
-    });
-    setShowPalette(null);
+    const newNode = defaultNode(type);
+    setNodes((prev) => { const next = [...prev]; next.splice(index, 0, newNode); return next; });
+    setAddAt(null);
+    setEditingNode(newNode.id);
   }, []);
 
   const updateNode = useCallback((nodeId: string, updates: Partial<FlowNode>) => {
@@ -100,8 +107,8 @@ export default function AutomacaoEditor() {
 
   const removeNode = useCallback((nodeId: string) => {
     setNodes((prev) => prev.filter((n) => n.id !== nodeId));
-    if (selectedNode === nodeId) setSelectedNode(null);
-  }, [selectedNode]);
+    if (editingNode === nodeId) setEditingNode(null);
+  }, [editingNode]);
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error("Nome obrigatório"); return; }
@@ -124,29 +131,36 @@ export default function AutomacaoEditor() {
     return <AdminLayout><div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin" style={{ color: WARM }} /></div></AdminLayout>;
   }
 
+  const triggerInfo = TRIGGER_OPTS.find((t) => t.value === triggerEvent);
+
   return (
     <AdminLayout>
-      <div className="max-w-[1080px] mx-auto pb-10">
+      <div className="max-w-[1100px] mx-auto pb-10">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-8">
           <div className="flex items-center gap-3">
             <Link to="/admin/marketing/automacoes" className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="font-display text-xl font-bold">{isNew ? "Nova automação" : name || "Automação"}</h1>
-              <p className="text-[11px] text-muted-foreground">Monte o fluxo arrastando passos abaixo do trigger</p>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-xl font-bold">{isNew ? "Nova automação" : name || "Automação"}</h1>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${isActive ? "bg-emerald-50 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
+                  {isActive ? "ATIVA" : "INATIVA"}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Defina o trigger e monte os passos do fluxo</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button onClick={() => setIsActive(!isActive)}
-              className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
-                isActive ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-border text-muted-foreground"
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-all ${
+                isActive ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border-border text-muted-foreground hover:bg-muted"
               }`}>
-              <Power className="h-4 w-4" /> {isActive ? "Ativa" : "Inativa"}
+              <Power className="h-3.5 w-3.5" /> {isActive ? "Ativa" : "Inativa"}
             </button>
             <button onClick={handleSave} disabled={saveMut.isPending}
-              className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-colors hover:opacity-90"
               style={{ backgroundColor: WARM }}>
               {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Salvar
@@ -154,117 +168,124 @@ export default function AutomacaoEditor() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[300px_1fr] gap-6">
+        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
           {/* Sidebar */}
-          <aside className="space-y-5">
-            {/* Metadados */}
-            <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: WARM }}>Configuração</p>
-              <Field label="Nome" value={name} onChange={setName} placeholder="Boas-vindas novo lead" />
+          <aside className="space-y-4">
+            <SideCard title="Configuração">
+              <Field label="Nome da automação" value={name} onChange={setName} placeholder="Boas-vindas novo lead" />
               <div className="space-y-1">
                 <label className="text-[11px] font-medium text-muted-foreground">Descrição</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                  placeholder="O que essa automação faz..." rows={2} className={inputCls + " resize-y"} />
+                  placeholder="Objetivo desta automação..." rows={2} className={inputCls + " resize-y"} />
               </div>
-            </div>
+            </SideCard>
 
-            {/* Trigger */}
-            <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: WARM }}>Trigger (quando dispara)</p>
-              <select value={triggerEvent} onChange={(e) => setTriggerEvent(e.target.value)} className={inputCls}>
-                {TRIGGER_OPTS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+            <SideCard title="Trigger">
+              <div className="space-y-2">
+                {TRIGGER_OPTS.map((t) => (
+                  <button key={t.value} type="button" onClick={() => setTriggerEvent(t.value)}
+                    className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs transition-all ${
+                      triggerEvent === t.value ? "bg-[#BAA05E]/8 border border-[#BAA05E]/40 text-foreground font-medium" : "border border-transparent text-muted-foreground hover:bg-muted"
+                    }`}>
+                    <span className="text-sm">{t.icon}</span>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
               {triggerEvent === "lead_status_changed" && (
                 <Field label="Novo status" value={triggerFilter.new_status || ""} onChange={(v) => setTriggerFilter({ ...triggerFilter, new_status: v })} placeholder="convertido" />
               )}
               {triggerEvent === "tag_added" && (
                 <Field label="Tag" value={triggerFilter.tag || ""} onChange={(v) => setTriggerFilter({ ...triggerFilter, tag: v })} placeholder="vip" />
               )}
-            </div>
+            </SideCard>
 
-            {/* Paleta de passos */}
-            <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: WARM }}>Passos disponíveis</p>
-              <p className="text-[11px] text-muted-foreground">Clique nos + no fluxo pra adicionar</p>
-              <div className="grid grid-cols-2 gap-2">
+            <SideCard title="Passos disponíveis">
+              <div className="space-y-1.5">
                 {STEP_PALETTE.map((s) => {
                   const Icon = s.icon;
                   return (
-                    <div key={s.type} className="flex items-center gap-2 rounded-xl border border-border/60 p-2.5 text-xs text-muted-foreground">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md text-white shrink-0" style={{ backgroundColor: s.color }}>
-                        <Icon className="h-3 w-3" />
+                    <div key={s.type} className="flex items-center gap-2.5 rounded-xl p-2.5 text-xs text-muted-foreground" style={{ backgroundColor: s.bg }}>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg text-white shrink-0" style={{ backgroundColor: s.color }}>
+                        <Icon className="h-3.5 w-3.5" />
                       </div>
-                      <span className="truncate">{s.label}</span>
+                      <span className="font-medium" style={{ color: s.color }}>{s.label}</span>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </SideCard>
           </aside>
 
-          {/* Flow builder */}
+          {/* Flow area */}
           <main className="min-w-0">
-            <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-              <div className="px-5 py-3 border-b border-border/60 bg-muted/20">
-                <h2 className="text-sm font-semibold">Fluxo da automação</h2>
-                <p className="text-[10px] text-muted-foreground">{nodes.length} passos</p>
+            <div className="rounded-2xl border border-border/60 bg-card min-h-[600px]" style={{ background: "linear-gradient(180deg, var(--card) 0%, #fafaf8 100%)" }}>
+              <div className="px-6 py-4 border-b border-border/60">
+                <h2 className="text-sm font-semibold text-foreground">Fluxo</h2>
+                <p className="text-[10px] text-muted-foreground">{nodes.length} passo{nodes.length !== 1 ? "s" : ""} configurado{nodes.length !== 1 ? "s" : ""}</p>
               </div>
 
-              <div className="p-6">
-                {/* Trigger node */}
-                <div className="flex flex-col items-center">
-                  <div className="flex items-center gap-3 rounded-xl border-2 border-dashed px-5 py-3" style={{ borderColor: WARM, background: `${WARM}08` }}>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full text-white" style={{ backgroundColor: WARM }}>
-                      <Zap className="h-4 w-4" />
+              <div className="p-8 flex flex-col items-center">
+                {/* ── Trigger ── */}
+                <div className="relative">
+                  <div className="flex items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-4 min-w-[280px]" style={{ borderColor: WARM, background: `${WARM}06` }}>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm" style={{ backgroundColor: WARM }}>
+                      <Zap className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Trigger</p>
-                      <p className="text-[11px] text-muted-foreground">{TRIGGER_OPTS.find((t) => t.value === triggerEvent)?.label || triggerEvent}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: WARM }}>Trigger</p>
+                      <p className="text-sm font-semibold text-foreground">{triggerInfo?.label}</p>
                     </div>
                   </div>
-
-                  {/* Connector + add button */}
-                  <AddButton index={0} showPalette={showPalette} setShowPalette={setShowPalette} onAdd={addNodeAt} />
                 </div>
 
-                {/* Flow nodes */}
+                <Connector />
+                <AddBtn index={0} active={addAt === 0} onToggle={() => setAddAt(addAt === 0 ? null : 0)} onAdd={(t) => addNodeAt(0, t)} />
+                <Connector />
+
+                {/* ── Nodes ── */}
                 {nodes.map((node, i) => {
                   const def = getStepDef(node.type);
                   const Icon = def.icon;
-                  const sel = selectedNode === node.id;
+                  const editing = editingNode === node.id;
                   return (
-                    <div key={node.id} className="flex flex-col items-center">
-                      <div className={`w-full max-w-md rounded-xl border transition-all ${sel ? "border-[#BAA05E] shadow-md" : "border-border/60 hover:border-border"}`}>
-                        {/* Node header */}
-                        <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setSelectedNode(sel ? null : node.id)}>
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white shrink-0" style={{ backgroundColor: def.color }}>
-                            <Icon className="h-4 w-4" />
+                    <div key={node.id} className="flex flex-col items-center w-full">
+                      <div className={`w-full max-w-[420px] rounded-2xl border-2 transition-all overflow-hidden ${
+                        editing ? "border-[#BAA05E] shadow-lg" : "border-transparent shadow-sm hover:shadow-md"
+                      }`} style={{ backgroundColor: editing ? "white" : def.bg }}>
+                        {/* Header */}
+                        <div className="flex items-center gap-3 px-5 py-4 cursor-pointer" onClick={() => setEditingNode(editing ? null : node.id)}>
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm shrink-0" style={{ backgroundColor: def.color }}>
+                            <Icon className="h-5 w-5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-foreground">{node.label || def.label}</p>
-                            <p className="text-[10px] text-muted-foreground">{def.desc}</p>
+                            <p className="text-sm font-bold" style={{ color: def.color }}>{node.label || def.label}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{nodePreview(node)}</p>
                           </div>
-                          <button onClick={(e) => { e.stopPropagation(); removeNode(node.id); }}
-                            className="p-1.5 rounded text-muted-foreground/50 hover:text-red-500 transition-colors">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button onClick={(e) => { e.stopPropagation(); removeNode(node.id); }}
+                              className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-red-500 hover:bg-red-50 transition-all">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            <ChevronDown className={`h-4 w-4 text-muted-foreground/40 transition-transform ${editing ? "rotate-180" : ""}`} />
+                          </div>
                         </div>
 
-                        {/* Expanded config */}
-                        {sel && (
-                          <div className="px-4 pb-4 pt-1 border-t border-border/40 space-y-3">
-                            <Field label="Rótulo" value={node.label || ""} onChange={(v) => updateNode(node.id, { label: v })} placeholder={def.label} />
+                        {/* Config panel */}
+                        {editing && (
+                          <div className="px-5 pb-5 pt-1 border-t border-border/40 space-y-3 bg-white">
+                            <Field label="Rótulo do passo" value={node.label || ""} onChange={(v) => updateNode(node.id, { label: v })} placeholder={def.label} />
 
                             {node.type === "send_email" && (
                               <>
                                 <div className="space-y-1">
-                                  <label className="text-[11px] font-medium text-muted-foreground">Template</label>
+                                  <label className="text-[11px] font-medium text-muted-foreground">Template do email</label>
                                   <select value={node.config?.template_id || ""} onChange={(e) => updateNode(node.id, { config: { ...node.config, template_id: e.target.value } })} className={inputCls}>
-                                    <option value="">— selecionar —</option>
+                                    <option value="">— selecionar template —</option>
                                     {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                                   </select>
                                 </div>
-                                <Field label="Assunto" value={node.config?.subject || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, subject: v } })} placeholder="Bem-vindo, {{primeiro_nome}}!" />
+                                <Field label="Assunto do email" value={node.config?.subject || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, subject: v } })} placeholder="Bem-vindo, {{primeiro_nome}}!" />
                               </>
                             )}
 
@@ -272,7 +293,7 @@ export default function AutomacaoEditor() {
                               <div className="space-y-1">
                                 <label className="text-[11px] font-medium text-muted-foreground">Mensagem</label>
                                 <textarea value={node.config?.message || ""} onChange={(e) => updateNode(node.id, { config: { ...node.config, message: e.target.value } })}
-                                  placeholder="Olá {{primeiro_nome}}! Temos novidades pra você..." rows={3} className={inputCls + " resize-y"} />
+                                  placeholder="Olá {{primeiro_nome}}! Temos novidades..." rows={3} className={inputCls + " resize-y"} />
                               </div>
                             )}
 
@@ -295,7 +316,7 @@ export default function AutomacaoEditor() {
 
                             {node.type === "condition" && (
                               <>
-                                <Field label="Campo" value={node.config?.field || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, field: v } })} placeholder="status, origem, tags..." />
+                                <Field label="Campo do lead" value={node.config?.field || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, field: v } })} placeholder="status, origem, tags..." />
                                 <div className="space-y-1">
                                   <label className="text-[11px] font-medium text-muted-foreground">Operador</label>
                                   <select value={node.config?.operator || "eq"} onChange={(e) => updateNode(node.id, { config: { ...node.config, operator: e.target.value } })} className={inputCls}>
@@ -305,44 +326,39 @@ export default function AutomacaoEditor() {
                                     <option value="exists">Existe</option>
                                   </select>
                                 </div>
-                                <Field label="Valor" value={node.config?.value || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, value: v } })} placeholder="convertido" />
+                                <Field label="Valor esperado" value={node.config?.value || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, value: v } })} placeholder="convertido" />
                               </>
                             )}
 
                             {node.type === "update_field" && (
                               <>
-                                <Field label="Campo" value={node.config?.field || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, field: v } })} placeholder="status" />
+                                <Field label="Campo a atualizar" value={node.config?.field || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, field: v } })} placeholder="status" />
                                 <Field label="Novo valor" value={node.config?.value || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, value: v } })} placeholder="em-andamento" />
                               </>
                             )}
 
                             {node.type === "add_tag" && (
-                              <Field label="Tag" value={node.config?.tag || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, tag: v } })} placeholder="engajado" />
+                              <Field label="Nome da tag" value={node.config?.tag || ""} onChange={(v) => updateNode(node.id, { config: { ...node.config, tag: v } })} placeholder="engajado" />
+                            )}
+
+                            {node.type === "end" && (
+                              <p className="text-[11px] text-muted-foreground py-1">O fluxo encerra aqui. Sem mais ações.</p>
                             )}
                           </div>
                         )}
                       </div>
 
-                      {/* Connector + add */}
-                      <AddButton index={i + 1} showPalette={showPalette} setShowPalette={setShowPalette} onAdd={addNodeAt} />
+                      <Connector />
+                      <AddBtn index={i + 1} active={addAt === i + 1} onToggle={() => setAddAt(addAt === i + 1 ? null : i + 1)} onAdd={(t) => addNodeAt(i + 1, t)} />
+                      <Connector />
                     </div>
                   );
                 })}
 
-                {/* End indicator */}
-                {nodes.length > 0 && (
-                  <div className="flex justify-center">
-                    <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-xs text-muted-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Fim do fluxo
-                    </div>
-                  </div>
-                )}
-
-                {nodes.length === 0 && (
-                  <div className="text-center py-8 text-sm text-muted-foreground">
-                    Clique no <strong>+</strong> acima pra adicionar o primeiro passo
-                  </div>
-                )}
+                {/* End */}
+                <div className="flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-medium text-muted-foreground" style={{ backgroundColor: "#f4f4f5" }}>
+                  <CheckCircle2 className="h-4 w-4" /> Fim do fluxo
+                </div>
               </div>
             </div>
           </main>
@@ -352,44 +368,58 @@ export default function AutomacaoEditor() {
   );
 }
 
-/* ── AddButton (connector entre nodes) ───────────────── */
+/* ── Connector line ─────────────────────────────────────── */
 
-function AddButton({ index, showPalette, setShowPalette, onAdd }: {
-  index: number; showPalette: number | null;
-  setShowPalette: (v: number | null) => void;
-  onAdd: (index: number, type: FlowNodeType) => void;
+function Connector() {
+  return <div className="w-0.5 h-5 rounded-full" style={{ backgroundColor: `${WARM}40` }} />;
+}
+
+/* ── Add button between nodes ───────────────────────────── */
+
+function AddBtn({ index, active, onToggle, onAdd }: {
+  index: number; active: boolean;
+  onToggle: () => void; onAdd: (type: FlowNodeType) => void;
 }) {
-  const open = showPalette === index;
   return (
-    <div className="flex flex-col items-center py-2 relative">
-      <div className="w-px h-6 bg-border" />
-      <button onClick={() => setShowPalette(open ? null : index)}
-        className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all ${
-          open ? "border-[#BAA05E] bg-[#BAA05E] text-white" : "border-border bg-card text-muted-foreground hover:border-[#BAA05E] hover:text-[#BAA05E]"
+    <div className="relative flex flex-col items-center">
+      <button onClick={onToggle}
+        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all z-10 ${
+          active ? "border-[#BAA05E] bg-[#BAA05E] text-white shadow-md scale-110" : "border-[#BAA05E]/30 bg-white text-[#BAA05E]/60 hover:border-[#BAA05E] hover:text-[#BAA05E] hover:scale-105"
         }`}>
-        <Plus className="h-3.5 w-3.5" />
+        {active ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
       </button>
-      {open && (
-        <div className="absolute top-full mt-1 z-30 bg-card border border-border rounded-xl shadow-lg py-2 w-52">
-          {STEP_PALETTE.map((s) => {
-            const Icon = s.icon;
-            return (
-              <button key={s.type} onClick={() => onAdd(index, s.type)}
-                className="w-full flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted transition-colors">
-                <div className="flex h-6 w-6 items-center justify-center rounded-md text-white shrink-0" style={{ backgroundColor: s.color }}>
-                  <Icon className="h-3 w-3" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-foreground">{s.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{s.desc}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+
+      {active && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={onToggle} />
+          <div className="absolute top-full mt-2 z-30 bg-white border border-border/60 rounded-2xl shadow-xl py-2 w-[240px] overflow-hidden">
+            <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Adicionar passo</p>
+            {STEP_PALETTE.map((s) => {
+              const Icon = s.icon;
+              return (
+                <button key={s.type} onClick={() => onAdd(s.type)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 transition-colors">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white shrink-0" style={{ backgroundColor: s.color }}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
-      <div className="w-px h-6 bg-border" />
-      <ChevronDown className="h-3 w-3 text-border -mt-1" />
+    </div>
+  );
+}
+
+/* ── Sidebar card ────────────────────────────────────────── */
+
+function SideCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-3">
+      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: WARM }}>{title}</p>
+      {children}
     </div>
   );
 }
