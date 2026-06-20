@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Save, Loader2, Users, RefreshCw, ChevronRight, ChevronLeft,
@@ -344,9 +344,7 @@ export default function CampanhaNova() {
 
                 {step === 4 && (
                   <div className="max-w-xl space-y-6">
-                    <Field label="Assunto do email" value={subject} onChange={setSubject}
-                      placeholder="Oferta exclusiva pra você, {{primeiro_nome}}" />
-                    <p className="text-[11px] text-muted-foreground -mt-4">Variáveis: {`{{nome}}`}, {`{{primeiro_nome}}`}, {`{{empresa}}`}</p>
+                    <SubjectFieldWithVars value={subject} onChange={setSubject} />
                     <Field label="Preheader (opcional)" value={preheader} onChange={setPreheader}
                       placeholder="Texto curto exibido no inbox antes de abrir" />
                     <div className="space-y-2">
@@ -479,6 +477,48 @@ export default function CampanhaNova() {
 /* ── Helpers ──────────────────────────────────────────── */
 
 const inputCls = "w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-[#BAA05E]/60 focus:ring-2 focus:ring-[#BAA05E]/10 transition-all";
+
+const SUBJECT_VARS = [
+  { key: "nome", label: "Nome" },
+  { key: "primeiro_nome", label: "Primeiro nome" },
+  { key: "email", label: "Email" },
+  { key: "empresa", label: "Empresa" },
+];
+
+function SubjectFieldWithVars({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const insertVar = (key: string) => {
+    const tag = `{{${key}}}`;
+    const el = inputRef.current;
+    if (el) {
+      const start = el.selectionStart ?? value.length;
+      const end = el.selectionEnd ?? value.length;
+      const next = value.slice(0, start) + tag + value.slice(end);
+      onChange(next);
+      requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start + tag.length, start + tag.length); });
+    } else {
+      onChange(value + tag);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-foreground">Assunto do email</label>
+      <input ref={inputRef} value={value} onChange={(e) => onChange(e.target.value)}
+        placeholder="Ex: Olá {{primeiro_nome}}, temos uma oportunidade!" className={inputCls} />
+      <div className="flex flex-wrap items-center gap-1.5 -mt-0.5">
+        <span className="text-[11px] text-muted-foreground mr-1">Inserir variável:</span>
+        {SUBJECT_VARS.map((v) => (
+          <button key={v.key} type="button" onClick={() => insertVar(v.key)}
+            className="px-2.5 py-1 rounded-lg border border-[#BAA05E]/30 bg-[#BAA05E]/5 text-[11px] font-medium text-[#BAA05E] hover:bg-[#BAA05E]/15 hover:border-[#BAA05E]/50 transition-all">
+            {`{{${v.key}}}`}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Field({ label, value, onChange, placeholder }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
