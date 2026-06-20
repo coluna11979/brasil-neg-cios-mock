@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Send, Loader2, Users, Mail, Eye, MousePointerClick, AlertTriangle, RefreshCw, Save, Plus, Trash2, UserPlus, UserMinus, FileText, Zap, Image, Type, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2, Users, Mail, Eye, MousePointerClick, AlertTriangle, RefreshCw, Save, Plus, Trash2, UserPlus, UserMinus, FileText, Zap, Image, Type, CheckCircle2, Upload } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import usePageTitle from "@/hooks/usePageTitle";
 import {
@@ -34,6 +34,8 @@ export default function CampanhaDetail() {
   const [qImage, setQImage] = useState("");
   const [qBtnLabel, setQBtnLabel] = useState("Saiba mais →");
   const [qBtnLink, setQBtnLink] = useState("https://negociaaky.com.br");
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const imgFileRef = useRef<HTMLInputElement>(null);
 
   // Pre-fill HTML when campaign loads
   if (c && html === "" && c.html_content) setHtml(c.html_content);
@@ -78,6 +80,23 @@ export default function CampanhaDetail() {
       await Promise.all([refetchLeads(), refetch()]);
     } catch (e: any) { toast.error(e.message || "Erro ao remover"); }
     finally { setRemoving(null); }
+  };
+
+  const handleImgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Tamanho máximo: 5 MB"); return; }
+    setUploadingImg(true);
+    const ext = file.name.split(".").pop() || "png";
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage.from("email-assets").upload(path, file, { contentType: file.type });
+    if (error) { toast.error("Erro no upload: " + error.message); setUploadingImg(false); return; }
+    const { data } = supabase.storage.from("email-assets").getPublicUrl(path);
+    setQImage(data.publicUrl);
+    toast.success("Imagem enviada!");
+    setUploadingImg(false);
+    if (imgFileRef.current) imgFileRef.current.value = "";
   };
 
   const handlePickTemplate = async (tplId: string) => {
@@ -388,10 +407,24 @@ export default function CampanhaDetail() {
                         ))}
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-medium text-muted-foreground">URL da imagem (opcional)</label>
-                      <input value={qImage} onChange={(e) => setQImage(e.target.value)} placeholder="https://... (cole a URL de uma imagem)"
-                        className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-[#BAA05E]/60 focus:ring-2 focus:ring-[#BAA05E]/10 transition-all" />
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-medium text-muted-foreground">Imagem (opcional)</label>
+                      <input ref={imgFileRef} type="file" accept="image/*" onChange={handleImgUpload} className="hidden" />
+                      <button onClick={() => imgFileRef.current?.click()} disabled={uploadingImg}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#BAA05E]/40 py-3.5 text-sm font-medium transition-all hover:bg-[#BAA05E]/5 disabled:opacity-50"
+                        style={{ color: "#BAA05E" }}>
+                        {uploadingImg ? <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</> : <><Upload className="h-4 w-4" /> Subir imagem do computador</>}
+                      </button>
+                      {qImage && (
+                        <div className="rounded-xl border border-border/60 p-2 bg-muted/20 relative">
+                          <img src={qImage} alt="" className="max-h-32 mx-auto rounded-lg object-contain" />
+                          <button onClick={() => setQImage("")}
+                            className="absolute top-2 right-2 p-1 rounded-lg bg-card border border-border text-muted-foreground hover:text-red-500 hover:border-red-200 transition-all"
+                            title="Remover imagem">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
