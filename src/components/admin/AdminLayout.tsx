@@ -19,6 +19,7 @@ import {
   Bot,
   Mail,
   Phone,
+  CalendarDays,
   Menu,
   X,
 } from "lucide-react";
@@ -39,6 +40,7 @@ const navItems = [
   { to: "/admin/marketing", label: "Email Marketing", icon: Mail },
   { to: "/admin/marketing/automacoes", label: "Automações", icon: Sparkles },
   { to: "/admin/marketing/whatsapp", label: "WhatsApp Mkt", icon: Phone },
+  { to: "/admin/agenda", label: "Agenda de Visitas", icon: CalendarDays },
   { to: "/admin/integracoes", label: "Integrações", icon: Plug },
   { to: "/admin/agentes-ia", label: "Agentes IA", icon: Sparkles },
   { to: "/agentes", label: "Plataforma de Agentes", icon: Bot },

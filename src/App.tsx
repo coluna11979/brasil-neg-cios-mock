@@ -72,6 +72,11 @@ const MarketingCampanhaDetail = lazy(() => import("./pages/admin/marketing/Campa
 const MarketingAutomacoes = lazy(() => import("./pages/admin/marketing/Automacoes"));
 const MarketingAutomacaoEditor = lazy(() => import("./pages/admin/marketing/AutomacaoEditor"));
 
+// Agenda
+const AdminAgenda = lazy(() => import("./pages/admin/Agenda"));
+const Agendar = lazy(() => import("./pages/Agendar"));
+const CorretorAgenda = lazy(() => import("./pages/corretor/Agenda"));
+
 // Marketing — WhatsApp
 const WhatsappDashboard = lazy(() => import("./pages/admin/marketing/WhatsappDashboard"));
 const WhatsappCampanhas = lazy(() => import("./pages/admin/marketing/WhatsappCampanhas"));
@@ -125,6 +130,7 @@ const App = () => (
                   <Route path="/meus-favoritos" element={<MeusFavoritos />} />
                   <Route path="/imoveis" element={<ImoveisComerciais />} />
                   <Route path="/comparar" element={<Comparar />} />
+                  <Route path="/agendar" element={<Agendar />} />
                   <Route path="/obrigado" element={<Obrigado />} />
 
                   {/* Admin */}
@@ -142,6 +148,7 @@ const App = () => (
                   <Route path="/admin/agentes-ia" element={<ProtectedRoute><AdminAgentesIA /></ProtectedRoute>} />
                   <Route path="/admin/usuarios" element={<ProtectedRoute><AdminUsuarios /></ProtectedRoute>} />
                   <Route path="/admin/social-selling" element={<ProtectedRoute><AdminSocialSelling /></ProtectedRoute>} />
+                  <Route path="/admin/agenda" element={<ProtectedRoute><AdminAgenda /></ProtectedRoute>} />
 
                   {/* Marketing — Email */}
                   <Route path="/admin/marketing" element={<ProtectedRoute><MarketingDashboard /></ProtectedRoute>} />
@@ -193,6 +200,7 @@ const App = () => (
                   <Route path="/corretor/redes-sociais"  element={<CorretorProtectedRoute><CorretorRedesSociais /></CorretorProtectedRoute>} />
                   <Route path="/corretor/materiais"      element={<CorretorProtectedRoute><CorretorMateriais /></CorretorProtectedRoute>} />
                   <Route path="/corretor/calculadora-roi" element={<CorretorProtectedRoute><CorretorCalculadoraROI /></CorretorProtectedRoute>} />
+                  <Route path="/corretor/agenda" element={<CorretorProtectedRoute><CorretorAgenda /></CorretorProtectedRoute>} />
                   <Route path="/corretor/perfil"         element={<CorretorProtectedRoute><CorretorPerfil /></CorretorProtectedRoute>} />
 
                   <Route path="*" element={<NotFound />} />
