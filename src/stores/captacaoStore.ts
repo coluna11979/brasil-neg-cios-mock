@@ -13,6 +13,8 @@ export interface Captacao {
   status: "prospeccao" | "contato-feito" | "visita-agendada" | "captado" | "perdido";
   criado_em: string;
   atualizado_em: string;
+  pipeline_id?: string | null;
+  stage_id?: string | null;
   // joined
   corretor_nome?: string;
 }

@@ -1,49 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import usePageTitle from "@/hooks/usePageTitle";
 import {
   Loader2, GripVertical, Phone, Mail, Clock, Building2, Store,
   Megaphone, MessageCircle, TrendingUp, Target, Plus, X,
-  ArrowRight, ChevronRight, Users, CheckCircle2,
+  ChevronRight, Users, CheckCircle2, Archive,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import LeadDetailModal from "@/components/admin/LeadDetailModal";
+import PipelineFormModal from "@/components/admin/PipelineFormModal";
 import { getAllLeads, updateLeadStatus, type Lead } from "@/stores/leadStore";
 import {
   getAllCaptacoes, addCaptacao, updateCaptacaoStatus, type Captacao,
 } from "@/stores/captacaoStore";
+import {
+  useSalesPipelines, useUpdateLeadStage, useUpdateCaptacaoStage, useArchivePipeline,
+  type SalesPipeline, type PipelineStage,
+} from "@/hooks/useSalesPipelines";
 
-// ─── Vendas (leads) ───────────────────────────────────────────────────────────
-
-const VENDAS_COLUMNS: {
-  id: Lead["status"];
-  label: string;
-  color: string;
-  lightBg: string;
-  lightText: string;
-  desc: string;
-}[] = [
-  { id: "novo",         label: "Novos",        color: "bg-blue-500",  lightBg: "bg-blue-50",  lightText: "text-blue-700",  desc: "Leads recém-capturados" },
-  { id: "em-andamento", label: "Em Andamento",  color: "bg-amber-500", lightBg: "bg-amber-50", lightText: "text-amber-700", desc: "Corretor em contato" },
-  { id: "convertido",   label: "Convertidos",   color: "bg-green-500", lightBg: "bg-green-50", lightText: "text-green-700", desc: "Negócio fechado" },
-  { id: "perdido",      label: "Perdidos",      color: "bg-red-400",   lightBg: "bg-red-50",   lightText: "text-red-700",   desc: "Não converteu" },
-];
-
-// ─── Captação ─────────────────────────────────────────────────────────────────
-
-const CAPTACAO_COLUMNS: {
-  id: Captacao["status"];
-  label: string;
-  color: string;
-  lightBg: string;
-  lightText: string;
-  desc: string;
-}[] = [
-  { id: "prospeccao",     label: "Prospecção",      color: "bg-violet-500", lightBg: "bg-violet-50", lightText: "text-violet-700", desc: "Identificado para abordar" },
-  { id: "contato-feito",  label: "Contato Feito",   color: "bg-blue-500",   lightBg: "bg-blue-50",   lightText: "text-blue-700",   desc: "Proprietário abordado" },
-  { id: "visita-agendada",label: "Visita Agendada", color: "bg-amber-500",  lightBg: "bg-amber-50",  lightText: "text-amber-700",  desc: "Visita marcada" },
-  { id: "captado",        label: "Captados",        color: "bg-green-500",  lightBg: "bg-green-50",  lightText: "text-green-700",  desc: "Listado na plataforma" },
-  { id: "perdido",        label: "Perdidos",        color: "bg-red-400",    lightBg: "bg-red-50",    lightText: "text-red-700",    desc: "Não converteu" },
-];
+// Mapa cor (nome) → classes tailwind (full palette para não tree-shake)
+const STAGE_COLORS: Record<string, { dot: string; bg: string; text: string; bar: string }> = {
+  blue:   { dot: "bg-blue-500",   bg: "bg-blue-50",   text: "text-blue-700",   bar: "bg-blue-500" },
+  amber:  { dot: "bg-amber-500",  bg: "bg-amber-50",  text: "text-amber-700",  bar: "bg-amber-500" },
+  green:  { dot: "bg-green-500",  bg: "bg-green-50",  text: "text-green-700",  bar: "bg-green-500" },
+  red:    { dot: "bg-red-400",    bg: "bg-red-50",    text: "text-red-700",    bar: "bg-red-400" },
+  violet: { dot: "bg-violet-500", bg: "bg-violet-50", text: "text-violet-700", bar: "bg-violet-500" },
+  slate:  { dot: "bg-slate-500",  bg: "bg-slate-50",  text: "text-slate-700",  bar: "bg-slate-500" },
+};
+function colorOf(stage: PipelineStage) {
+  return STAGE_COLORS[stage.color] || STAGE_COLORS.blue;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -96,36 +81,32 @@ function MetricCard({ label, value, sub, color }: {
 
 // ─── Funil conversion bar ─────────────────────────────────────────────────────
 
-function FunnelBar({ columns, counts }: {
-  columns: { id: string; label: string; color: string }[];
+function FunnelBar({ stages, counts }: {
+  stages: PipelineStage[];
   counts: Record<string, number>;
 }) {
-  const total = Object.values(counts).reduce((a, b) => a + b, 0);
-  const active = columns.filter((c) => c.id !== "perdido");
+  const total = stages.reduce((a, s) => a + (counts[s.id] || 0), 0);
+  const active = stages.filter((s) => !s.is_lost);
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Funil de conversão</p>
       <div className="flex items-center gap-1">
-        {active.map((col, i) => {
-          const n = counts[col.id] || 0;
+        {active.map((s, i) => {
+          const n = counts[s.id] || 0;
           const pct = total > 0 ? Math.round((n / total) * 100) : 0;
+          const c = colorOf(s);
           return (
-            <div key={col.id} className="flex items-center gap-1 flex-1 min-w-0">
+            <div key={s.id} className="flex items-center gap-1 flex-1 min-w-0">
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground truncate">{col.label}</span>
+                  <span className="text-xs text-muted-foreground truncate">{s.name}</span>
                   <span className="text-xs font-bold text-foreground ml-1">{n}</span>
                 </div>
                 <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${col.color}`}
-                    style={{ width: `${pct}%` }}
-                  />
+                  <div className={`h-full rounded-full transition-all ${c.bar}`} style={{ width: `${pct}%` }} />
                 </div>
               </div>
-              {i < active.length - 1 && (
-                <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
-              )}
+              {i < active.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />}
             </div>
           );
         })}
@@ -242,20 +223,37 @@ function NovaCaptacaoModal({ onClose, onSave }: {
 
 const Pipeline = () => {
   usePageTitle("Admin - Pipeline");
-  const [tab, setTab] = useState<"vendas" | "captacao">("vendas");
 
-  // Vendas
+  const { data: pipelines = [], isLoading: loadingPipes } = useSalesPipelines();
+  const updateLeadStage = useUpdateLeadStage();
+  const updateCapStage = useUpdateCaptacaoStage();
+  const archiveMut = useArchivePipeline();
+
+  const [activePipelineId, setActivePipelineId] = useState<string | null>(null);
+  const [showNewPipeline, setShowNewPipeline] = useState(false);
+
+  // Seleciona primeiro pipeline ao carregar
+  useEffect(() => {
+    if (!activePipelineId && pipelines.length > 0) setActivePipelineId(pipelines[0].id);
+  }, [pipelines, activePipelineId]);
+
+  const activePipeline: SalesPipeline | null = useMemo(
+    () => pipelines.find((p) => p.id === activePipelineId) || pipelines[0] || null,
+    [pipelines, activePipelineId]
+  );
+  const pipelineType = activePipeline?.pipeline_type || "vendas";
+  const stages = activePipeline?.stages || [];
+
+  // Dados
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [draggedLead, setDraggedLead] = useState<string | null>(null);
-  const [dragOverLeadCol, setDragOverLeadCol] = useState<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
-  // Captação
   const [captacoes, setCaptacoes] = useState<Captacao[]>([]);
   const [loadingCap, setLoadingCap] = useState(true);
   const [draggedCap, setDraggedCap] = useState<string | null>(null);
-  const [dragOverCapCol, setDragOverCapCol] = useState<string | null>(null);
   const [showNovaCap, setShowNovaCap] = useState(false);
 
   useEffect(() => {
@@ -263,74 +261,65 @@ const Pipeline = () => {
     getAllCaptacoes().then((d) => { setCaptacoes(d); setLoadingCap(false); });
   }, []);
 
-  // ── Vendas drag ──
-  const handleLeadDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedLead(id);
+  // ── Drag handlers (genéricos: usam stage_id) ──
+  const dragStart = (e: React.DragEvent, id: string, kind: "lead" | "cap") => {
+    if (kind === "lead") setDraggedLead(id); else setDraggedCap(id);
     e.dataTransfer.effectAllowed = "move";
     (e.currentTarget as HTMLElement).style.opacity = "0.5";
   };
-  const handleLeadDragEnd = (e: React.DragEvent) => {
-    setDraggedLead(null);
-    setDragOverLeadCol(null);
+  const dragEnd = (e: React.DragEvent) => {
+    setDraggedLead(null); setDraggedCap(null); setDragOverCol(null);
     (e.currentTarget as HTMLElement).style.opacity = "1";
   };
-  const handleLeadDrop = async (e: React.DragEvent, newStatus: Lead["status"]) => {
-    e.preventDefault();
-    setDragOverLeadCol(null);
-    if (!draggedLead) return;
+
+  const dropLead = async (stageId: string) => {
+    if (!draggedLead || !activePipeline) return;
     const lead = leads.find((l) => l.id === draggedLead);
-    if (!lead || lead.status === newStatus) return;
-    setLeads((p) => p.map((l) => l.id === draggedLead ? { ...l, status: newStatus } : l));
-    await updateLeadStatus(draggedLead, newStatus);
+    if (!lead || lead.stage_id === stageId) { setDraggedLead(null); return; }
+    const stage = stages.find((s) => s.id === stageId);
+    setLeads((p) => p.map((l) => l.id === draggedLead ? { ...l, stage_id: stageId, pipeline_id: activePipeline.id } : l));
+    await updateLeadStage.mutateAsync({
+      leadId: draggedLead, stageId, pipelineId: activePipeline.id,
+      isWon: stage?.is_won, isLost: stage?.is_lost,
+    });
     setDraggedLead(null);
   };
+  const dropCap = async (stageId: string) => {
+    if (!draggedCap || !activePipeline) return;
+    const cap = captacoes.find((c) => c.id === draggedCap);
+    if (!cap || cap.stage_id === stageId) { setDraggedCap(null); return; }
+    const stage = stages.find((s) => s.id === stageId);
+    setCaptacoes((p) => p.map((c) => c.id === draggedCap ? { ...c, stage_id: stageId, pipeline_id: activePipeline.id } : c));
+    await updateCapStage.mutateAsync({
+      captacaoId: draggedCap, stageId, pipelineId: activePipeline.id,
+      isWon: stage?.is_won, isLost: stage?.is_lost,
+    });
+    setDraggedCap(null);
+  };
+
   const handleLeadStatusChange = async (id: string, newStatus: Lead["status"]) => {
     setLeads((p) => p.map((l) => l.id === id ? { ...l, status: newStatus } : l));
     await updateLeadStatus(id, newStatus);
   };
 
-  // ── Captação drag ──
-  const handleCapDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedCap(id);
-    e.dataTransfer.effectAllowed = "move";
-    (e.currentTarget as HTMLElement).style.opacity = "0.5";
-  };
-  const handleCapDragEnd = (e: React.DragEvent) => {
-    setDraggedCap(null);
-    setDragOverCapCol(null);
-    (e.currentTarget as HTMLElement).style.opacity = "1";
-  };
-  const handleCapDrop = async (e: React.DragEvent, newStatus: Captacao["status"]) => {
-    e.preventDefault();
-    setDragOverCapCol(null);
-    if (!draggedCap) return;
-    const cap = captacoes.find((c) => c.id === draggedCap);
-    if (!cap || cap.status === newStatus) return;
-    setCaptacoes((p) => p.map((c) => c.id === draggedCap ? { ...c, status: newStatus } : c));
-    await updateCaptacaoStatus(draggedCap, newStatus);
-    setDraggedCap(null);
-  };
+  // ── Contagens dinâmicas por stage ──
+  const items = pipelineType === "vendas"
+    ? leads.filter((l) => l.pipeline_id === activePipeline?.id)
+    : captacoes.filter((c) => c.pipeline_id === activePipeline?.id);
+  const stageCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    stages.forEach((s) => { m[s.id] = 0; });
+    items.forEach((it: any) => { if (it.stage_id) m[it.stage_id] = (m[it.stage_id] || 0) + 1; });
+    return m;
+  }, [stages, items]);
 
-  // ── Metrics ──
-  const vendaCounts = VENDAS_COLUMNS.reduce((acc, col) => {
-    acc[col.id] = leads.filter((l) => l.status === col.id).length;
-    return acc;
-  }, {} as Record<string, number>);
+  const wonStage = stages.find((s) => s.is_won);
+  const wonCount = wonStage ? stageCounts[wonStage.id] || 0 : 0;
+  const total = items.length;
+  const inProgress = stages.filter((s) => !s.is_won && !s.is_lost).reduce((a, s) => a + (stageCounts[s.id] || 0), 0);
+  const taxa = total > 0 ? Math.round((wonCount / total) * 100) : 0;
 
-  const capCounts = CAPTACAO_COLUMNS.reduce((acc, col) => {
-    acc[col.id] = captacoes.filter((c) => c.status === col.id).length;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const taxaVendas = leads.length > 0
-    ? Math.round((vendaCounts.convertido / leads.length) * 100)
-    : 0;
-
-  const taxaCaptacao = captacoes.length > 0
-    ? Math.round((capCounts.captado / captacoes.length) * 100)
-    : 0;
-
-  const isLoading = tab === "vendas" ? loadingLeads : loadingCap;
+  const isLoading = loadingPipes || (pipelineType === "vendas" ? loadingLeads : loadingCap);
 
   if (isLoading) {
     return (
@@ -342,254 +331,242 @@ const Pipeline = () => {
     );
   }
 
+  const handleArchive = async () => {
+    if (!activePipeline || activePipeline.is_default) return;
+    if (!confirm(`Arquivar pipeline "${activePipeline.name}"? Os leads/captações dele ficarão sem pipeline.`)) return;
+    await archiveMut.mutateAsync({ id: activePipeline.id, arquivar: true });
+    setActivePipelineId(null);
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">Pipeline</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Arraste os cards entre colunas para atualizar o status
+              {activePipeline?.description || "Arraste os cards entre as colunas para atualizar o estágio."}
             </p>
           </div>
-          {tab === "captacao" && (
+          <div className="flex items-center gap-2">
+            {pipelineType === "captacao" && (
+              <button
+                onClick={() => setShowNovaCap(true)}
+                className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
+              >
+                <Plus className="h-4 w-4" /> Nova Captação
+              </button>
+            )}
             <button
-              onClick={() => setShowNovaCap(true)}
+              onClick={() => setShowNewPipeline(true)}
               className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              <Plus className="h-4 w-4" />
-              Nova Captação
+              <Plus className="h-4 w-4" /> Novo Pipeline
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs dinâmicas (1 por pipeline) */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex gap-1 rounded-xl bg-muted p-1 overflow-x-auto max-w-full">
+            {pipelines.map((p) => {
+              const Icon = p.pipeline_type === "vendas" ? Users : Target;
+              const isActive = activePipelineId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setActivePipelineId(p.id)}
+                  className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${
+                    isActive ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {p.name}
+                  {p.is_default && <span className="text-[10px] uppercase tracking-wide opacity-60">padrão</span>}
+                </button>
+              );
+            })}
+          </div>
+          {activePipeline && !activePipeline.is_default && (
+            <button
+              onClick={handleArchive}
+              className="flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-red-600 transition-colors"
+              title="Arquivar pipeline"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Arquivar
             </button>
           )}
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 rounded-xl bg-muted p-1 w-fit">
-          {(["vendas", "captacao"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                tab === t
-                  ? "bg-card shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t === "vendas" ? (
-                <><Users className="h-4 w-4" />Funil de Vendas</>
-              ) : (
-                <><Target className="h-4 w-4" />Funil de Captação</>
-              )}
-            </button>
-          ))}
+        {/* Metrics dinâmicas */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <MetricCard label={pipelineType === "vendas" ? "Total de Leads" : "Total Captações"} value={total} color="bg-blue-500" />
+          <MetricCard label="Em Andamento" value={inProgress} sub="estágios intermediários" color="bg-amber-500" />
+          <MetricCard label={wonStage?.name || "Convertidos"} value={wonCount} sub="estágio de sucesso" color="bg-green-500" />
+          <MetricCard label="Taxa de Conversão" value={`${taxa}%`} sub={`de ${total} totais`} color="bg-violet-500" />
         </div>
 
-        {/* Metrics */}
-        {tab === "vendas" ? (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <MetricCard label="Total de Leads" value={leads.length} color="bg-blue-500" />
-            <MetricCard label="Em Andamento" value={vendaCounts["em-andamento"]} sub="aguardando retorno" color="bg-amber-500" />
-            <MetricCard label="Convertidos" value={vendaCounts.convertido} sub="negócios fechados" color="bg-green-500" />
-            <MetricCard label="Taxa de Conversão" value={`${taxaVendas}%`} sub="de leads → clientes" color="bg-violet-500" />
+        {/* Funil */}
+        {stages.length > 0 && <FunnelBar stages={stages} counts={stageCounts} />}
+
+        {/* Kanban dinâmico */}
+        {!activePipeline ? (
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-12 text-center">
+            <p className="text-sm text-muted-foreground mb-3">Nenhum pipeline ativo. Crie o primeiro:</p>
+            <button
+              onClick={() => setShowNewPipeline(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" /> Criar Pipeline
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <MetricCard label="Total Captações" value={captacoes.length} color="bg-violet-500" />
-            <MetricCard label="Em Andamento" value={(capCounts["contato-feito"] || 0) + (capCounts["visita-agendada"] || 0)} sub="contato + visita" color="bg-blue-500" />
-            <MetricCard label="Captados" value={capCounts.captado} sub="na plataforma" color="bg-green-500" />
-            <MetricCard label="Taxa de Captação" value={`${taxaCaptacao}%`} sub="de prospecção → captado" color="bg-amber-500" />
-          </div>
-        )}
-
-        {/* Funnel bar */}
-        <FunnelBar
-          columns={tab === "vendas" ? VENDAS_COLUMNS : CAPTACAO_COLUMNS}
-          counts={tab === "vendas" ? vendaCounts : capCounts}
-        />
-
-        {/* Kanban */}
-        {tab === "vendas" ? (
           <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-px-4 -mx-4 px-4 md:mx-0 md:px-0 md:snap-none">
-            {VENDAS_COLUMNS.map((col) => {
-              const colLeads = leads.filter((l) => l.status === col.id);
-              const isOver = dragOverLeadCol === col.id;
+            {stages.map((stage) => {
+              const c = colorOf(stage);
+              const colItems = items.filter((it: any) => it.stage_id === stage.id);
+              const isOver = dragOverCol === stage.id;
               return (
                 <div
-                  key={col.id}
+                  key={stage.id}
                   className={`flex-shrink-0 w-[85vw] sm:w-[280px] snap-start rounded-xl border transition-all ${
                     isOver ? "border-primary bg-primary/5 shadow-lg" : "border-border bg-muted/30"
                   }`}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverLeadCol(col.id); }}
-                  onDragLeave={() => setDragOverLeadCol(null)}
-                  onDrop={(e) => handleLeadDrop(e, col.id)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverCol(stage.id); }}
+                  onDragLeave={() => setDragOverCol(null)}
+                  onDrop={(e) => { e.preventDefault(); setDragOverCol(null); pipelineType === "vendas" ? dropLead(stage.id) : dropCap(stage.id); }}
                 >
                   <div className="px-4 py-3 border-b border-border">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`h-3 w-3 rounded-full ${col.color}`} />
-                        <h3 className="font-semibold text-sm text-foreground">{col.label}</h3>
+                        <div className={`h-3 w-3 rounded-full ${c.dot}`} />
+                        <h3 className="font-semibold text-sm text-foreground">{stage.name}</h3>
                       </div>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${col.lightBg} ${col.lightText}`}>
-                        {colLeads.length}
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${c.bg} ${c.text}`}>
+                        {colItems.length}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{col.desc}</p>
+                    {stage.description && <p className="mt-1 text-xs text-muted-foreground">{stage.description}</p>}
                   </div>
                   <div className="p-2 space-y-2 min-h-[200px]">
-                    {colLeads.length === 0 ? (
+                    {colItems.length === 0 ? (
                       <div className="flex items-center justify-center h-24 text-xs text-muted-foreground italic">
-                        Nenhum lead
+                        {pipelineType === "vendas" ? "Nenhum lead" : "Nenhuma captação"}
                       </div>
-                    ) : colLeads.map((lead) => {
-                      const temp = getTemperature(lead.criado_em);
-                      const OrigemIcon = origemIcons[lead.origem] || MessageCircle;
-                      return (
-                        <div
-                          key={lead.id}
-                          draggable
-                          onDragStart={(e) => handleLeadDragStart(e, lead.id)}
-                          onDragEnd={handleLeadDragEnd}
-                          onClick={() => setSelectedLead(lead)}
-                          className={`group cursor-pointer rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/30 ${
-                            draggedLead === lead.id ? "opacity-50" : ""
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            <div className="mt-0.5 opacity-0 group-hover:opacity-40 transition-opacity cursor-grab">
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <div className={`h-2 w-2 rounded-full shrink-0 ${tempColors[temp]}`} />
-                                <p className="font-semibold text-sm text-foreground truncate">{lead.nome}</p>
+                    ) : pipelineType === "vendas"
+                      ? (colItems as Lead[]).map((lead) => {
+                          const temp = getTemperature(lead.criado_em);
+                          const OrigemIcon = origemIcons[lead.origem] || MessageCircle;
+                          return (
+                            <div
+                              key={lead.id}
+                              draggable
+                              onDragStart={(e) => dragStart(e, lead.id, "lead")}
+                              onDragEnd={dragEnd}
+                              onClick={() => setSelectedLead(lead)}
+                              className={`group cursor-pointer rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/30 ${
+                                draggedLead === lead.id ? "opacity-50" : ""
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className="mt-0.5 opacity-0 group-hover:opacity-40 transition-opacity cursor-grab">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className={`h-2 w-2 rounded-full shrink-0 ${tempColors[temp]}`} />
+                                    <p className="font-semibold text-sm text-foreground truncate">{lead.nome}</p>
+                                  </div>
+                                  <div className="mt-1.5 space-y-1">
+                                    {lead.email && (
+                                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <Mail className="h-3 w-3 shrink-0" />
+                                        <span className="truncate">{lead.email}</span>
+                                      </div>
+                                    )}
+                                    {lead.telefone && (
+                                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <Phone className="h-3 w-3 shrink-0" />
+                                        <span>{lead.telefone}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {(lead.negocio_titulo || lead.galeria_nome) && (
+                                    <p className="mt-1.5 text-xs text-primary font-medium truncate">
+                                      {lead.negocio_titulo || lead.galeria_nome}
+                                      {lead.espaco_numero && ` — ${lead.espaco_numero}`}
+                                    </p>
+                                  )}
+                                  <div className="mt-2 flex items-center justify-between">
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <OrigemIcon className="h-3 w-3" />
+                                      <span>{lead.origem.replace(/-/g, " ")}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{timeAgo(lead.criado_em)}</span>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="mt-1.5 space-y-1">
-                                {lead.email && (
-                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    <Mail className="h-3 w-3 shrink-0" />
-                                    <span className="truncate">{lead.email}</span>
+                            </div>
+                          );
+                        })
+                      : (colItems as Captacao[]).map((cap) => (
+                          <div
+                            key={cap.id}
+                            draggable
+                            onDragStart={(e) => dragStart(e, cap.id, "cap")}
+                            onDragEnd={dragEnd}
+                            className={`group cursor-grab rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/30 ${
+                              draggedCap === cap.id ? "opacity-50" : ""
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className="mt-0.5 opacity-0 group-hover:opacity-40 transition-opacity">
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm text-foreground truncate">{cap.nome_negocio}</p>
+                                {cap.tipo && (
+                                  <span className="inline-block mt-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{cap.tipo}</span>
+                                )}
+                                {cap.contato_nome && (
+                                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Users className="h-3 w-3 shrink-0" />
+                                    <span className="truncate">{cap.contato_nome}</span>
                                   </div>
                                 )}
-                                {lead.telefone && (
+                                {cap.contato_telefone && (
                                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <Phone className="h-3 w-3 shrink-0" />
-                                    <span>{lead.telefone}</span>
+                                    <span>{cap.contato_telefone}</span>
+                                  </div>
+                                )}
+                                {cap.endereco && (
+                                  <p className="mt-1 text-xs text-muted-foreground truncate">{cap.endereco}</p>
+                                )}
+                                <div className="mt-2 flex items-center justify-between">
+                                  {cap.corretor_nome && (
+                                    <span className="text-xs text-primary font-medium truncate">{cap.corretor_nome}</span>
+                                  )}
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{timeAgo(cap.criado_em)}</span>
+                                  </div>
+                                </div>
+                                {stage.is_won && (
+                                  <div className="mt-2 flex items-center gap-1 text-xs text-green-600 font-medium">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    Convertido
                                   </div>
                                 )}
                               </div>
-                              {(lead.negocio_titulo || lead.galeria_nome) && (
-                                <p className="mt-1.5 text-xs text-primary font-medium truncate">
-                                  {lead.negocio_titulo || lead.galeria_nome}
-                                  {lead.espaco_numero && ` — ${lead.espaco_numero}`}
-                                </p>
-                              )}
-                              <div className="mt-2 flex items-center justify-between">
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <OrigemIcon className="h-3 w-3" />
-                                  <span>{lead.origem.replace(/-/g, " ")}</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Clock className="h-3 w-3" />
-                                  <span>{timeAgo(lead.criado_em)}</span>
-                                </div>
-                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          /* Captação Kanban */
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scroll-px-4 -mx-4 px-4 md:mx-0 md:px-0 md:snap-none">
-            {CAPTACAO_COLUMNS.map((col) => {
-              const colCaps = captacoes.filter((c) => c.status === col.id);
-              const isOver = dragOverCapCol === col.id;
-              return (
-                <div
-                  key={col.id}
-                  className={`flex-shrink-0 w-[260px] rounded-xl border transition-all ${
-                    isOver ? "border-primary bg-primary/5 shadow-lg" : "border-border bg-muted/30"
-                  }`}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverCapCol(col.id); }}
-                  onDragLeave={() => setDragOverCapCol(null)}
-                  onDrop={(e) => handleCapDrop(e, col.id)}
-                >
-                  <div className="px-4 py-3 border-b border-border">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-3 w-3 rounded-full ${col.color}`} />
-                        <h3 className="font-semibold text-sm text-foreground">{col.label}</h3>
-                      </div>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${col.lightBg} ${col.lightText}`}>
-                        {colCaps.length}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{col.desc}</p>
-                  </div>
-                  <div className="p-2 space-y-2 min-h-[200px]">
-                    {colCaps.length === 0 ? (
-                      <div className="flex items-center justify-center h-24 text-xs text-muted-foreground italic">
-                        Nenhum negócio
-                      </div>
-                    ) : colCaps.map((cap) => (
-                      <div
-                        key={cap.id}
-                        draggable
-                        onDragStart={(e) => handleCapDragStart(e, cap.id)}
-                        onDragEnd={handleCapDragEnd}
-                        className={`group cursor-grab rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md hover:border-primary/30 ${
-                          draggedCap === cap.id ? "opacity-50" : ""
-                        }`}
-                      >
-                        <div className="flex items-start gap-2">
-                          <div className="mt-0.5 opacity-0 group-hover:opacity-40 transition-opacity">
-                            <GripVertical className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm text-foreground truncate">{cap.nome_negocio}</p>
-                            {cap.tipo && (
-                              <span className="inline-block mt-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{cap.tipo}</span>
-                            )}
-                            {cap.contato_nome && (
-                              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Users className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{cap.contato_nome}</span>
-                              </div>
-                            )}
-                            {cap.contato_telefone && (
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Phone className="h-3 w-3 shrink-0" />
-                                <span>{cap.contato_telefone}</span>
-                              </div>
-                            )}
-                            {cap.endereco && (
-                              <p className="mt-1 text-xs text-muted-foreground truncate">{cap.endereco}</p>
-                            )}
-                            <div className="mt-2 flex items-center justify-between">
-                              {cap.corretor_nome && (
-                                <span className="text-xs text-primary font-medium truncate">{cap.corretor_nome}</span>
-                              )}
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
-                                <Clock className="h-3 w-3" />
-                                <span>{timeAgo(cap.criado_em)}</span>
-                              </div>
-                            </div>
-                            {cap.status === "captado" && (
-                              <div className="mt-2 flex items-center gap-1 text-xs text-green-600 font-medium">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                Na plataforma
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        ))}
                   </div>
                 </div>
               );
@@ -624,6 +601,13 @@ const Pipeline = () => {
           }}
         />
       )}
+
+      {/* Novo pipeline modal */}
+      <PipelineFormModal
+        open={showNewPipeline}
+        onClose={() => setShowNewPipeline(false)}
+        defaultType={pipelineType}
+      />
     </AdminLayout>
   );
 };

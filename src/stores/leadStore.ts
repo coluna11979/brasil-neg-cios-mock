@@ -44,6 +44,8 @@ export interface Lead {
   ai_sugestao_usada?: boolean;
   criado_em: string;
   status: "novo" | "em-andamento" | "convertido" | "perdido";
+  pipeline_id?: string | null;
+  stage_id?: string | null;
 }
 
 // ---- Public functions (async, hit Supabase) ----
