@@ -14,6 +14,7 @@ import { getLeadIntent, describeIntent, intentItemLabel } from "@/lib/leadIntent
 import { getAiPrompt } from "@/lib/aiPrompts";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, type Lead } from "@/stores/leadStore";
+import { useSalesPipelines, useUpdateLeadStage } from "@/hooks/useSalesPipelines";
 
 type NegocioData = {
   titulo: string;
@@ -274,6 +275,35 @@ const WhatsAppCRM = () => {
     setCurrentStatus(status);
     await updateLeadStatus(selectedLead.id, status);
     setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, status } : l));
+  };
+
+  // === Pipelines: transferir o lead entre pipelines ===
+  const { data: pipelines = [] } = useSalesPipelines();
+  const updateStageMut = useUpdateLeadStage();
+  const handleTransferPipeline = async (pipelineId: string) => {
+    if (!selectedLead) return;
+    const pipe = pipelines.find((p) => p.id === pipelineId);
+    if (!pipe || pipe.stages.length === 0) return;
+    const firstStage = pipe.stages[0];
+    await updateStageMut.mutateAsync({
+      leadId: selectedLead.id,
+      stageId: firstStage.id,
+      pipelineId: pipe.id,
+    });
+    setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, pipeline_id: pipe.id, stage_id: firstStage.id } : l));
+    setSelectedLead((p) => p ? { ...p, pipeline_id: pipe.id, stage_id: firstStage.id } : p);
+  };
+  const handleChangeStage = async (stageId: string) => {
+    if (!selectedLead || !selectedLead.pipeline_id) return;
+    const pipe = pipelines.find((p) => p.id === selectedLead.pipeline_id);
+    const stage = pipe?.stages.find((s) => s.id === stageId);
+    if (!pipe || !stage) return;
+    await updateStageMut.mutateAsync({
+      leadId: selectedLead.id, stageId, pipelineId: pipe.id,
+      isWon: stage.is_won, isLost: stage.is_lost,
+    });
+    setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, stage_id: stageId } : l));
+    setSelectedLead((p) => p ? { ...p, stage_id: stageId } : p);
   };
 
   const handleInvestorAnalysis = async () => {
@@ -1294,6 +1324,37 @@ ${describeIntent(intent, selectedLead)}
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* ── Pipeline ── */}
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pipeline</p>
+                <select
+                  value={selectedLead.pipeline_id || ""}
+                  onChange={(e) => e.target.value && handleTransferPipeline(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="">— Sem pipeline —</option>
+                  {pipelines.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.pipeline_type === "vendas" ? "Vendas" : "Captação"})</option>
+                  ))}
+                </select>
+                {selectedLead.pipeline_id && (() => {
+                  const pipe = pipelines.find((p) => p.id === selectedLead.pipeline_id);
+                  if (!pipe) return null;
+                  return (
+                    <select
+                      value={selectedLead.stage_id || ""}
+                      onChange={(e) => e.target.value && handleChangeStage(e.target.value)}
+                      className="mt-1.5 w-full rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      <option value="">— Estágio —</option>
+                      {pipe.stages.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  );
+                })()}
               </div>
 
               {/* ── Status rápido ── */}
