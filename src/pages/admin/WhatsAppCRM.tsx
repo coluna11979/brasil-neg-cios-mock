@@ -280,6 +280,40 @@ const WhatsAppCRM = () => {
   // === Pipelines: transferir o lead entre pipelines ===
   const { data: pipelines = [] } = useSalesPipelines();
   const updateStageMut = useUpdateLeadStage();
+
+  // === Vincular imóvel ===
+  const [imovelSearch, setImovelSearch] = useState("");
+  const [imovelResults, setImovelResults] = useState<Array<{ id: string; titulo: string; categoria: string | null; cidade: string | null }>>([]);
+  const [imovelSearching, setImovelSearching] = useState(false);
+  useEffect(() => {
+    if (!imovelSearch.trim() || imovelSearch.length < 2) { setImovelResults([]); return; }
+    setImovelSearching(true);
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("negocios")
+        .select("id, titulo, categoria, cidade")
+        .or(`titulo.ilike.%${imovelSearch}%,bairro.ilike.%${imovelSearch}%,cidade.ilike.%${imovelSearch}%,descricao.ilike.%${imovelSearch}%`)
+        .eq("status", "ativo")
+        .limit(8);
+      setImovelResults((data || []) as any);
+      setImovelSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [imovelSearch]);
+  const handleVincularImovel = async (negocioId: string, titulo: string) => {
+    if (!selectedLead) return;
+    await supabase.from("leads").update({ negocio_id: negocioId, negocio_titulo: titulo }).eq("id", selectedLead.id);
+    setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, negocio_id: negocioId, negocio_titulo: titulo } : l));
+    setSelectedLead((p) => p ? { ...p, negocio_id: negocioId, negocio_titulo: titulo } : p);
+    setImovelSearch("");
+    setImovelResults([]);
+  };
+  const handleDesvincularImovel = async () => {
+    if (!selectedLead) return;
+    await supabase.from("leads").update({ negocio_id: null, negocio_titulo: null }).eq("id", selectedLead.id);
+    setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, negocio_id: undefined, negocio_titulo: undefined } : l));
+    setSelectedLead((p) => p ? { ...p, negocio_id: undefined, negocio_titulo: undefined } : p);
+  };
   const handleTransferPipeline = async (pipelineId: string) => {
     if (!selectedLead) return;
     const pipe = pipelines.find((p) => p.id === pipelineId);
@@ -1355,6 +1389,53 @@ ${describeIntent(intent, selectedLead)}
                     </select>
                   );
                 })()}
+              </div>
+
+              {/* ── Imóvel de interesse ── */}
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Imóvel de Interesse</p>
+                {selectedLead.negocio_titulo ? (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                      <Building2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                      <span className="text-xs font-medium text-foreground line-clamp-2">{selectedLead.negocio_titulo}</span>
+                    </div>
+                    <button onClick={handleDesvincularImovel} className="text-muted-foreground hover:text-red-600 shrink-0" title="Desvincular">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic mb-1.5">Nenhum imóvel vinculado</p>
+                )}
+                <div className="mt-1.5 relative">
+                  <input
+                    type="text"
+                    value={imovelSearch}
+                    onChange={(e) => setImovelSearch(e.target.value)}
+                    placeholder={selectedLead.negocio_titulo ? "Trocar por outro imóvel..." : "Buscar imóvel pra vincular..."}
+                    className="w-full rounded-lg border border-border bg-card px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  {(imovelSearching || imovelResults.length > 0) && (
+                    <div className="absolute z-10 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
+                      {imovelSearching && <div className="px-3 py-2 text-xs text-muted-foreground">Buscando...</div>}
+                      {!imovelSearching && imovelResults.map((n) => (
+                        <button
+                          key={n.id}
+                          onClick={() => handleVincularImovel(n.id, n.titulo)}
+                          className="w-full text-left px-3 py-2 hover:bg-muted border-b border-border last:border-0"
+                        >
+                          <p className="text-xs font-medium text-foreground truncate">{n.titulo}</p>
+                          {(n.categoria || n.cidade) && (
+                            <p className="text-[10px] text-muted-foreground">{[n.categoria, n.cidade].filter(Boolean).join(" · ")}</p>
+                          )}
+                        </button>
+                      ))}
+                      {!imovelSearching && imovelResults.length === 0 && imovelSearch.length >= 2 && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum resultado.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* ── Status rápido ── */}

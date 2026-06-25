@@ -302,9 +302,25 @@ const Pipeline = () => {
     await updateLeadStatus(id, newStatus);
   };
 
+  // ── Filtro por imóvel ──
+  const [imovelFilter, setImovelFilter] = useState<string>("");
+  const imoveisDisponiveis = useMemo(() => {
+    const set = new Map<string, string>();
+    leads.forEach((l) => {
+      if (l.pipeline_id !== activePipeline?.id) return;
+      const titulo = l.negocio_titulo || l.galeria_nome;
+      if (titulo) set.set(titulo, titulo);
+    });
+    return Array.from(set.values()).sort();
+  }, [leads, activePipeline?.id]);
+
   // ── Contagens dinâmicas por stage ──
   const items = pipelineType === "vendas"
-    ? leads.filter((l) => l.pipeline_id === activePipeline?.id)
+    ? leads.filter((l) => {
+        if (l.pipeline_id !== activePipeline?.id) return false;
+        if (!imovelFilter) return true;
+        return (l.negocio_titulo || l.galeria_nome) === imovelFilter;
+      })
     : captacoes.filter((c) => c.pipeline_id === activePipeline?.id);
   const stageCounts = useMemo(() => {
     const m: Record<string, number> = {};
@@ -408,6 +424,30 @@ const Pipeline = () => {
           <MetricCard label="Taxa de Conversão" value={`${taxa}%`} sub={`de ${total} totais`} color="bg-violet-500" />
         </div>
 
+        {/* Filtro por imóvel (só vendas, só se tiver opções) */}
+        {pipelineType === "vendas" && imoveisDisponiveis.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground">Imóvel de interesse:</span>
+            <select
+              value={imovelFilter}
+              onChange={(e) => setImovelFilter(e.target.value)}
+              className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="">Todos ({leads.filter((l) => l.pipeline_id === activePipeline?.id).length})</option>
+              {imoveisDisponiveis.map((titulo) => {
+                const n = leads.filter((l) => l.pipeline_id === activePipeline?.id && (l.negocio_titulo || l.galeria_nome) === titulo).length;
+                return <option key={titulo} value={titulo}>{titulo} ({n})</option>;
+              })}
+            </select>
+            {imovelFilter && (
+              <button onClick={() => setImovelFilter("")} className="text-xs text-muted-foreground hover:text-foreground underline">
+                limpar filtro
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Funil */}
         {stages.length > 0 && <FunnelBar stages={stages} counts={stageCounts} />}
 
@@ -494,10 +534,10 @@ const Pipeline = () => {
                                     )}
                                   </div>
                                   {(lead.negocio_titulo || lead.galeria_nome) && (
-                                    <p className="mt-1.5 text-xs text-primary font-medium truncate">
-                                      {lead.negocio_titulo || lead.galeria_nome}
-                                      {lead.espaco_numero && ` — ${lead.espaco_numero}`}
-                                    </p>
+                                    <span className="mt-2 inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary max-w-full">
+                                      <Building2 className="h-2.5 w-2.5 shrink-0" />
+                                      <span className="truncate">{lead.negocio_titulo || lead.galeria_nome}{lead.espaco_numero && ` — ${lead.espaco_numero}`}</span>
+                                    </span>
                                   )}
                                   <div className="mt-2 flex items-center justify-between">
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
