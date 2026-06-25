@@ -1393,45 +1393,84 @@ ${describeIntent(intent, selectedLead)}
 
               {/* ── Imóvel de interesse ── */}
               <div>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Imóvel de Interesse</p>
-                {selectedLead.negocio_titulo ? (
-                  <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-1.5 min-w-0 flex-1">
-                      <Building2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                      <span className="text-xs font-medium text-foreground line-clamp-2">{selectedLead.negocio_titulo}</span>
-                    </div>
-                    <button onClick={handleDesvincularImovel} className="text-muted-foreground hover:text-red-600 shrink-0" title="Desvincular">
-                      <X className="h-3.5 w-3.5" />
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Imóvel de Interesse</p>
+                  {selectedLead.negocio_titulo && (
+                    <button onClick={handleDesvincularImovel} className="text-[10px] font-medium text-muted-foreground hover:text-red-600 underline">
+                      desvincular
                     </button>
+                  )}
+                </div>
+
+                {selectedLead.negocio_titulo ? (
+                  <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-3 mb-2">
+                    <div className="flex items-start gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                        <Building2 className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">{selectedLead.negocio_titulo}</p>
+                        <p className="text-[10px] text-primary mt-0.5 font-medium">Vinculado ✓</p>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground italic mb-1.5">Nenhum imóvel vinculado</p>
+                  <div className="rounded-xl border-2 border-dashed border-border bg-muted/30 p-4 mb-2 text-center">
+                    <Building2 className="h-6 w-6 text-muted-foreground/50 mx-auto mb-1.5" />
+                    <p className="text-[11px] text-muted-foreground">Nenhum imóvel vinculado</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">Busque abaixo pra vincular</p>
+                  </div>
                 )}
-                <div className="mt-1.5 relative">
+
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   <input
                     type="text"
                     value={imovelSearch}
                     onChange={(e) => setImovelSearch(e.target.value)}
-                    placeholder={selectedLead.negocio_titulo ? "Trocar por outro imóvel..." : "Buscar imóvel pra vincular..."}
-                    className="w-full rounded-lg border border-border bg-card px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    placeholder={selectedLead.negocio_titulo ? "Trocar imóvel..." : "Buscar por título, bairro, cidade..."}
+                    className="w-full rounded-xl border border-border bg-card pl-8 pr-7 py-2 text-xs outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground/60"
                   />
-                  {(imovelSearching || imovelResults.length > 0) && (
-                    <div className="absolute z-10 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-card shadow-lg">
-                      {imovelSearching && <div className="px-3 py-2 text-xs text-muted-foreground">Buscando...</div>}
+                  {imovelSearch && (
+                    <button
+                      onClick={() => { setImovelSearch(""); setImovelResults([]); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+
+                  {(imovelSearching || (imovelSearch.length >= 2 && (imovelResults.length > 0 || !imovelSearching))) && (
+                    <div className="absolute z-20 left-0 right-0 mt-1.5 max-h-72 overflow-y-auto rounded-xl border border-border bg-card shadow-xl">
+                      {imovelSearching && (
+                        <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Buscando imóveis...
+                        </div>
+                      )}
                       {!imovelSearching && imovelResults.map((n) => (
                         <button
                           key={n.id}
                           onClick={() => handleVincularImovel(n.id, n.titulo)}
-                          className="w-full text-left px-3 py-2 hover:bg-muted border-b border-border last:border-0"
+                          className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b border-border/60 last:border-0 transition-colors group"
                         >
-                          <p className="text-xs font-medium text-foreground truncate">{n.titulo}</p>
-                          {(n.categoria || n.cidade) && (
-                            <p className="text-[10px] text-muted-foreground">{[n.categoria, n.cidade].filter(Boolean).join(" · ")}</p>
-                          )}
+                          <div className="flex items-start gap-2">
+                            <Building2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">{n.titulo}</p>
+                              {(n.categoria || n.cidade) && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5">
+                                  {[n.categoria, n.cidade].filter(Boolean).join(" · ")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </button>
                       ))}
                       {!imovelSearching && imovelResults.length === 0 && imovelSearch.length >= 2 && (
-                        <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum resultado.</div>
+                        <div className="px-3 py-4 text-center">
+                          <p className="text-xs text-muted-foreground">Nenhum imóvel encontrado pra "{imovelSearch}"</p>
+                          <p className="text-[10px] text-muted-foreground/70 mt-1">Tente outro termo</p>
+                        </div>
                       )}
                     </div>
                   )}
