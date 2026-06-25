@@ -651,7 +651,7 @@ ${describeIntent(intent, selectedLead)}
 
   const handleCreateContact = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newContact.nome.trim() || !newContact.telefone.trim()) return;
+    if (!newContact.nome.trim() || (!newContact.telefone.trim() && !newContact.email.trim())) return;
     setSavingContact(true);
     try {
       const ok = await addLead({
@@ -779,14 +779,14 @@ ${describeIntent(intent, selectedLead)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
+              <p className="text-[10px] text-muted-foreground -mt-2">Informe ao menos WhatsApp <strong>ou</strong> e-mail.</p>
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">WhatsApp <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">WhatsApp</label>
                 <input
                   type="tel"
                   value={newContact.telefone}
                   onChange={(e) => setNewContact((p) => ({ ...p, telefone: e.target.value }))}
                   placeholder="(11) 99999-9999"
-                  required
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
