@@ -15,6 +15,7 @@ import { getAiPrompt } from "@/lib/aiPrompts";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, type Lead } from "@/stores/leadStore";
 import { useSalesPipelines, useUpdateLeadStage } from "@/hooks/useSalesPipelines";
+import ImovelPickerModal from "@/components/admin/ImovelPickerModal";
 
 type NegocioData = {
   titulo: string;
@@ -282,31 +283,13 @@ const WhatsAppCRM = () => {
   const updateStageMut = useUpdateLeadStage();
 
   // === Vincular imóvel ===
-  const [imovelSearch, setImovelSearch] = useState("");
-  const [imovelResults, setImovelResults] = useState<Array<{ id: string; titulo: string; categoria: string | null; cidade: string | null }>>([]);
-  const [imovelSearching, setImovelSearching] = useState(false);
-  useEffect(() => {
-    if (!imovelSearch.trim() || imovelSearch.length < 2) { setImovelResults([]); return; }
-    setImovelSearching(true);
-    const timer = setTimeout(async () => {
-      const { data } = await supabase
-        .from("negocios")
-        .select("id, titulo, categoria, cidade")
-        .or(`titulo.ilike.%${imovelSearch}%,bairro.ilike.%${imovelSearch}%,cidade.ilike.%${imovelSearch}%,descricao.ilike.%${imovelSearch}%`)
-        .eq("status", "ativo")
-        .limit(8);
-      setImovelResults((data || []) as any);
-      setImovelSearching(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [imovelSearch]);
+  const [showImovelPicker, setShowImovelPicker] = useState(false);
   const handleVincularImovel = async (negocioId: string, titulo: string) => {
     if (!selectedLead) return;
     await supabase.from("leads").update({ negocio_id: negocioId, negocio_titulo: titulo }).eq("id", selectedLead.id);
     setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, negocio_id: negocioId, negocio_titulo: titulo } : l));
     setSelectedLead((p) => p ? { ...p, negocio_id: negocioId, negocio_titulo: titulo } : p);
-    setImovelSearch("");
-    setImovelResults([]);
+    setShowImovelPicker(false);
   };
   const handleDesvincularImovel = async () => {
     if (!selectedLead) return;
@@ -1448,78 +1431,30 @@ ${describeIntent(intent, selectedLead)}
                 </div>
 
                 {selectedLead.negocio_titulo ? (
-                  <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-3 mb-2">
+                  <button
+                    onClick={() => setShowImovelPicker(true)}
+                    className="w-full rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-3 text-left hover:border-primary hover:shadow-md transition-all group"
+                  >
                     <div className="flex items-start gap-2">
                       <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
                         <Building2 className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">{selectedLead.negocio_titulo}</p>
-                        <p className="text-[10px] text-primary mt-0.5 font-medium">Vinculado ✓</p>
+                        <p className="text-[10px] text-primary mt-0.5 font-medium group-hover:underline">Clique pra trocar →</p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ) : (
-                  <div className="rounded-xl border-2 border-dashed border-border bg-muted/30 p-4 mb-2 text-center">
-                    <Building2 className="h-6 w-6 text-muted-foreground/50 mx-auto mb-1.5" />
-                    <p className="text-[11px] text-muted-foreground">Nenhum imóvel vinculado</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">Busque abaixo pra vincular</p>
-                  </div>
+                  <button
+                    onClick={() => setShowImovelPicker(true)}
+                    className="w-full rounded-xl border-2 border-dashed border-border bg-muted/30 p-4 hover:border-primary hover:bg-primary/5 transition-all group"
+                  >
+                    <Building2 className="h-7 w-7 text-muted-foreground/50 group-hover:text-primary mx-auto mb-1.5 transition-colors" />
+                    <p className="text-xs font-medium text-foreground">+ Vincular Imóvel</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Escolha de quais negócios este lead tem interesse</p>
+                  </button>
                 )}
-
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                  <input
-                    type="text"
-                    value={imovelSearch}
-                    onChange={(e) => setImovelSearch(e.target.value)}
-                    placeholder={selectedLead.negocio_titulo ? "Trocar imóvel..." : "Buscar por título, bairro, cidade..."}
-                    className="w-full rounded-xl border border-border bg-card pl-8 pr-7 py-2 text-xs outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground/60"
-                  />
-                  {imovelSearch && (
-                    <button
-                      onClick={() => { setImovelSearch(""); setImovelResults([]); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-
-                  {(imovelSearching || (imovelSearch.length >= 2 && (imovelResults.length > 0 || !imovelSearching))) && (
-                    <div className="absolute z-20 left-0 right-0 mt-1.5 max-h-72 overflow-y-auto rounded-xl border border-border bg-card shadow-xl">
-                      {imovelSearching && (
-                        <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Buscando imóveis...
-                        </div>
-                      )}
-                      {!imovelSearching && imovelResults.map((n) => (
-                        <button
-                          key={n.id}
-                          onClick={() => handleVincularImovel(n.id, n.titulo)}
-                          className="w-full text-left px-3 py-2.5 hover:bg-primary/5 border-b border-border/60 last:border-0 transition-colors group"
-                        >
-                          <div className="flex items-start gap-2">
-                            <Building2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">{n.titulo}</p>
-                              {(n.categoria || n.cidade) && (
-                                <p className="text-[10px] text-muted-foreground mt-0.5">
-                                  {[n.categoria, n.cidade].filter(Boolean).join(" · ")}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                      {!imovelSearching && imovelResults.length === 0 && imovelSearch.length >= 2 && (
-                        <div className="px-3 py-4 text-center">
-                          <p className="text-xs text-muted-foreground">Nenhum imóvel encontrado pra "{imovelSearch}"</p>
-                          <p className="text-[10px] text-muted-foreground/70 mt-1">Tente outro termo</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
 
               {/* ── Status rápido ── */}
@@ -1689,6 +1624,14 @@ ${describeIntent(intent, selectedLead)}
         )}
 
       </div>
+
+      {/* Modal de seleção de imóvel */}
+      <ImovelPickerModal
+        open={showImovelPicker}
+        onClose={() => setShowImovelPicker(false)}
+        onSelect={({ id, titulo }) => handleVincularImovel(id, titulo)}
+        currentNegocioId={selectedLead?.negocio_id || null}
+      />
     </AdminLayout>
   );
 };
