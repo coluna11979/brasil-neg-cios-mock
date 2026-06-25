@@ -256,27 +256,6 @@ const WhatsAppCRM = () => {
     });
   };
 
-  // Fetch negocio data when lead's linked negocios change (use first one for ficha)
-  useEffect(() => {
-    const firstNegocioId = leadNegocios[0]?.negocio_id || selectedLead?.negocio_id;
-    if (!firstNegocioId) {
-      setNegocioData(null);
-      setInvestorProfile(null);
-      return;
-    }
-    setLoadingNegocio(true);
-    setInvestorProfile(null);
-    supabase
-      .from("negocios")
-      .select("titulo, preco, faturamento_mensal, categoria, cidade")
-      .eq("id", firstNegocioId)
-      .single()
-      .then(({ data }) => {
-        setNegocioData(data ?? null);
-        setLoadingNegocio(false);
-      });
-  }, [leadNegocios, selectedLead?.negocio_id]);
-
   useEffect(() => {
     if (selectedLead) setCurrentStatus(selectedLead.status || "novo");
   }, [selectedLead]);
@@ -317,6 +296,27 @@ const WhatsAppCRM = () => {
     if (selectedLead) loadLeadNegocios(selectedLead.id);
     else setLeadNegocios([]);
   }, [selectedLead?.id]);
+
+  // Fetch negocio data when lead's linked negocios change (use first one for ficha)
+  useEffect(() => {
+    const firstNegocioId = leadNegocios[0]?.negocio_id || selectedLead?.negocio_id;
+    if (!firstNegocioId) {
+      setNegocioData(null);
+      setInvestorProfile(null);
+      return;
+    }
+    setLoadingNegocio(true);
+    setInvestorProfile(null);
+    supabase
+      .from("negocios")
+      .select("titulo, preco, faturamento_mensal, categoria, cidade")
+      .eq("id", firstNegocioId)
+      .single()
+      .then(({ data }) => {
+        setNegocioData(data ?? null);
+        setLoadingNegocio(false);
+      });
+  }, [leadNegocios, selectedLead?.negocio_id]);
 
   const handleAdicionarNegocio = async (negocioId: string, titulo: string) => {
     if (!selectedLead) return;
