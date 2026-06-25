@@ -16,6 +16,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { getAllLeads, addLead, calculateLeadScore, getScoreLabel, updateLeadStatus, type Lead } from "@/stores/leadStore";
 import { useSalesPipelines, useUpdateLeadStage } from "@/hooks/useSalesPipelines";
 import ImovelPickerModal from "@/components/admin/ImovelPickerModal";
+import { useSearchParams } from "react-router-dom";
 
 type NegocioData = {
   titulo: string;
@@ -161,6 +162,7 @@ function formatPhoneDisplay(phone: string): string {
 
 const WhatsAppCRM = () => {
   usePageTitle("Admin - Mensagens");
+  const [searchParams] = useSearchParams();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -229,6 +231,12 @@ const WhatsAppCRM = () => {
     getAllLeads().then((data) => {
       setLeads(data);
       setLoading(false);
+      // Abre o lead se vier ?leadId= na URL (vindo do Pipeline)
+      const leadIdParam = searchParams.get("leadId");
+      if (leadIdParam) {
+        const found = data.find((l) => l.id === leadIdParam);
+        if (found) setSelectedLead(found);
+      }
     });
     loadLastMsgMap();
     // Checa status da instância Uazapi ao abrir
@@ -1457,28 +1465,6 @@ ${describeIntent(intent, selectedLead)}
                 )}
               </div>
 
-              {/* ── Status rápido ── */}
-              <div>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Status do Lead</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {STATUS_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => handleStatusChange(opt.value)}
-                      className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
-                        currentStatus === opt.value
-                          ? `${opt.color} border-current shadow-sm`
-                          : "border-border text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {currentStatus === opt.value
-                        ? <CheckCircle className="h-3 w-3 shrink-0" />
-                        : <Circle className="h-3 w-3 shrink-0" />}
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* ── Ficha do Negócio ── */}
               {selectedLead.negocio_id && (

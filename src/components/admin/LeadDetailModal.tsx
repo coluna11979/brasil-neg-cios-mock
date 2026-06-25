@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   X,
   Mail,
@@ -16,6 +17,7 @@ import {
   Thermometer,
   Snowflake,
   Instagram,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -96,6 +98,7 @@ interface Props {
 }
 
 const LeadDetailModal = ({ lead, onClose, onStatusChange }: Props) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("detalhes");
   const status = statusConfig[lead.status] || statusConfig.novo;
   const origem = origemConfig[lead.origem] || { label: lead.origem, icon: MessageCircle };
@@ -347,7 +350,15 @@ const LeadDetailModal = ({ lead, onClose, onStatusChange }: Props) => {
         </div>
 
         {/* Footer actions */}
-        <div className="border-t border-border px-6 py-4 flex items-center gap-3">
+        <div className="border-t border-border px-6 py-4 flex items-center gap-3 flex-wrap">
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={() => { onClose(); navigate(`/admin/mensagens?leadId=${lead.id}`); }}
+          >
+            <MessageSquare className="h-4 w-4" />
+            Abrir Conversa
+          </Button>
           {lead.email && (
             <Button asChild variant="outline" size="sm" className="gap-2">
               <a href={`mailto:${lead.email}`}>
