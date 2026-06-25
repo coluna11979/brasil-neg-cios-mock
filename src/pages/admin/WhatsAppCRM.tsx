@@ -685,14 +685,24 @@ ${describeIntent(intent, selectedLead)}
     }
   };
 
+  const [quickFilter, setQuickFilter] = useState<"all" | "today" | "pipeline" | "no_pipeline">("all");
   const filteredLeads = leads
     .filter((lead) => {
+      if (quickFilter === "today") {
+        const last = lastMsgMap[lead.id] || lead.created_at;
+        if (!last) return false;
+        return new Date(last).toDateString() === new Date().toDateString();
+      }
+      if (quickFilter === "pipeline" && !lead.pipeline_id) return false;
+      if (quickFilter === "no_pipeline" && lead.pipeline_id) return false;
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
         lead.nome.toLowerCase().includes(q) ||
         (lead.email || "").toLowerCase().includes(q) ||
-        (lead.telefone || "").includes(q)
+        (lead.telefone || "").includes(q) ||
+        (lead.mensagem || "").toLowerCase().includes(q) ||
+        (lead.negocio_titulo || "").toLowerCase().includes(q)
       );
     })
     .sort((a, b) => {
@@ -867,14 +877,22 @@ ${describeIntent(intent, selectedLead)}
             </div>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Buscar lead..."
+                  placeholder="Nome, telefone, mensagem, imóvel..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-8 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground/60"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
               <button
                 onClick={() => setShowNewContact(true)}
@@ -884,6 +902,33 @@ ${describeIntent(intent, selectedLead)}
                 <UserPlus className="h-4 w-4" />
               </button>
             </div>
+            {/* Chips de filtro rápido */}
+            <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1">
+              {([
+                { key: "all", label: "Todos", count: leads.length },
+                { key: "today", label: "Hoje", count: leads.filter((l) => { const last = lastMsgMap[l.id] || l.created_at; return last && new Date(last).toDateString() === new Date().toDateString(); }).length },
+                { key: "pipeline", label: "Em pipeline", count: leads.filter((l) => l.pipeline_id).length },
+                { key: "no_pipeline", label: "Sem pipeline", count: leads.filter((l) => !l.pipeline_id).length },
+              ] as const).map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setQuickFilter(f.key)}
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium whitespace-nowrap transition-colors ${
+                    quickFilter === f.key
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {f.label}
+                  <span className={`rounded-full px-1 text-[9px] ${quickFilter === f.key ? "bg-primary-foreground/20" : "bg-background/60"}`}>{f.count}</span>
+                </button>
+              ))}
+            </div>
+            {(searchQuery || quickFilter !== "all") && (
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                {filteredLeads.length} {filteredLeads.length === 1 ? "resultado" : "resultados"}
+              </p>
+            )}
           </div>
 
           {/* Contact List */}

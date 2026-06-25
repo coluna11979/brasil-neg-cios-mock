@@ -3,7 +3,7 @@ import usePageTitle from "@/hooks/usePageTitle";
 import {
   Loader2, GripVertical, Phone, Mail, Clock, Building2, Store,
   Megaphone, MessageCircle, TrendingUp, Target, Plus, X,
-  ChevronRight, Users, CheckCircle2, Archive,
+  ChevronRight, Users, CheckCircle2, Archive, Pencil,
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import LeadDetailModal from "@/components/admin/LeadDetailModal";
@@ -231,6 +231,7 @@ const Pipeline = () => {
 
   const [activePipelineId, setActivePipelineId] = useState<string | null>(null);
   const [showNewPipeline, setShowNewPipeline] = useState(false);
+  const [editingPipeline, setEditingPipeline] = useState<SalesPipeline | null>(null);
 
   // Seleciona primeiro pipeline ao carregar
   useEffect(() => {
@@ -404,15 +405,27 @@ const Pipeline = () => {
               );
             })}
           </div>
-          {activePipeline && !activePipeline.is_default && (
-            <button
-              onClick={handleArchive}
-              className="flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-red-600 transition-colors"
-              title="Arquivar pipeline"
-            >
-              <Archive className="h-3.5 w-3.5" />
-              Arquivar
-            </button>
+          {activePipeline && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setEditingPipeline(activePipeline)}
+                className="flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+                title="Editar estágios deste pipeline"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Editar
+              </button>
+              {!activePipeline.is_default && (
+                <button
+                  onClick={handleArchive}
+                  className="flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-red-600 transition-colors"
+                  title="Arquivar pipeline"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                  Arquivar
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -647,6 +660,13 @@ const Pipeline = () => {
         open={showNewPipeline}
         onClose={() => setShowNewPipeline(false)}
         defaultType={pipelineType}
+      />
+
+      {/* Editar pipeline modal */}
+      <PipelineFormModal
+        open={!!editingPipeline}
+        onClose={() => setEditingPipeline(null)}
+        pipeline={editingPipeline}
       />
     </AdminLayout>
   );

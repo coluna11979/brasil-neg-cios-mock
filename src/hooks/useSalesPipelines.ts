@@ -60,6 +60,22 @@ export function useCreatePipeline() {
   });
 }
 
+export function useUpdatePipeline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { pipelineId: string; nome: string; estagios: Array<{ id: string | null; name: string; color?: string; is_won?: boolean; is_lost?: boolean }> }) => {
+      const { data, error } = await supabase.rpc("agent_atualizar_pipeline", {
+        p_pipeline_id: args.pipelineId,
+        p_nome: args.nome,
+        p_estagios: args.estagios,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sales_pipelines"] }),
+  });
+}
+
 export function useArchivePipeline() {
   const qc = useQueryClient();
   return useMutation({
