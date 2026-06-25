@@ -7,6 +7,7 @@ import {
   BarChart3, Brain, PanelRightOpen, PanelRightClose, Flame,
   ThumbsUp, Snowflake, CheckCircle, Circle, Paperclip, ImageIcon,
   UserCircle, MapPin, Calendar, MessageSquare, UserPlus, X,
+  Plus, Trash2, Clock, Eye,
 } from "lucide-react";
 import { callClaude } from "@/lib/anthropic";
 import { checkInstanceStatus } from "@/lib/uazapi";
@@ -255,9 +256,10 @@ const WhatsAppCRM = () => {
     });
   };
 
-  // Fetch negocio data when lead changes
+  // Fetch negocio data when lead's linked negocios change (use first one for ficha)
   useEffect(() => {
-    if (!selectedLead?.negocio_id) {
+    const firstNegocioId = leadNegocios[0]?.negocio_id || selectedLead?.negocio_id;
+    if (!firstNegocioId) {
       setNegocioData(null);
       setInvestorProfile(null);
       return;
@@ -267,13 +269,13 @@ const WhatsAppCRM = () => {
     supabase
       .from("negocios")
       .select("titulo, preco, faturamento_mensal, categoria, cidade")
-      .eq("id", selectedLead.negocio_id)
+      .eq("id", firstNegocioId)
       .single()
       .then(({ data }) => {
         setNegocioData(data ?? null);
         setLoadingNegocio(false);
       });
-  }, [selectedLead?.negocio_id]);
+  }, [leadNegocios, selectedLead?.negocio_id]);
 
   useEffect(() => {
     if (selectedLead) setCurrentStatus(selectedLead.status || "novo");
@@ -290,20 +292,99 @@ const WhatsAppCRM = () => {
   const { data: pipelines = [] } = useSalesPipelines();
   const updateStageMut = useUpdateLeadStage();
 
-  // === Vincular imóvel ===
+  // === Múltiplos negócios (lead_negocios junction) ===
   const [showImovelPicker, setShowImovelPicker] = useState(false);
-  const handleVincularImovel = async (negocioId: string, titulo: string) => {
+  const [leadNegocios, setLeadNegocios] = useState<{ id: string; negocio_id: string; titulo: string; categoria?: string | null; preco?: number | null }[]>([]);
+  const [loadingNegocios, setLoadingNegocios] = useState(false);
+
+  const loadLeadNegocios = async (leadId: string) => {
+    setLoadingNegocios(true);
+    const { data } = await supabase
+      .from("lead_negocios")
+      .select("id, negocio_id, negocios(titulo, categoria, preco)")
+      .eq("lead_id", leadId);
+    setLeadNegocios((data || []).map((r: any) => ({
+      id: r.id,
+      negocio_id: r.negocio_id,
+      titulo: r.negocios?.titulo || "Sem título",
+      categoria: r.negocios?.categoria,
+      preco: r.negocios?.preco,
+    })));
+    setLoadingNegocios(false);
+  };
+
+  useEffect(() => {
+    if (selectedLead) loadLeadNegocios(selectedLead.id);
+    else setLeadNegocios([]);
+  }, [selectedLead?.id]);
+
+  const handleAdicionarNegocio = async (negocioId: string, titulo: string) => {
     if (!selectedLead) return;
-    await supabase.from("leads").update({ negocio_id: negocioId, negocio_titulo: titulo }).eq("id", selectedLead.id);
-    setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, negocio_id: negocioId, negocio_titulo: titulo } : l));
-    setSelectedLead((p) => p ? { ...p, negocio_id: negocioId, negocio_titulo: titulo } : p);
+    const { error } = await supabase.from("lead_negocios").insert({ lead_id: selectedLead.id, negocio_id: negocioId });
+    if (error && error.code === "23505") return; // duplicate
+    if (!error) {
+      await supabase.from("leads").update({ negocio_id: negocioId, negocio_titulo: titulo }).eq("id", selectedLead.id);
+      setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, negocio_id: negocioId, negocio_titulo: titulo } : l));
+      setSelectedLead((p) => p ? { ...p, negocio_id: negocioId, negocio_titulo: titulo } : p);
+    }
+    await loadLeadNegocios(selectedLead.id);
     setShowImovelPicker(false);
   };
-  const handleDesvincularImovel = async () => {
+  const handleRemoverNegocio = async (junctionId: string) => {
     if (!selectedLead) return;
-    await supabase.from("leads").update({ negocio_id: null, negocio_titulo: null }).eq("id", selectedLead.id);
-    setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, negocio_id: undefined, negocio_titulo: undefined } : l));
-    setSelectedLead((p) => p ? { ...p, negocio_id: undefined, negocio_titulo: undefined } : p);
+    await supabase.from("lead_negocios").delete().eq("id", junctionId);
+    await loadLeadNegocios(selectedLead.id);
+  };
+
+  // === Agendamentos de visita ===
+  const [agendamentos, setAgendamentos] = useState<{ id: string; data_hora: string; observacao: string | null; status: string; negocio_id: string | null; negocio_titulo?: string }[]>([]);
+  const [loadingAgendamentos, setLoadingAgendamentos] = useState(false);
+  const [showAgendarModal, setShowAgendarModal] = useState(false);
+  const [agendarForm, setAgendarForm] = useState({ data: "", hora: "", negocio_id: "", observacao: "" });
+  const [salvandoAgendamento, setSalvandoAgendamento] = useState(false);
+
+  const loadAgendamentos = async (leadId: string) => {
+    setLoadingAgendamentos(true);
+    const { data } = await supabase
+      .from("agendamentos")
+      .select("id, data_hora, observacao, status, negocio_id, negocios(titulo)")
+      .eq("lead_id", leadId)
+      .order("data_hora", { ascending: true });
+    setAgendamentos((data || []).map((r: any) => ({
+      id: r.id,
+      data_hora: r.data_hora,
+      observacao: r.observacao,
+      status: r.status,
+      negocio_id: r.negocio_id,
+      negocio_titulo: r.negocios?.titulo,
+    })));
+    setLoadingAgendamentos(false);
+  };
+
+  useEffect(() => {
+    if (selectedLead) loadAgendamentos(selectedLead.id);
+    else setAgendamentos([]);
+  }, [selectedLead?.id]);
+
+  const handleSalvarAgendamento = async () => {
+    if (!selectedLead || !agendarForm.data || !agendarForm.hora) return;
+    setSalvandoAgendamento(true);
+    const dataHora = new Date(`${agendarForm.data}T${agendarForm.hora}`).toISOString();
+    await supabase.from("agendamentos").insert({
+      lead_id: selectedLead.id,
+      negocio_id: agendarForm.negocio_id || null,
+      data_hora: dataHora,
+      observacao: agendarForm.observacao.trim() || null,
+    });
+    await loadAgendamentos(selectedLead.id);
+    setShowAgendarModal(false);
+    setAgendarForm({ data: "", hora: "", negocio_id: "", observacao: "" });
+    setSalvandoAgendamento(false);
+  };
+
+  const handleCancelarAgendamento = async (agId: string) => {
+    await supabase.from("agendamentos").update({ status: "cancelado", updated_at: new Date().toISOString() }).eq("id", agId);
+    if (selectedLead) await loadAgendamentos(selectedLead.id);
   };
   const handleTransferPipeline = async (pipelineId: string) => {
     if (!selectedLead) return;
@@ -1427,47 +1508,92 @@ ${describeIntent(intent, selectedLead)}
                 })()}
               </div>
 
-              {/* ── Imóvel de interesse ── */}
+              {/* ── Negócios de Interesse (múltiplos) ── */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Imóvel de Interesse</p>
-                  {selectedLead.negocio_titulo && (
-                    <button onClick={handleDesvincularImovel} className="text-[10px] font-medium text-muted-foreground hover:text-red-600 underline">
-                      desvincular
-                    </button>
-                  )}
-                </div>
-
-                {selectedLead.negocio_titulo ? (
-                  <button
-                    onClick={() => setShowImovelPicker(true)}
-                    className="w-full rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-3 text-left hover:border-primary hover:shadow-md transition-all group"
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                        <Building2 className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">{selectedLead.negocio_titulo}</p>
-                        <p className="text-[10px] text-primary mt-0.5 font-medium group-hover:underline">Clique pra trocar →</p>
-                      </div>
-                    </div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Negócios de Interesse</p>
+                  <button onClick={() => setShowImovelPicker(true)} className="flex items-center gap-0.5 text-[10px] font-medium text-primary hover:underline">
+                    <Plus className="h-3 w-3" /> Adicionar
                   </button>
-                ) : (
+                </div>
+                {loadingNegocios ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando...</div>
+                ) : leadNegocios.length === 0 ? (
                   <button
                     onClick={() => setShowImovelPicker(true)}
                     className="w-full rounded-xl border-2 border-dashed border-border bg-muted/30 p-4 hover:border-primary hover:bg-primary/5 transition-all group"
                   >
                     <Building2 className="h-7 w-7 text-muted-foreground/50 group-hover:text-primary mx-auto mb-1.5 transition-colors" />
-                    <p className="text-xs font-medium text-foreground">+ Vincular Imóvel</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Escolha de quais negócios este lead tem interesse</p>
+                    <p className="text-xs font-medium text-foreground">+ Vincular Negócio</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Escolha os negócios que este lead tem interesse</p>
                   </button>
+                ) : (
+                  <div className="space-y-1.5">
+                    {leadNegocios.map((n) => (
+                      <div key={n.id} className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 p-2 group">
+                        <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                          <Building2 className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-semibold text-foreground truncate">{n.titulo}</p>
+                          <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+                            {n.categoria && <span>{n.categoria}</span>}
+                            {n.preco && <span className="font-medium text-primary">{formatCurrency(n.preco)}</span>}
+                          </div>
+                        </div>
+                        <button onClick={() => handleRemoverNegocio(n.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 transition-all" title="Remover">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Agendar Visita ── */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Visitas</p>
+                  <button onClick={() => { setAgendarForm({ data: "", hora: "", negocio_id: "", observacao: "" }); setShowAgendarModal(true); }} className="flex items-center gap-0.5 text-[10px] font-medium text-primary hover:underline">
+                    <Plus className="h-3 w-3" /> Agendar
+                  </button>
+                </div>
+                {loadingAgendamentos ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando...</div>
+                ) : agendamentos.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground italic">Nenhuma visita agendada</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {agendamentos.map((ag) => {
+                      const dt = new Date(ag.data_hora);
+                      const isPast = dt < new Date();
+                      const isCanceled = ag.status === "cancelado";
+                      return (
+                        <div key={ag.id} className={`rounded-lg border p-2 ${isCanceled ? "border-red-200 bg-red-50/50 opacity-60" : isPast ? "border-amber-200 bg-amber-50/50" : "border-green-200 bg-green-50/50"}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-[11px] font-semibold text-foreground">
+                                {dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} às {dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                            {!isCanceled && (
+                              <button onClick={() => handleCancelarAgendamento(ag.id)} className="text-[9px] text-muted-foreground hover:text-red-500 underline">cancelar</button>
+                            )}
+                          </div>
+                          {ag.negocio_titulo && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{ag.negocio_titulo}</p>}
+                          {ag.observacao && <p className="text-[10px] text-muted-foreground italic mt-0.5">"{ag.observacao}"</p>}
+                          {isCanceled && <span className="text-[9px] font-medium text-red-600">Cancelada</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
 
               {/* ── Ficha do Negócio ── */}
-              {selectedLead.negocio_id && (
+              {(leadNegocios.length > 0 || selectedLead.negocio_id) && (
                 <div>
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Ficha do Negócio</p>
                   {loadingNegocio ? (
@@ -1611,13 +1737,62 @@ ${describeIntent(intent, selectedLead)}
 
       </div>
 
-      {/* Modal de seleção de imóvel */}
+      {/* Modal de seleção de imóvel (adiciona à lista) */}
       <ImovelPickerModal
         open={showImovelPicker}
         onClose={() => setShowImovelPicker(false)}
-        onSelect={({ id, titulo }) => handleVincularImovel(id, titulo)}
+        onSelect={({ id, titulo }) => handleAdicionarNegocio(id, titulo)}
         currentNegocioId={selectedLead?.negocio_id || null}
       />
+
+      {/* Modal Agendar Visita */}
+      {showAgendarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowAgendarModal(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-card border border-border shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                  <Calendar className="h-4 w-4 text-green-700" />
+                </div>
+                <p className="font-display font-bold text-foreground">Agendar Visita</p>
+              </div>
+              <button onClick={() => setShowAgendarModal(false)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1">Data <span className="text-red-500">*</span></label>
+                  <input type="date" value={agendarForm.data} onChange={(e) => setAgendarForm((p) => ({ ...p, data: e.target.value }))} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1">Hora <span className="text-red-500">*</span></label>
+                  <input type="time" value={agendarForm.hora} onChange={(e) => setAgendarForm((p) => ({ ...p, hora: e.target.value }))} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+              </div>
+              {leadNegocios.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1">Negócio</label>
+                  <select value={agendarForm.negocio_id} onChange={(e) => setAgendarForm((p) => ({ ...p, negocio_id: e.target.value }))} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">— Selecione (opcional) —</option>
+                    {leadNegocios.map((n) => <option key={n.negocio_id} value={n.negocio_id}>{n.titulo}</option>)}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1">Observação</label>
+                <textarea value={agendarForm.observacao} onChange={(e) => setAgendarForm((p) => ({ ...p, observacao: e.target.value }))} placeholder="Ex: visitar o salão no período da manhã..." rows={2} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setShowAgendarModal(false)} className="flex-1 rounded-lg border border-border py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Cancelar</button>
+                <button type="button" onClick={handleSalvarAgendamento} disabled={!agendarForm.data || !agendarForm.hora || salvandoAgendamento} className="flex-1 rounded-lg bg-green-600 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  {salvandoAgendamento ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
+                  Agendar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };
