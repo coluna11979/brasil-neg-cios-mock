@@ -1,7 +1,6 @@
 import { useLocation } from "react-router-dom";
 import ExitIntentPopup from "./ExitIntentPopup";
 import TopNotificationBar from "./TopNotificationBar";
-import SofiaChat from "./SofiaChat";
 
 const GlobalCaptureWidgets = () => {
   const location = useLocation();
@@ -15,10 +14,11 @@ const GlobalCaptureWidgets = () => {
     return null;
   }
 
+  // Chat flutuante: usa apenas o FloatingAgentHost (DB-driven, configuravel
+  // em /admin/agentes). SofiaChat legado removido pra nao duplicar bolha.
   return (
     <>
       <TopNotificationBar />
-      <SofiaChat />
       <ExitIntentPopup />
     </>
   );
