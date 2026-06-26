@@ -398,7 +398,7 @@ const WhatsAppCRM = () => {
       imovel_ref: negocio?.titulo || selectedLead.negocio_titulo || null,
       data: agendarForm.data,
       horario: agendarForm.hora,
-      status: "agendado",
+      status: "pendente",
       notas: agendarForm.observacao.trim() || null,
     });
     if (error) {
