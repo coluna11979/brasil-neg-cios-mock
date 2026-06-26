@@ -406,7 +406,7 @@ const WhatsAppCRM = () => {
     if (!selectedLead || !agendarForm.data || !agendarForm.hora) return;
     setSalvandoAgendamento(true);
     const negocio = leadNegocios.find((n) => n.negocio_id === agendarForm.negocio_id);
-    const { error } = await supabase.from("agendamentos").insert({
+    const { data: inserted, error } = await supabase.from("agendamentos").insert({
       lead_id: selectedLead.id,
       negocio_id: agendarForm.negocio_id || null,
       nome: selectedLead.nome,
@@ -417,16 +417,38 @@ const WhatsAppCRM = () => {
       horario: agendarForm.hora,
       status: "pendente",
       notas: agendarForm.observacao.trim() || null,
-    });
+    }).select("id").single();
     if (error) {
       alert("Erro ao agendar: " + error.message);
       setSalvandoAgendamento(false);
       return;
     }
+
+    // Envia email de confirmacao se o lead tem email
+    let emailMsg = "";
+    if (selectedLead.email && inserted?.id) {
+      try {
+        const { data: emailRes, error: emailErr } = await supabase.functions.invoke("send-agendamento-email", {
+          body: { agendamento_id: inserted.id },
+        });
+        if (emailErr || !emailRes?.success) {
+          emailMsg = `\n\nObs: agendamento salvo, mas email NÃO enviado: ${emailRes?.error || emailErr?.message || "erro desconhecido"}`;
+          console.error("[CRM] Falha envio email agendamento:", emailRes, emailErr);
+        } else {
+          emailMsg = `\n\n📧 Email de confirmação enviado para ${emailRes.sent_to}`;
+        }
+      } catch (e) {
+        emailMsg = `\n\nObs: agendamento salvo, mas falhou ao enviar email: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    } else if (!selectedLead.email) {
+      emailMsg = "\n\n⚠️ Lead sem email — clique no nome dele no topo do chat pra adicionar e reenviar.";
+    }
+
     await loadAgendamentos(selectedLead.id);
     setShowAgendarModal(false);
     setAgendarForm({ data: "", hora: "", negocio_id: "", observacao: "" });
     setSalvandoAgendamento(false);
+    if (emailMsg) alert(`Visita agendada!${emailMsg}`);
   };
 
   const handleCancelarAgendamento = async (agId: string) => {
