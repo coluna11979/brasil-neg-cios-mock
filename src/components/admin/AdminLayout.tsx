@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { logout, getAdminEmail } from "@/stores/authStore";
 import Logo, { LogoMark } from "@/components/Logo";
+import MessageNotifier from "@/components/admin/MessageNotifier";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -111,6 +112,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
               <p className="text-sm font-medium text-foreground truncate">Administrador</p>
               <p className="text-xs text-muted-foreground truncate">{adminEmail}</p>
             </div>
+            <MessageNotifier />
           </div>
           <Button
             variant="outline"
@@ -211,8 +213,11 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
             <LogoMark className="h-7 w-7" />
             <span className="font-display text-sm font-bold">Admin</span>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary" aria-label="Perfil">
-            A
+          <div className="flex items-center gap-1">
+            <MessageNotifier />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary" aria-label="Perfil">
+              A
+            </div>
           </div>
         </header>
 
