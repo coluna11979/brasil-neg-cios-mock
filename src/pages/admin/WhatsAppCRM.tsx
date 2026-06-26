@@ -184,9 +184,9 @@ const WhatsAppCRM = () => {
   const [showNewContact, setShowNewContact] = useState(false);
   const [newContact, setNewContact] = useState({ nome: "", telefone: "", email: "", mensagem: "" });
   const [savingContact, setSavingContact] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [editNameValue, setEditNameValue] = useState("");
-  const [savingName, setSavingName] = useState(false);
+  const [showEditLead, setShowEditLead] = useState(false);
+  const [editLeadForm, setEditLeadForm] = useState({ nome: "", telefone: "", email: "" });
+  const [savingEditLead, setSavingEditLead] = useState(false);
   const [negocioData, setNegocioData] = useState<NegocioData | null>(null);
   const [loadingNegocio, setLoadingNegocio] = useState(false);
   const [investorProfile, setInvestorProfile] = useState<InvestorProfile | null>(null);
@@ -263,18 +263,35 @@ const WhatsAppCRM = () => {
     if (selectedLead) setCurrentStatus(selectedLead.status || "novo");
   }, [selectedLead]);
 
-  const handleSaveName = async () => {
-    if (!selectedLead || !editNameValue.trim()) { setEditingName(false); return; }
-    const novoNome = editNameValue.trim();
-    if (novoNome === selectedLead.nome) { setEditingName(false); return; }
-    setSavingName(true);
-    const { error } = await supabase.from("leads").update({ nome: novoNome }).eq("id", selectedLead.id);
-    if (!error) {
-      setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, nome: novoNome } : l));
-      setSelectedLead((p) => p ? { ...p, nome: novoNome } : p);
+  const openEditLead = () => {
+    if (!selectedLead) return;
+    setEditLeadForm({
+      nome: selectedLead.nome || "",
+      telefone: selectedLead.telefone || "",
+      email: selectedLead.email || "",
+    });
+    setShowEditLead(true);
+  };
+  const handleSaveEditLead = async () => {
+    if (!selectedLead) return;
+    const nome = editLeadForm.nome.trim();
+    if (!nome) { alert("Nome é obrigatório"); return; }
+    setSavingEditLead(true);
+    const updates = {
+      nome,
+      telefone: editLeadForm.telefone.trim() || null,
+      email: editLeadForm.email.trim() || null,
+    };
+    const { error } = await supabase.from("leads").update(updates).eq("id", selectedLead.id);
+    if (error) {
+      alert("Erro ao salvar: " + error.message);
+      setSavingEditLead(false);
+      return;
     }
-    setSavingName(false);
-    setEditingName(false);
+    setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, ...updates } : l));
+    setSelectedLead((p) => p ? { ...p, ...updates } : p);
+    setSavingEditLead(false);
+    setShowEditLead(false);
   };
 
   const handleStatusChange = async (status: Lead["status"]) => {
@@ -1139,27 +1156,14 @@ ${describeIntent(intent, selectedLead)}
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    {editingName ? (
-                      <input
-                        type="text"
-                        autoFocus
-                        value={editNameValue}
-                        onChange={(e) => setEditNameValue(e.target.value)}
-                        onBlur={handleSaveName}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false); }}
-                        disabled={savingName}
-                        className="font-semibold text-foreground bg-card border border-primary rounded px-2 py-0.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 min-w-[140px]"
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => { setEditNameValue(selectedLead.nome); setEditingName(true); }}
-                        title="Clique pra editar o nome"
-                        className="font-semibold text-foreground hover:text-primary hover:underline decoration-dotted underline-offset-4 transition-colors"
-                      >
-                        {selectedLead.nome}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={openEditLead}
+                      title="Editar nome, telefone e email do lead"
+                      className="font-semibold text-foreground hover:text-primary hover:underline decoration-dotted underline-offset-4 transition-colors"
+                    >
+                      {selectedLead.nome}
+                    </button>
                     {selectedLead.corretor_id && corretoresMap[selectedLead.corretor_id] && (
                       <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
                         <UserCircle className="h-3 w-3" />
@@ -1821,6 +1825,66 @@ ${describeIntent(intent, selectedLead)}
         onSelect={({ id, titulo }) => handleAdicionarNegocio(id, titulo)}
         currentNegocioId={selectedLead?.negocio_id || null}
       />
+
+      {/* Modal Editar Lead (nome/telefone/email) */}
+      {showEditLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowEditLead(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-card border border-border shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <UserCircle className="h-4 w-4 text-primary" />
+                </div>
+                <p className="font-display font-bold text-foreground">Editar Lead</p>
+              </div>
+              <button onClick={() => setShowEditLead(false)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">Nome <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={editLeadForm.nome}
+                  onChange={(e) => setEditLeadForm((p) => ({ ...p, nome: e.target.value }))}
+                  placeholder="Nome completo"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">WhatsApp</label>
+                <input
+                  type="tel"
+                  value={editLeadForm.telefone}
+                  onChange={(e) => setEditLeadForm((p) => ({ ...p, telefone: e.target.value }))}
+                  placeholder="(11) 99999-9999"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">E-mail</label>
+                <input
+                  type="email"
+                  value={editLeadForm.email}
+                  onChange={(e) => setEditLeadForm((p) => ({ ...p, email: e.target.value }))}
+                  placeholder="email@exemplo.com"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Necessário para enviar agendamentos por email</p>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setShowEditLead(false)} className="flex-1 rounded-lg border border-border py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">Cancelar</button>
+                <button type="button" onClick={handleSaveEditLead} disabled={savingEditLead || !editLeadForm.nome.trim()} className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  {savingEditLead ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                  Salvar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Agendar Visita */}
       {showAgendarModal && (
