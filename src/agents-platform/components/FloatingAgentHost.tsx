@@ -35,8 +35,11 @@ export function FloatingAgentHost() {
     staleTime: 60_000,
   });
 
-  // Não renderiza dentro do próprio módulo de agentes (evita bolha em cima do chat)
+  // Não renderiza no módulo de agentes, painel admin nem corretor
+  // (bolha pública não pode tampar o chat interno com leads)
   if (pathname.startsWith('/agentes')) return null;
+  if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/corretor')) return null;
 
   // Filtra: só bolhas cujo `route` casa com a rota atual (ou sem route = global)
   const visible = deployments.filter((d) => {

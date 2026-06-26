@@ -180,7 +180,7 @@ const WhatsAppCRM = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [showAi, setShowAi] = useState(false);
   // Intel sidebar
-  const [showIntel, setShowIntel] = useState(true);
+  const [showIntel, setShowIntel] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768);
   const [showNewContact, setShowNewContact] = useState(false);
   const [newContact, setNewContact] = useState({ nome: "", telefone: "", email: "", mensagem: "" });
   const [savingContact, setSavingContact] = useState(false);
@@ -937,7 +937,7 @@ ${describeIntent(intent, selectedLead)}
         </div>
       )}
 
-      <div className="flex h-[calc(100vh-7rem)] rounded-xl border border-border overflow-hidden bg-card shadow-sm">
+      <div className="flex h-[calc(100dvh-7rem)] md:h-[calc(100vh-7rem)] rounded-none md:rounded-xl border-0 md:border border-border overflow-hidden bg-card shadow-sm -mx-4 md:mx-0">
 
         {/* Sidebar - Contact List */}
         <div className={`w-full md:w-[300px] flex-shrink-0 border-r border-border flex flex-col ${selectedLead ? "hidden md:flex" : "flex"}`}>
@@ -1408,7 +1408,7 @@ ${describeIntent(intent, selectedLead)}
               </div>
 
               {/* Message Input */}
-              <form onSubmit={handleSend} className="flex items-center gap-2 px-4 py-3 border-t border-border bg-muted/30">
+              <form onSubmit={handleSend} className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-t border-border bg-muted/30 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                 <input type="file" ref={fileInputRef} accept="image/*,audio/*,video/*,.pdf" className="hidden" onChange={handleFileSelect} />
                 <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors shrink-0">
                   <Smile className="h-5 w-5" />
@@ -1451,7 +1451,7 @@ ${describeIntent(intent, selectedLead)}
             PAINEL DE INTELIGÊNCIA DO LEAD (direita)
             ────────────────────────────────────────── */}
         {selectedLead && showIntel && (
-          <div className="flex w-[280px] shrink-0 flex-col border-l border-border bg-card overflow-y-auto">
+          <div className="fixed inset-0 z-40 md:static md:inset-auto flex w-full md:w-[280px] shrink-0 flex-col border-l border-border bg-card overflow-y-auto">
 
             {/* Header do painel */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-primary/5 to-transparent shrink-0">
