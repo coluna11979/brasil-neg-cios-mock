@@ -1641,16 +1641,37 @@ ${describeIntent(intent, selectedLead)}
                   const pipe = pipelines.find((p) => p.id === selectedLead.pipeline_id);
                   if (!pipe) return null;
                   return (
-                    <select
-                      value={selectedLead.stage_id || ""}
-                      onChange={(e) => e.target.value && handleChangeStage(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                      <option value="">— Estágio —</option>
-                      {pipe.stages.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                    <div className="mt-2">
+                      <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Estágio do lead</p>
+                      <div className="flex flex-wrap gap-1">
+                        {pipe.stages.map((s) => {
+                          const active = selectedLead.stage_id === s.id;
+                          const dot = s.color === "amber" ? "bg-amber-500" :
+                            s.color === "green" ? "bg-green-500" :
+                            s.color === "red" ? "bg-red-500" :
+                            s.color === "violet" ? "bg-violet-500" :
+                            s.color === "slate" ? "bg-slate-500" :
+                            "bg-blue-500";
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => handleChangeStage(s.id)}
+                              disabled={updateStageMut.isPending}
+                              title={`Mover para ${s.name}`}
+                              className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold transition-all disabled:opacity-50 ${
+                                active
+                                  ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30"
+                                  : "bg-muted text-foreground hover:bg-muted/70 border border-border"
+                              }`}
+                            >
+                              <span className={`inline-block h-1.5 w-1.5 rounded-full ${active ? "bg-primary-foreground" : dot}`} />
+                              {s.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 })()}
               </div>
