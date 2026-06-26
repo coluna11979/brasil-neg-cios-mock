@@ -337,7 +337,7 @@ const WhatsAppCRM = () => {
   };
 
   // === Agendamentos de visita ===
-  const [agendamentos, setAgendamentos] = useState<{ id: string; data_hora: string; observacao: string | null; status: string; negocio_id: string | null; negocio_titulo?: string }[]>([]);
+  const [agendamentos, setAgendamentos] = useState<{ id: string; data: string; horario: string; notas: string | null; status: string; negocio_id: string | null; negocio_titulo?: string }[]>([]);
   const [loadingAgendamentos, setLoadingAgendamentos] = useState(false);
   const [showAgendarModal, setShowAgendarModal] = useState(false);
   const [agendarForm, setAgendarForm] = useState({ data: "", hora: "", negocio_id: "", observacao: "" });
@@ -347,13 +347,15 @@ const WhatsAppCRM = () => {
     setLoadingAgendamentos(true);
     const { data } = await supabase
       .from("agendamentos")
-      .select("id, data_hora, observacao, status, negocio_id, negocios(titulo)")
+      .select("id, data, horario, notas, status, negocio_id, negocios(titulo)")
       .eq("lead_id", leadId)
-      .order("data_hora", { ascending: true });
+      .order("data", { ascending: true })
+      .order("horario", { ascending: true });
     setAgendamentos((data || []).map((r: any) => ({
       id: r.id,
-      data_hora: r.data_hora,
-      observacao: r.observacao,
+      data: r.data,
+      horario: r.horario,
+      notas: r.notas,
       status: r.status,
       negocio_id: r.negocio_id,
       negocio_titulo: r.negocios?.titulo,
@@ -369,13 +371,24 @@ const WhatsAppCRM = () => {
   const handleSalvarAgendamento = async () => {
     if (!selectedLead || !agendarForm.data || !agendarForm.hora) return;
     setSalvandoAgendamento(true);
-    const dataHora = new Date(`${agendarForm.data}T${agendarForm.hora}`).toISOString();
-    await supabase.from("agendamentos").insert({
+    const negocio = leadNegocios.find((n) => n.negocio_id === agendarForm.negocio_id);
+    const { error } = await supabase.from("agendamentos").insert({
       lead_id: selectedLead.id,
       negocio_id: agendarForm.negocio_id || null,
-      data_hora: dataHora,
-      observacao: agendarForm.observacao.trim() || null,
+      nome: selectedLead.nome,
+      telefone: selectedLead.telefone || "",
+      email: selectedLead.email || null,
+      imovel_ref: negocio?.titulo || selectedLead.negocio_titulo || null,
+      data: agendarForm.data,
+      horario: agendarForm.hora,
+      status: "agendado",
+      notas: agendarForm.observacao.trim() || null,
     });
+    if (error) {
+      alert("Erro ao agendar: " + error.message);
+      setSalvandoAgendamento(false);
+      return;
+    }
     await loadAgendamentos(selectedLead.id);
     setShowAgendarModal(false);
     setAgendarForm({ data: "", hora: "", negocio_id: "", observacao: "" });
@@ -1565,7 +1578,7 @@ ${describeIntent(intent, selectedLead)}
                 ) : (
                   <div className="space-y-1.5">
                     {agendamentos.map((ag) => {
-                      const dt = new Date(ag.data_hora);
+                      const dt = new Date(`${ag.data}T${ag.horario}`);
                       const isPast = dt < new Date();
                       const isCanceled = ag.status === "cancelado";
                       return (
@@ -1574,7 +1587,7 @@ ${describeIntent(intent, selectedLead)}
                             <div className="flex items-center gap-1.5">
                               <Clock className="h-3 w-3 text-muted-foreground" />
                               <span className="text-[11px] font-semibold text-foreground">
-                                {dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} às {dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                {dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} às {ag.horario.slice(0,5)}
                               </span>
                             </div>
                             {!isCanceled && (
@@ -1582,7 +1595,7 @@ ${describeIntent(intent, selectedLead)}
                             )}
                           </div>
                           {ag.negocio_titulo && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{ag.negocio_titulo}</p>}
-                          {ag.observacao && <p className="text-[10px] text-muted-foreground italic mt-0.5">"{ag.observacao}"</p>}
+                          {ag.notas && <p className="text-[10px] text-muted-foreground italic mt-0.5">"{ag.notas}"</p>}
                           {isCanceled && <span className="text-[9px] font-medium text-red-600">Cancelada</span>}
                         </div>
                       );
