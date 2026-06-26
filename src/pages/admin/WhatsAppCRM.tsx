@@ -788,8 +788,10 @@ ${describeIntent(intent, selectedLead)}
   };
 
   const [quickFilter, setQuickFilter] = useState<"all" | "today" | "pipeline" | "no_pipeline">("all");
+  const [pipelineFilter, setPipelineFilter] = useState<string>("all");
   const filteredLeads = leads
     .filter((lead) => {
+      if (pipelineFilter !== "all" && lead.pipeline_id !== pipelineFilter) return false;
       if (quickFilter === "today") {
         const last = lastMsgMap[lead.id] || lead.created_at;
         if (!last) return false;
@@ -1017,7 +1019,25 @@ ${describeIntent(intent, selectedLead)}
                 </button>
               ))}
             </div>
-            {(searchQuery || quickFilter !== "all") && (
+            {/* Filtro por pipeline */}
+            <div className="mt-2">
+              <select
+                value={pipelineFilter}
+                onChange={(e) => setPipelineFilter(e.target.value)}
+                className="w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              >
+                <option value="all">📋 Todos os pipelines</option>
+                {pipelines.map((p) => {
+                  const count = leads.filter((l) => l.pipeline_id === p.id).length;
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {p.pipeline_type === "vendas" ? "💼" : "🎯"} {p.name} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            {(searchQuery || quickFilter !== "all" || pipelineFilter !== "all") && (
               <p className="text-[10px] text-muted-foreground mt-1.5">
                 {filteredLeads.length} {filteredLeads.length === 1 ? "resultado" : "resultados"}
               </p>
