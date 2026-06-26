@@ -184,6 +184,9 @@ const WhatsAppCRM = () => {
   const [showNewContact, setShowNewContact] = useState(false);
   const [newContact, setNewContact] = useState({ nome: "", telefone: "", email: "", mensagem: "" });
   const [savingContact, setSavingContact] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const [negocioData, setNegocioData] = useState<NegocioData | null>(null);
   const [loadingNegocio, setLoadingNegocio] = useState(false);
   const [investorProfile, setInvestorProfile] = useState<InvestorProfile | null>(null);
@@ -259,6 +262,20 @@ const WhatsAppCRM = () => {
   useEffect(() => {
     if (selectedLead) setCurrentStatus(selectedLead.status || "novo");
   }, [selectedLead]);
+
+  const handleSaveName = async () => {
+    if (!selectedLead || !editNameValue.trim()) { setEditingName(false); return; }
+    const novoNome = editNameValue.trim();
+    if (novoNome === selectedLead.nome) { setEditingName(false); return; }
+    setSavingName(true);
+    const { error } = await supabase.from("leads").update({ nome: novoNome }).eq("id", selectedLead.id);
+    if (!error) {
+      setLeads((prev) => prev.map((l) => l.id === selectedLead.id ? { ...l, nome: novoNome } : l));
+      setSelectedLead((p) => p ? { ...p, nome: novoNome } : p);
+    }
+    setSavingName(false);
+    setEditingName(false);
+  };
 
   const handleStatusChange = async (status: Lead["status"]) => {
     if (!selectedLead) return;
@@ -925,16 +942,7 @@ ${describeIntent(intent, selectedLead)}
           {/* Header */}
           <div className="px-4 py-3 border-b border-border bg-muted/30">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <p className="font-display font-semibold text-foreground text-sm">Conversas</p>
-                <button
-                  onClick={() => setShowNewContact(true)}
-                  title="Novo contato"
-                  className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                >
-                  <UserPlus className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              <p className="font-display font-semibold text-foreground text-sm">Conversas</p>
               {/* Status Uazapi */}
               <button
                 onClick={recheckInstance}
@@ -1091,7 +1099,27 @@ ${describeIntent(intent, selectedLead)}
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-foreground">{selectedLead.nome}</p>
+                    {editingName ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editNameValue}
+                        onChange={(e) => setEditNameValue(e.target.value)}
+                        onBlur={handleSaveName}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false); }}
+                        disabled={savingName}
+                        className="font-semibold text-foreground bg-card border border-primary rounded px-2 py-0.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 min-w-[140px]"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setEditNameValue(selectedLead.nome); setEditingName(true); }}
+                        title="Clique pra editar o nome"
+                        className="font-semibold text-foreground hover:text-primary hover:underline decoration-dotted underline-offset-4 transition-colors"
+                      >
+                        {selectedLead.nome}
+                      </button>
+                    )}
                     {selectedLead.corretor_id && corretoresMap[selectedLead.corretor_id] && (
                       <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
                         <UserCircle className="h-3 w-3" />
