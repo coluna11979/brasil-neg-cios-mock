@@ -719,25 +719,34 @@ ${describeIntent(intent, selectedLead)}
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !selectedLead) return;
-    if (file.size > 25 * 1024 * 1024) { alert("Arquivo muito grande! Máximo 25MB."); return; }
 
     const isImage = file.type.startsWith("image/");
     const isAudio = file.type.startsWith("audio/");
-    const isVideo = file.type.startsWith("video/");
+    const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm|3gp)$/i.test(file.name);
     const isDoc = file.type === "application/pdf" || file.name.endsWith(".pdf");
 
     if (!isImage && !isAudio && !isVideo && !isDoc) {
-      alert("Tipo não suportado. Envie imagem, áudio, vídeo ou PDF.");
+      alert("Tipo não suportado. Envie imagem, áudio, vídeo (mp4/mov) ou PDF.");
+      return;
+    }
+
+    // Limite por tipo: vídeo aceita até 50MB (WhatsApp via Uazapi)
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 25 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`Arquivo muito grande! Máximo ${isVideo ? "50" : "25"}MB. Seu arquivo: ${(file.size / 1024 / 1024).toFixed(1)}MB`);
       return;
     }
 
     setUploadingFile(true);
+    setSendStatus("idle");
     try {
       const ext = file.name.split(".").pop() || "bin";
       const folder = isImage ? "crm/images" : isAudio ? "crm/audio" : isVideo ? "crm/video" : "crm/docs";
       const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("lead-images").upload(path, file, { contentType: file.type, cacheControl: "3600", upsert: false });
-      if (uploadError) throw uploadError;
+      // Vídeos sem MIME (alguns navegadores) → força video/mp4
+      const contentType = file.type || (isVideo ? "video/mp4" : "application/octet-stream");
+      const { error: uploadError } = await supabase.storage.from("lead-images").upload(path, file, { contentType, cacheControl: "3600", upsert: false });
+      if (uploadError) throw new Error(`Upload: ${uploadError.message}`);
 
       const { data: urlData } = supabase.storage.from("lead-images").getPublicUrl(path);
       const publicUrl = urlData.publicUrl;
@@ -748,12 +757,23 @@ ${describeIntent(intent, selectedLead)}
       else if (isVideo) msgContent = `[VIDEO]:${publicUrl}`;
       else msgContent = `[FILE]:${publicUrl}|${file.name}`;
 
-      await sendMessage(selectedLead.id, msgContent, "corretor", selectedLead.telefone || undefined);
+      const result = await sendMessage(selectedLead.id, msgContent, "corretor", selectedLead.telefone || undefined);
       const updated = await getMessagesByLead(selectedLead.id);
       setMessages(updated);
+
+      if (result.saved) {
+        const status = result.whatsapp === "sent" ? "sent" : result.whatsapp === "no_phone" ? "no_phone" : result.whatsapp === "error" ? "error" : "idle";
+        setSendStatus(status);
+        if (status === "error") {
+          setSendError(result.error || `Falha ao enviar ${isVideo ? "vídeo" : "arquivo"} via WhatsApp — veja o console (F12)`);
+          console.error(`[CRM] WhatsApp falhou:`, result.error, result.debugInfo);
+        }
+        setTimeout(() => { setSendStatus("idle"); setSendError(""); }, 8000);
+      }
     } catch (err) {
       console.error("[CRM] Erro ao enviar arquivo:", err);
-      alert("Erro ao enviar arquivo. Tente novamente.");
+      setSendStatus("error");
+      setSendError(err instanceof Error ? err.message : "Erro ao enviar arquivo");
     } finally {
       setUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
