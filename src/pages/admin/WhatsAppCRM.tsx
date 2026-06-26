@@ -848,9 +848,11 @@ ${describeIntent(intent, selectedLead)}
 
   const [quickFilter, setQuickFilter] = useState<"all" | "today" | "pipeline" | "no_pipeline">("all");
   const [pipelineFilter, setPipelineFilter] = useState<string>("all");
+  const [stageFilter, setStageFilter] = useState<string>("all");
   const filteredLeads = leads
     .filter((lead) => {
       if (pipelineFilter !== "all" && lead.pipeline_id !== pipelineFilter) return false;
+      if (stageFilter !== "all" && lead.stage_id !== stageFilter) return false;
       if (quickFilter === "today") {
         const last = lastMsgMap[lead.id] || lead.created_at;
         if (!last) return false;
@@ -1082,7 +1084,7 @@ ${describeIntent(intent, selectedLead)}
             <div className="mt-2">
               <select
                 value={pipelineFilter}
-                onChange={(e) => setPipelineFilter(e.target.value)}
+                onChange={(e) => { setPipelineFilter(e.target.value); setStageFilter("all"); }}
                 className="w-full rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="all">📋 Todos os pipelines</option>
@@ -1096,7 +1098,49 @@ ${describeIntent(intent, selectedLead)}
                 })}
               </select>
             </div>
-            {(searchQuery || quickFilter !== "all" || pipelineFilter !== "all") && (
+            {/* Chips de estagios — aparecem quando um pipeline esta selecionado */}
+            {pipelineFilter !== "all" && (() => {
+              const pipe = pipelines.find((p) => p.id === pipelineFilter);
+              if (!pipe || pipe.stages.length === 0) return null;
+              const allCount = leads.filter((l) => l.pipeline_id === pipe.id).length;
+              return (
+                <div className="mt-1.5 flex items-center gap-1 overflow-x-auto pb-1">
+                  <button
+                    onClick={() => setStageFilter("all")}
+                    className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap transition-colors ${
+                      stageFilter === "all" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    Todos <span className="opacity-70">{allCount}</span>
+                  </button>
+                  {pipe.stages.map((s) => {
+                    const count = leads.filter((l) => l.stage_id === s.id).length;
+                    const active = stageFilter === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => setStageFilter(s.id)}
+                        title={s.name}
+                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap transition-colors ${
+                          active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        <span className={`inline-block h-1.5 w-1.5 rounded-full ${
+                          s.color === "amber" ? "bg-amber-500" :
+                          s.color === "green" ? "bg-green-500" :
+                          s.color === "red" ? "bg-red-500" :
+                          s.color === "violet" ? "bg-violet-500" :
+                          s.color === "slate" ? "bg-slate-500" :
+                          "bg-blue-500"
+                        }`} />
+                        {s.name} <span className="opacity-70">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+            {(searchQuery || quickFilter !== "all" || pipelineFilter !== "all" || stageFilter !== "all") && (
               <p className="text-[10px] text-muted-foreground mt-1.5">
                 {filteredLeads.length} {filteredLeads.length === 1 ? "resultado" : "resultados"}
               </p>
