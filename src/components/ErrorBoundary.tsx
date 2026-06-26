@@ -8,6 +8,18 @@ interface State {
   hasError: boolean;
 }
 
+// Detecta erros de chunk antigo (deploy novo invalidou hash). Recarrega
+// 1x automaticamente — usa sessionStorage pra evitar loop infinito.
+function isChunkLoadError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    msg.includes("Failed to fetch dynamically imported module") ||
+    msg.includes("Loading chunk") ||
+    msg.includes("Loading CSS chunk") ||
+    msg.includes("Importing a module script failed")
+  );
+}
+
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -20,6 +32,21 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("ErrorBoundary caught:", error, info.componentStack);
+    if (isChunkLoadError(error)) {
+      const RELOAD_KEY = "__chunk_reload_done";
+      if (!sessionStorage.getItem(RELOAD_KEY)) {
+        sessionStorage.setItem(RELOAD_KEY, "1");
+        // Limpa service worker cache antes do reload pra garantir bundle novo
+        if ("caches" in window) {
+          caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))).finally(() => window.location.reload());
+        } else {
+          window.location.reload();
+        }
+      }
+    } else {
+      // Limpa flag de reload em erro não-chunk pra permitir retry futuro
+      sessionStorage.removeItem("__chunk_reload_done");
+    }
   }
 
   render() {
