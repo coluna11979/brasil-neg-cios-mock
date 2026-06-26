@@ -1408,30 +1408,26 @@ ${describeIntent(intent, selectedLead)}
               </div>
 
               {/* Message Input */}
-              <form onSubmit={handleSend} className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border-t border-border bg-muted/30 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <form onSubmit={handleSend} className="flex items-center gap-1.5 md:gap-2 px-2 md:px-4 py-2 md:py-3 border-t border-border bg-muted/30 pb-[max(0.5rem,env(safe-area-inset-bottom))] w-full min-w-0">
                 <input type="file" ref={fileInputRef} accept="image/*,audio/*,video/*,.pdf" className="hidden" onChange={handleFileSelect} />
-                <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors shrink-0">
+                <button type="button" className="hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors shrink-0">
                   <Smile className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFile}
-                  title="Enviar imagem"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors shrink-0 disabled:opacity-50"
+                  title="Enviar arquivo"
+                  className="flex h-9 w-9 md:h-9 md:w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors shrink-0 disabled:opacity-50"
                 >
                   {uploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-5 w-5" />}
                 </button>
                 <input
                   type="text"
-                  placeholder={
-                    selectedLead.telefone
-                      ? `Mensagem para ${selectedLead.nome} via WhatsApp...`
-                      : "Mensagem interna (lead sem telefone)..."
-                  }
+                  placeholder={selectedLead.telefone ? "Mensagem..." : "Mensagem interna..."}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  className="flex-1 rounded-lg border border-border bg-card px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="flex-1 min-w-0 rounded-full md:rounded-lg border border-border bg-card px-3 md:px-4 py-2 md:py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
                 <button
                   type="submit"
