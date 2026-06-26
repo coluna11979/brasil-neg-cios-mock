@@ -43,6 +43,10 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Força SW novo a assumir imediatamente em vez de esperar fechar todas as abas
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // Não cache rotas /admin nem chamadas Supabase — sempre fresh
         navigateFallbackDenylist: [/^\/admin/, /^\/api/, /supabase/],
         runtimeCaching: [
